@@ -63,14 +63,14 @@ body {
   100% { transform: translate(0%, 0%); }
 }
 .aurora-teal {
-  width: 600px; height: 600px; border-radius: 50%;
-  background: rgba(26,138,110,0.18);
+  width: 700px; height: 700px; border-radius: 50%;
+  background: rgba(26,138,110,0.20);
   filter: blur(130px);
   animation: aurora1 25s ease-in-out infinite;
 }
 .aurora-gold {
-  width: 500px; height: 500px; border-radius: 50%;
-  background: rgba(240,165,0,0.10);
+  width: 700px; height: 700px; border-radius: 50%;
+  background: rgba(240,165,0,0.12);
   filter: blur(130px);
   animation: aurora2 35s ease-in-out infinite;
 }

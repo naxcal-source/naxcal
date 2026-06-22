@@ -205,7 +205,7 @@ export default function Home() {
         <div className="bg-[rgba(2,4,8,0.85)] backdrop-blur-xl border-b border-white/[0.06]">
           <div className="mx-auto max-w-7xl px-6 flex items-center justify-between h-[72px]">
             <div className="flex items-center gap-3">
-              <Image src="/Naxcal_Primary_Logo.png" alt="Naxcal" width={160} height={44} className="h-10 w-auto" style={{ filter: "drop-shadow(0 0 16px rgba(26,138,110,0.5))" }} priority />
+              <Image src="/Naxcal_Primary_Logo.png" alt="Naxcal" width={180} height={50} className="w-auto" style={{ height: 44, filter: "drop-shadow(0 0 12px rgba(26,138,110,0.4))" }} priority />
               <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/12 border border-emerald-500/25">
                 <LiveDot />
                 <span className="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider">FCA Regulated</span>
@@ -218,7 +218,7 @@ export default function Home() {
             </div>
             <div className="hidden lg:flex items-center gap-3">
               <button className="px-5 py-2 text-sm rounded-lg border border-white/15 text-white/80 hover:bg-white/5 transition-all cursor-pointer">Login</button>
-              <button className="btn-teal px-5 py-2 text-sm rounded-lg text-white cursor-pointer flex items-center gap-1.5 font-medium">Start Investing <ArrowRight size={14} /></button>
+              <button className="px-6 py-2.5 text-sm rounded-lg text-white cursor-pointer flex items-center gap-1.5 font-semibold transition-all" style={{ background: "linear-gradient(135deg, #1a8a6e, #22a882)", boxShadow: "0 0 20px rgba(26,138,110,0.35)" }} onMouseOver={e => (e.currentTarget.style.boxShadow = "0 0 35px rgba(26,138,110,0.55)")} onMouseOut={e => (e.currentTarget.style.boxShadow = "0 0 20px rgba(26,138,110,0.35)")}>Start Investing <ArrowRight size={14} /></button>
             </div>
             <button className="lg:hidden text-white cursor-pointer" onClick={() => setMobileMenu(!mobileMenu)}>
               {mobileMenu ? <X size={24} /> : <Menu size={24} />}
@@ -250,54 +250,52 @@ export default function Home() {
         }} />
         <div className="absolute top-[40%] left-0 right-0 light-beam z-[1]" />
 
-        <div className="relative z-10 mx-auto max-w-7xl px-6 pt-28 pb-20 flex flex-col lg:flex-row items-center gap-16 lg:gap-8 w-full">
+        <div className="relative z-10 mx-auto max-w-7xl px-6 pt-24 pb-16 flex flex-col lg:flex-row items-center gap-12 lg:gap-8 w-full">
           {/* Left 60% */}
           <div className="flex-[3] text-center lg:text-left">
             <FadeUp>
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.06] border border-white/[0.1] mb-8">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.06] border border-white/[0.1] mb-7">
                 <Zap size={13} className="text-naxcal-gold" />
                 <span className="text-[11px] text-white/60 tracking-wide">Institutional-Grade Capital Management</span>
               </div>
             </FadeUp>
             <FadeUp delay={0.08}>
-              <h1 style={{ fontSize: "clamp(48px, 6vw, 80px)" }} className="font-bold tracking-tight leading-[1.08]">
+              <h1 style={{ fontSize: "clamp(52px, 5.5vw, 84px)" }} className="font-bold tracking-tight leading-[1.08]">
                 Your Capital.
                 <br />
                 <span className="bg-gradient-to-r from-naxcal-teal via-naxcal-teal-light to-naxcal-teal bg-clip-text text-transparent text-glow-heading">
-                  Working Around
-                  <br />
-                  the Clock.
+                  Working Around the Clock.
                 </span>
               </h1>
             </FadeUp>
             <FadeUp delay={0.16}>
-              <p className="mt-6 text-[15px] sm:text-base text-white/50 max-w-xl mx-auto lg:mx-0 leading-[1.7]">
+              <p className="mt-6 text-[15px] sm:text-base text-white/50 leading-[1.7]" style={{ maxWidth: 480 }}>
                 Naxcal deploys your capital across six institutional asset classes &mdash; forex, global equities,
                 commodities, crypto, algorithmic strategies, and fixed income. Professional management. Daily returns. Full transparency.
               </p>
             </FadeUp>
             <FadeUp delay={0.24}>
-              <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <button className="group btn-teal px-8 py-4 rounded-xl text-white font-semibold cursor-pointer flex items-center justify-center gap-2 text-base">
+              <div className="mt-9 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <button className="group px-8 py-4 rounded-xl text-white font-semibold cursor-pointer flex items-center justify-center gap-2 text-base transition-all" style={{ background: "linear-gradient(135deg, #1a8a6e, #22a882)", boxShadow: "0 0 20px rgba(26,138,110,0.35)" }} onMouseOver={e => (e.currentTarget.style.boxShadow = "0 0 35px rgba(26,138,110,0.55)")} onMouseOut={e => (e.currentTarget.style.boxShadow = "0 0 20px rgba(26,138,110,0.35)")}>
                   Start Investing <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                 </button>
-                <a href="#returns" className="px-8 py-4 rounded-xl border border-white/15 text-white/70 font-semibold hover:border-white/25 hover:bg-white/[0.03] transition-all text-center text-base">
+                <a href="#returns" className="px-8 py-4 rounded-xl text-white/70 font-semibold hover:border-naxcal-teal transition-all text-center text-base" style={{ border: "1px solid rgba(255,255,255,0.25)" }}>
                   View Performance
                 </a>
               </div>
             </FadeUp>
             <FadeUp delay={0.35}>
-              <div className="mt-12 flex flex-wrap items-center justify-center lg:justify-start gap-x-0">
+              <div className="mt-10 flex items-center justify-center lg:justify-start">
                 {[
                   { icon: Lock, text: "256-bit SSL" },
                   { icon: Shield, text: "FCA Authorised" },
                   { icon: Wallet, text: "Cold Storage" },
                   { icon: Eye, text: "24/7 Active" },
                 ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-1.5 px-3 py-1">
+                  <div key={i} className="flex items-center gap-1.5">
                     <item.icon size={12} className="text-naxcal-teal" />
-                    <span className="text-[10px] text-white/35 uppercase tracking-wider">{item.text}</span>
-                    {i < 3 && <span className="text-white/15 ml-3">|</span>}
+                    <span className="text-[11px] text-white/35 uppercase tracking-wider">{item.text}</span>
+                    {i < 3 && <span className="text-white/15 mx-3">|</span>}
                   </div>
                 ))}
               </div>
@@ -308,77 +306,78 @@ export default function Home() {
           <div className="flex-[2] relative hidden lg:flex justify-center items-center">
             <FadeUp delay={0.15}>
               <div className="relative" style={{ perspective: "1200px" }}>
-                {/* Ambient glow behind phone */}
-                <div className="absolute -inset-24 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(26,138,110,0.25) 0%, rgba(26,138,110,0.08) 50%, transparent 70%)" }} />
+                {/* Strong glow behind phone */}
+                <div className="absolute pointer-events-none" style={{ width: 500, height: 700, top: "50%", left: "50%", transform: "translate(-50%, -50%)", background: "radial-gradient(ellipse, rgba(26,138,110,0.35) 0%, transparent 70%)", filter: "blur(60px)", zIndex: -1 }} />
 
                 {/* Floating notification */}
                 <motion.div
-                  className="absolute -top-8 -right-6 z-20 rounded-xl px-4 py-3 w-[230px]"
-                  style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.18)", backdropFilter: "blur(20px)" }}
+                  className="absolute -top-8 -right-8 z-20 rounded-xl px-4 py-3 w-[230px]"
+                  style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.22)", backdropFilter: "blur(20px)" }}
                   animate={{ y: [0, -10, 0] }}
                   transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                 >
                   <div className="flex items-center gap-2.5">
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-                    <span className="text-[12px] text-white/90 font-medium">+$142.50 profit distributed</span>
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" style={{ boxShadow: "0 0 10px rgba(34,197,94,0.7)" }} />
+                    <span className="text-[12px] text-white font-medium">+$142.50 profit distributed</span>
                   </div>
                 </motion.div>
 
-                {/* Phone frame */}
+                {/* Phone frame — 320x640, brighter */}
                 <div
-                  className="w-[300px] h-[600px] rounded-[40px] overflow-hidden relative"
+                  className="w-[320px] h-[640px] overflow-hidden relative"
                   style={{
+                    borderRadius: 44,
                     transform: "rotateY(-12deg) rotateX(4deg)",
-                    border: "1px solid rgba(255,255,255,0.20)",
-                    boxShadow: "0 0 0 1px rgba(255,255,255,0.1), 0 40px 80px rgba(0,0,0,0.8), 0 0 80px rgba(26,138,110,0.3), 0 0 160px rgba(26,138,110,0.15)",
-                    background: "#0f1a16",
+                    border: "2px solid rgba(255,255,255,0.15)",
+                    boxShadow: "0 0 0 1px rgba(255,255,255,0.08), 0 40px 80px rgba(0,0,0,0.8), 0 0 80px rgba(26,138,110,0.3), 0 0 160px rgba(26,138,110,0.15)",
+                    background: "#0d1f18",
                   }}
                 >
                   <div className="p-6 pt-14 h-full flex flex-col">
-                    <p className="text-[12px] text-white/60">Good morning, James</p>
-                    <p className="text-[10px] text-naxcal-teal/80 mt-4 uppercase tracking-[0.15em] font-semibold">Portfolio Value</p>
-                    <p className="text-[30px] font-extrabold text-white mt-0.5 leading-tight">$24,847.50</p>
+                    <p className="text-[12px]" style={{ color: "rgba(255,255,255,0.6)" }}>Good morning, James</p>
+                    <p className="text-[10px] mt-4 uppercase tracking-[0.15em] font-semibold" style={{ color: "rgba(26,138,110,0.8)" }}>Portfolio Value</p>
+                    <p className="mt-0.5 leading-tight text-white" style={{ fontSize: 32, fontWeight: 800 }}>$24,847.50</p>
                     <div className="mt-1.5 inline-flex self-start items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/25">
                       <ArrowUpRight size={12} className="text-emerald-400" />
-                      <span className="text-[12px] font-semibold text-[#22c55e]">+$523.80 today (+2.1%)</span>
+                      <span className="text-[12px]" style={{ color: "#22c55e", fontWeight: 700 }}>+$523.80 today (+2.1%)</span>
                     </div>
 
-                    {/* Sparkline */}
-                    <div className="h-[75px] mt-4 rounded-lg p-2" style={{ background: "rgba(255,255,255,0.04)" }}>
+                    {/* Sparkline — bright */}
+                    <div className="h-[80px] mt-4 rounded-lg p-2" style={{ background: "rgba(255,255,255,0.05)" }}>
                       <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={sparklineData}>
                           <defs>
                             <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#1a8a6e" stopOpacity={0.4} />
-                              <stop offset="100%" stopColor="#1a8a6e" stopOpacity={0} />
+                              <stop offset="0%" stopColor="#1a8a6e" stopOpacity={0.5} />
+                              <stop offset="100%" stopColor="#1a8a6e" stopOpacity={0.05} />
                             </linearGradient>
                           </defs>
-                          <Area type="monotone" dataKey="v" stroke="#1a8a6e" strokeWidth={2} fill="url(#sparkGrad)" />
+                          <Area type="monotone" dataKey="v" stroke="#1a8a6e" strokeWidth={2} fill="url(#sparkGrad)" fillOpacity={1} />
                         </AreaChart>
                       </ResponsiveContainer>
                     </div>
 
-                    {/* Asset rows */}
-                    <div className="mt-4 space-y-2">
+                    {/* Asset rows — brighter bg, proper spacing */}
+                    <div className="mt-4 space-y-1">
                       {[
                         { label: "Forex", val: "$8,240", pct: "+1.8%" },
                         { label: "Equities", val: "$9,100", pct: "+2.3%" },
                         { label: "Crypto", val: "$7,507", pct: "+1.9%" },
                       ].map((s, i) => (
-                        <div key={i} className="flex items-center justify-between py-2.5 px-3 rounded-lg" style={{ background: "rgba(255,255,255,0.05)" }}>
+                        <div key={i} className="flex items-center justify-between rounded-lg" style={{ background: "rgba(255,255,255,0.08)", padding: 10 }}>
                           <span className="text-[12px] text-white/60">{s.label}</span>
                           <div className="flex items-center gap-2.5">
-                            <span className="text-[12px] text-white/90 font-medium">{s.val}</span>
-                            <span className="text-[11px] font-semibold text-[#22c55e]">{s.pct}</span>
+                            <span className="text-[12px] text-white font-medium">{s.val}</span>
+                            <span className="text-[11px] font-bold" style={{ color: "#22c55e" }}>{s.pct}</span>
                           </div>
                         </div>
                       ))}
                     </div>
 
-                    {/* Buttons */}
-                    <div className="mt-auto flex gap-2.5 pb-6">
-                      <div className="flex-1 py-2.5 rounded-lg text-center text-[12px] font-semibold text-white" style={{ background: "linear-gradient(135deg, #1a8a6e, #22a882)" }}>Withdraw</div>
-                      <div className="flex-1 py-2.5 rounded-lg border text-center text-[12px] font-medium text-white/70" style={{ borderColor: "rgba(255,255,255,0.2)" }}>Deposit</div>
+                    {/* Buttons — full width each */}
+                    <div className="mt-auto space-y-2 pb-6">
+                      <div className="w-full py-3 rounded-lg text-center text-[13px] font-semibold text-white" style={{ background: "linear-gradient(135deg, #1a8a6e, #22a882)" }}>Withdraw</div>
+                      <div className="w-full py-3 rounded-lg text-center text-[13px] font-medium text-white/70" style={{ border: "1px solid rgba(255,255,255,0.3)" }}>Deposit</div>
                     </div>
                   </div>
                 </div>
@@ -397,7 +396,7 @@ export default function Home() {
       <section className="relative z-10" style={{ background: "#0a1628" }}>
         <div className="h-[2px] bg-gradient-to-r from-transparent via-naxcal-teal to-transparent" />
         <FadeUp>
-          <div className="mx-auto max-w-6xl px-6 py-1">
+          <div className="mx-auto max-w-6xl px-6 py-1" style={{ borderTop: "2px solid rgba(26,138,110,0.5)" }}>
             <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-white/[0.06]">
               {[
                 { value: 127, prefix: "$", suffix: "M+", label: "Assets Under Management", decimals: 0 },
@@ -406,7 +405,7 @@ export default function Home() {
                 { value: 99.7, suffix: "%", label: "Platform Uptime", decimals: 1 },
               ].map((stat, i) => (
                 <div key={i} className="text-center py-8 px-4">
-                  <div className="text-2xl sm:text-3xl font-bold text-white" style={{ textShadow: "0 0 30px rgba(26,138,110,0.6), 0 0 60px rgba(26,138,110,0.2)" }}>
+                  <div className="text-2xl sm:text-3xl font-bold" style={{ color: "#ffffff", textShadow: "0 0 30px rgba(26,138,110,0.7)" }}>
                     <AnimatedCounter target={stat.value} prefix={stat.prefix} suffix={stat.suffix} decimals={stat.decimals} />
                   </div>
                   <p className="mt-1.5 text-[10px] text-white/40 uppercase tracking-[0.15em]">{stat.label}</p>
@@ -417,8 +416,9 @@ export default function Home() {
         </FadeUp>
       </section>
 
+      <div className="h-px w-full" style={{ background: "linear-gradient(90deg, transparent, rgba(26,138,110,0.25), transparent)" }} />
       {/* ═══ HOW IT WORKS — dark #020408 ═══ */}
-      <section id="how-it-works" className="py-28 px-6 relative" style={{ background: "#020408" }}>
+      <section id="how-it-works" className="py-[100px] px-6 relative" style={{ background: "#020408" }}>
         <div className="mx-auto max-w-6xl">
           <FadeUp>
             <SectionLabel>Process</SectionLabel>
@@ -455,8 +455,9 @@ export default function Home() {
         </div>
       </section>
 
+      <div className="h-px w-full" style={{ background: "linear-gradient(90deg, transparent, rgba(26,138,110,0.25), transparent)" }} />
       {/* ═══ WHAT WE TRADE — #060d18 lighter ═══ */}
-      <section id="markets" className="py-28 px-6" style={{ background: "#060d18" }}>
+      <section id="markets" className="py-[100px] px-6" style={{ background: "#060d18" }}>
         <div className="mx-auto max-w-6xl">
           <FadeUp>
             <SectionLabel>Markets</SectionLabel>
@@ -498,8 +499,9 @@ export default function Home() {
         </div>
       </section>
 
+      <div className="h-px w-full" style={{ background: "linear-gradient(90deg, transparent, rgba(26,138,110,0.25), transparent)" }} />
       {/* ═══ DASHBOARD PREVIEW — dark, bright screen ═══ */}
-      <section className="py-28 px-6 relative overflow-hidden" style={{ background: "#020408" }}>
+      <section className="py-[100px] px-6 relative overflow-hidden" style={{ background: "#020408" }}>
         <div className="mx-auto max-w-6xl relative z-10">
           <FadeUp>
             <SectionLabel>Dashboard</SectionLabel>
@@ -626,8 +628,9 @@ export default function Home() {
         </div>
       </section>
 
+      <div className="h-px w-full" style={{ background: "linear-gradient(90deg, transparent, rgba(26,138,110,0.25), transparent)" }} />
       {/* ═══ PERFORMANCE — #020408 ═══ */}
-      <section id="returns" className="py-28 px-6" style={{ background: "#020408" }}>
+      <section id="returns" className="py-[100px] px-6" style={{ background: "#020408" }}>
         <div className="mx-auto max-w-6xl">
           <FadeUp>
             <SectionLabel>Performance</SectionLabel>
@@ -697,8 +700,9 @@ export default function Home() {
         </div>
       </section>
 
+      <div className="h-px w-full" style={{ background: "linear-gradient(90deg, transparent, rgba(26,138,110,0.25), transparent)" }} />
       {/* ═══ INVESTMENT TIERS — #060d18 ═══ */}
-      <section id="tiers" className="py-28 px-6" style={{ background: "#060d18" }}>
+      <section id="tiers" className="py-[100px] px-6" style={{ background: "#060d18" }}>
         <div className="mx-auto max-w-6xl">
           <FadeUp>
             <SectionLabel>Tiers</SectionLabel>
@@ -750,8 +754,9 @@ export default function Home() {
         </div>
       </section>
 
+      <div className="h-px w-full" style={{ background: "linear-gradient(90deg, transparent, rgba(26,138,110,0.25), transparent)" }} />
       {/* ═══ ROI CALCULATOR — #020408 ═══ */}
-      <section className="py-28 px-6" style={{ background: "#020408" }}>
+      <section className="py-[100px] px-6" style={{ background: "#020408" }}>
         <div className="mx-auto max-w-[700px]">
           <FadeUp>
             <SectionLabel>Calculator</SectionLabel>
@@ -815,8 +820,9 @@ export default function Home() {
         </div>
       </section>
 
+      <div className="h-px w-full" style={{ background: "linear-gradient(90deg, transparent, rgba(26,138,110,0.25), transparent)" }} />
       {/* ═══ TESTIMONIALS — #020408 ═══ */}
-      <section className="py-28 overflow-hidden" style={{ background: "#020408" }}>
+      <section className="py-[100px] overflow-hidden" style={{ background: "#020408" }}>
         <div className="px-6">
           <FadeUp>
             <SectionLabel>Investors</SectionLabel>
@@ -841,8 +847,9 @@ export default function Home() {
         </div>
       </section>
 
+      <div className="h-px w-full" style={{ background: "linear-gradient(90deg, transparent, rgba(26,138,110,0.25), transparent)" }} />
       {/* ═══ LIVE ACTIVITY FEED — #060d18 ═══ */}
-      <section className="py-28 px-6" style={{ background: "#060d18" }}>
+      <section className="py-[100px] px-6" style={{ background: "#060d18" }}>
         <div className="mx-auto max-w-3xl">
           <FadeUp>
             <SectionLabel>Activity</SectionLabel>
@@ -880,8 +887,9 @@ export default function Home() {
         </div>
       </section>
 
+      <div className="h-px w-full" style={{ background: "linear-gradient(90deg, transparent, rgba(26,138,110,0.25), transparent)" }} />
       {/* ═══ FINAL CTA — teal gradient background ═══ */}
-      <section className="py-36 px-6 relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0d2420, #0a1a14, #081510)" }}>
+      <section className="py-[120px] px-6 relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0d2420, #0a1a14, #081510)" }}>
         <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(circle at 50% 50%, rgba(26,138,110,0.2) 0%, transparent 60%)" }} />
         {/* Rising diamonds */}
         {[0, 1, 2, 3, 4, 5].map((i) => (

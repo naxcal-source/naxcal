@@ -1,0 +1,182 @@
+"use client";
+
+import { useState, Suspense } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { createClient } from "@/lib/supabase";
+import { Shield, Lock, Eye, EyeOff, TrendingUp, CheckCircle2, Loader2 } from "lucide-react";
+
+export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterForm />
+    </Suspense>
+  );
+}
+
+function RegisterForm() {
+  const searchParams = useSearchParams();
+  const [form, setForm] = useState({
+    fullName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    referralCode: searchParams.get("ref") || "",
+    agreed: false,
+  });
+  const [showPw, setShowPw] = useState(false);
+  const [showCpw, setShowCpw] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (!form.fullName || !form.email || !form.password || !form.confirmPassword) {
+      setError("All fields are required.");
+      return;
+    }
+    if (form.password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+    if (form.password !== form.confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+    if (!form.agreed) {
+      setError("You must agree to the Terms of Service.");
+      return;
+    }
+
+    setLoading(true);
+    const supabase = createClient();
+
+    const { error: authError } = await supabase.auth.signUp({
+      email: form.email,
+      password: form.password,
+      options: {
+        data: { full_name: form.fullName, referred_by: form.referralCode || null },
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+
+    setLoading(false);
+
+    if (authError) {
+      setError(authError.message);
+      return;
+    }
+
+    setSuccess(true);
+  };
+
+  const update = (field: string, value: string | boolean) =>
+    setForm((p) => ({ ...p, [field]: value }));
+
+  return (
+    <div className="min-h-screen flex">
+      {/* Left branding panel */}
+      <div className="hidden lg:flex w-[40%] flex-col justify-between p-10 relative overflow-hidden" style={{ background: "#020408" }}>
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 30% 50%, rgba(26,138,110,0.15) 0%, transparent 70%)" }} />
+        <div className="relative z-10">
+          <Image src="/Naxcal_Primary_Logo.png" alt="Naxcal" width={160} height={44} className="h-10 w-auto mb-6" style={{ filter: "drop-shadow(0 0 12px rgba(26,138,110,0.4))" }} />
+          <h2 className="text-2xl font-bold text-white mt-12 mb-3">Deploy Capital. <span className="text-naxcal-teal">Earn Daily.</span></h2>
+          <p className="text-white/40 text-sm leading-relaxed max-w-xs">
+            Join 4,200+ investors accessing institutional-grade strategies across forex, equities, and crypto markets.
+          </p>
+          <div className="mt-10 space-y-4">
+            {[
+              { icon: Shield, text: "FCA Authorised & Regulated" },
+              { icon: Lock, text: "256-bit SSL Encryption" },
+              { icon: TrendingUp, text: "1.5% – 2.1% Daily Returns" },
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "rgba(26,138,110,0.12)", border: "1px solid rgba(26,138,110,0.25)" }}>
+                  <item.icon size={16} className="text-naxcal-teal" />
+                </div>
+                <span className="text-sm text-white/60">{item.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="relative z-10 p-5 rounded-xl" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+          <p className="text-sm text-white/50 italic leading-relaxed">&ldquo;Naxcal has genuinely transformed how I think about passive income. Consistent, transparent, professional.&rdquo;</p>
+          <p className="text-xs text-naxcal-teal mt-3 font-medium">— James W., Gold Tier Investor</p>
+        </div>
+      </div>
+
+      {/* Right form */}
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-10" style={{ background: "#0a0e14" }}>
+        <div className="w-full max-w-md">
+          {success ? (
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-naxcal-teal/15 flex items-center justify-center mx-auto mb-6">
+                <CheckCircle2 size={32} className="text-naxcal-teal" />
+              </div>
+              <h1 className="text-2xl font-bold text-white mb-3">Check Your Email</h1>
+              <p className="text-white/50 text-sm mb-8">We&apos;ve sent a verification link to <span className="text-white/80">{form.email}</span>. Click it to activate your account.</p>
+              <Link href="/login" className="text-naxcal-teal text-sm font-medium hover:underline">Back to Login</Link>
+            </div>
+          ) : (
+            <>
+              <h1 className="text-2xl font-bold text-white mb-1">Create your account</h1>
+              <p className="text-white/40 text-sm mb-8">
+                Already have an account?{" "}
+                <Link href="/login" className="text-naxcal-teal font-medium hover:underline">Login</Link>
+              </p>
+
+              {error && (
+                <div className="mb-5 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">{error}</div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs text-white/50 mb-1.5 uppercase tracking-wider">Full Name</label>
+                  <input type="text" value={form.fullName} onChange={(e) => update("fullName", e.target.value)} placeholder="John Smith" className="w-full px-4 py-3 rounded-lg text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-naxcal-teal transition-colors" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }} />
+                </div>
+                <div>
+                  <label className="block text-xs text-white/50 mb-1.5 uppercase tracking-wider">Email Address</label>
+                  <input type="email" value={form.email} onChange={(e) => update("email", e.target.value)} placeholder="you@example.com" className="w-full px-4 py-3 rounded-lg text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-naxcal-teal transition-colors" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }} />
+                </div>
+                <div>
+                  <label className="block text-xs text-white/50 mb-1.5 uppercase tracking-wider">Password</label>
+                  <div className="relative">
+                    <input type={showPw ? "text" : "password"} value={form.password} onChange={(e) => update("password", e.target.value)} placeholder="Min. 8 characters" className="w-full px-4 py-3 pr-11 rounded-lg text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-naxcal-teal transition-colors" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }} />
+                    <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 cursor-pointer">{showPw ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs text-white/50 mb-1.5 uppercase tracking-wider">Confirm Password</label>
+                  <div className="relative">
+                    <input type={showCpw ? "text" : "password"} value={form.confirmPassword} onChange={(e) => update("confirmPassword", e.target.value)} placeholder="Re-enter password" className="w-full px-4 py-3 pr-11 rounded-lg text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-naxcal-teal transition-colors" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }} />
+                    <button type="button" onClick={() => setShowCpw(!showCpw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 cursor-pointer">{showCpw ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs text-white/50 mb-1.5 uppercase tracking-wider">Referral Code <span className="text-white/25">(optional)</span></label>
+                  <input type="text" value={form.referralCode} onChange={(e) => update("referralCode", e.target.value)} placeholder="e.g. ABCD1234" className="w-full px-4 py-3 rounded-lg text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-naxcal-teal transition-colors" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }} />
+                </div>
+                <label className="flex items-start gap-2.5 cursor-pointer pt-1">
+                  <input type="checkbox" checked={form.agreed} onChange={(e) => update("agreed", e.target.checked)} className="mt-0.5 accent-naxcal-teal" />
+                  <span className="text-xs text-white/40 leading-relaxed">
+                    I agree to the <a href="#" className="text-naxcal-teal hover:underline">Terms of Service</a> and <a href="#" className="text-naxcal-teal hover:underline">Privacy Policy</a>
+                  </span>
+                </label>
+                <button type="submit" disabled={loading} className="w-full py-3.5 rounded-lg text-white font-semibold text-sm cursor-pointer flex items-center justify-center gap-2 transition-all disabled:opacity-50" style={{ background: "linear-gradient(135deg, #1a8a6e, #22a882)", boxShadow: "0 0 20px rgba(26,138,110,0.35)" }}>
+                  {loading ? <><Loader2 size={16} className="animate-spin" /> Creating Account...</> : "Create Account"}
+                </button>
+              </form>
+              <p className="text-[10px] text-white/20 text-center mt-4 leading-relaxed">
+                By registering you agree to our terms. Capital at risk.
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

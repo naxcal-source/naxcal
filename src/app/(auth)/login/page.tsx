@@ -25,17 +25,29 @@ export default function LoginPage() {
     }
 
     setLoading(true);
-    const supabase = createClient();
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
+    try {
+      const supabase = createClient();
+      const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (authError) {
-      setError(authError.message);
-      return;
+      if (authError) {
+        console.error("Supabase login error:", authError);
+        setError(authError.message || "Login failed. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      router.push("/dashboard");
+      router.refresh();
+    } catch (err: unknown) {
+      console.error("Login exception:", err);
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Login failed. Please try again.");
+      }
+    } finally {
+      setLoading(false);
     }
-
-    router.push("/dashboard");
-    router.refresh();
   };
 
   return (
@@ -70,29 +82,29 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Right form */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-10" style={{ background: "#0a0e14" }}>
+      {/* Right form — WHITE */}
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-10" style={{ backgroundColor: "#ffffff" }}>
         <div className="w-full max-w-md">
-          <h1 className="text-2xl font-bold text-white mb-1">Welcome back</h1>
-          <p className="text-white/40 text-sm mb-8">Sign in to your Naxcal account</p>
+          <h1 className="text-2xl font-bold mb-1" style={{ color: "#0f172a" }}>Welcome back</h1>
+          <p className="text-sm mb-8" style={{ color: "#6b7280" }}>Sign in to your Naxcal account</p>
 
           {error && (
-            <div className="mb-5 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">{error}</div>
+            <div className="mb-5 p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">{typeof error === "string" ? error : "An error occurred"}</div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs text-white/50 mb-1.5 uppercase tracking-wider">Email Address</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="w-full px-4 py-3 rounded-lg text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-naxcal-teal transition-colors" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }} />
+              <label className="block text-xs mb-1.5 uppercase tracking-wider" style={{ color: "#374151" }}>Email Address</label>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="w-full px-4 py-3 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-naxcal-teal/20 focus:border-naxcal-teal transition-colors" style={{ backgroundColor: "#ffffff", color: "#0f172a", border: "1px solid #e2e8f0" }} />
             </div>
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs text-white/50 uppercase tracking-wider">Password</label>
+                <label className="text-xs uppercase tracking-wider" style={{ color: "#374151" }}>Password</label>
                 <Link href="/forgot-password" className="text-xs text-naxcal-teal hover:underline">Forgot password?</Link>
               </div>
               <div className="relative">
-                <input type={showPw ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" className="w-full px-4 py-3 pr-11 rounded-lg text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-naxcal-teal transition-colors" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }} />
-                <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 cursor-pointer">{showPw ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+                <input type={showPw ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" className="w-full px-4 py-3 pr-11 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-naxcal-teal/20 focus:border-naxcal-teal transition-colors" style={{ backgroundColor: "#ffffff", color: "#0f172a", border: "1px solid #e2e8f0" }} />
+                <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer" style={{ color: "#9ca3af" }}>{showPw ? <EyeOff size={16} /> : <Eye size={16} />}</button>
               </div>
             </div>
             <button type="submit" disabled={loading} className="w-full py-3.5 rounded-lg text-white font-semibold text-sm cursor-pointer flex items-center justify-center gap-2 transition-all disabled:opacity-50" style={{ background: "linear-gradient(135deg, #1a8a6e, #22a882)", boxShadow: "0 0 20px rgba(26,138,110,0.35)" }}>
@@ -101,12 +113,12 @@ export default function LoginPage() {
           </form>
 
           <div className="flex items-center gap-3 my-6">
-            <div className="flex-1 h-px bg-white/[0.06]" />
-            <span className="text-xs text-white/25">or</span>
-            <div className="flex-1 h-px bg-white/[0.06]" />
+            <div className="flex-1 h-px" style={{ background: "#e5e7eb" }} />
+            <span className="text-xs" style={{ color: "#9ca3af" }}>or</span>
+            <div className="flex-1 h-px" style={{ background: "#e5e7eb" }} />
           </div>
 
-          <p className="text-sm text-white/40 text-center">
+          <p className="text-sm text-center" style={{ color: "#6b7280" }}>
             Don&apos;t have an account?{" "}
             <Link href="/register" className="text-naxcal-teal font-medium hover:underline">Register</Link>
           </p>

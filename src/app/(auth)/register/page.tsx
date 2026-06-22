@@ -3,7 +3,7 @@
 import { useState, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { Shield, Lock, Eye, EyeOff, TrendingUp, CheckCircle2, Loader2 } from "lucide-react";
 
@@ -16,6 +16,7 @@ export default function RegisterPage() {
 }
 
 function RegisterForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [form, setForm] = useState({
     fullName: "",
@@ -53,25 +54,45 @@ function RegisterForm() {
     }
 
     setLoading(true);
-    const supabase = createClient();
+    try {
+      const supabase = createClient();
 
-    const { error: authError } = await supabase.auth.signUp({
-      email: form.email,
-      password: form.password,
-      options: {
-        data: { full_name: form.fullName, referred_by: form.referralCode || null },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
+      const { data, error: authError } = await supabase.auth.signUp({
+        email: form.email,
+        password: form.password,
+        options: {
+          data: { full_name: form.fullName, referred_by: form.referralCode || null },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
 
-    setLoading(false);
+      if (authError) {
+        console.error("Supabase signup error:", authError);
+        const msg = authError.message && authError.message !== "{}"
+          ? authError.message
+          : "Registration failed. Please try again.";
+        setError(msg);
+        setLoading(false);
+        return;
+      }
 
-    if (authError) {
-      setError(authError.message);
-      return;
+      if (data.session) {
+        router.push("/dashboard");
+        router.refresh();
+        return;
+      }
+
+      setSuccess(true);
+    } catch (err: unknown) {
+      console.error("Signup exception:", err);
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Registration failed. Please try again.");
+      }
+    } finally {
+      setLoading(false);
     }
-
-    setSuccess(true);
   };
 
   const update = (field: string, value: string | boolean) =>
@@ -109,60 +130,60 @@ function RegisterForm() {
         </div>
       </div>
 
-      {/* Right form */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-10" style={{ background: "#0a0e14" }}>
+      {/* Right form — WHITE */}
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-10" style={{ backgroundColor: "#ffffff" }}>
         <div className="w-full max-w-md">
           {success ? (
             <div className="text-center">
-              <div className="w-16 h-16 rounded-full bg-naxcal-teal/15 flex items-center justify-center mx-auto mb-6">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: "rgba(26,138,110,0.1)" }}>
                 <CheckCircle2 size={32} className="text-naxcal-teal" />
               </div>
-              <h1 className="text-2xl font-bold text-white mb-3">Check Your Email</h1>
-              <p className="text-white/50 text-sm mb-8">We&apos;ve sent a verification link to <span className="text-white/80">{form.email}</span>. Click it to activate your account.</p>
+              <h1 className="text-2xl font-bold mb-3" style={{ color: "#0f172a" }}>Check Your Email</h1>
+              <p className="text-sm mb-8" style={{ color: "#6b7280" }}>We&apos;ve sent a verification link to <span style={{ color: "#0f172a" }}>{form.email}</span>. Click it to activate your account.</p>
               <Link href="/login" className="text-naxcal-teal text-sm font-medium hover:underline">Back to Login</Link>
             </div>
           ) : (
             <>
-              <h1 className="text-2xl font-bold text-white mb-1">Create your account</h1>
-              <p className="text-white/40 text-sm mb-8">
+              <h1 className="text-2xl font-bold mb-1" style={{ color: "#0f172a" }}>Create your account</h1>
+              <p className="text-sm mb-8" style={{ color: "#6b7280" }}>
                 Already have an account?{" "}
                 <Link href="/login" className="text-naxcal-teal font-medium hover:underline">Login</Link>
               </p>
 
               {error && (
-                <div className="mb-5 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">{error}</div>
+                <div className="mb-5 p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">{typeof error === "string" ? error : "An error occurred"}</div>
               )}
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs text-white/50 mb-1.5 uppercase tracking-wider">Full Name</label>
-                  <input type="text" value={form.fullName} onChange={(e) => update("fullName", e.target.value)} placeholder="John Smith" className="w-full px-4 py-3 rounded-lg text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-naxcal-teal transition-colors" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }} />
+                  <label className="block text-xs mb-1.5 uppercase tracking-wider" style={{ color: "#374151" }}>Full Name</label>
+                  <input type="text" value={form.fullName} onChange={(e) => update("fullName", e.target.value)} placeholder="John Smith" className="w-full px-4 py-3 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-naxcal-teal/20 focus:border-naxcal-teal transition-colors" style={{ backgroundColor: "#ffffff", color: "#0f172a", border: "1px solid #e2e8f0" }} />
                 </div>
                 <div>
-                  <label className="block text-xs text-white/50 mb-1.5 uppercase tracking-wider">Email Address</label>
-                  <input type="email" value={form.email} onChange={(e) => update("email", e.target.value)} placeholder="you@example.com" className="w-full px-4 py-3 rounded-lg text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-naxcal-teal transition-colors" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }} />
+                  <label className="block text-xs mb-1.5 uppercase tracking-wider" style={{ color: "#374151" }}>Email Address</label>
+                  <input type="email" value={form.email} onChange={(e) => update("email", e.target.value)} placeholder="you@example.com" className="w-full px-4 py-3 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-naxcal-teal/20 focus:border-naxcal-teal transition-colors" style={{ backgroundColor: "#ffffff", color: "#0f172a", border: "1px solid #e2e8f0" }} />
                 </div>
                 <div>
-                  <label className="block text-xs text-white/50 mb-1.5 uppercase tracking-wider">Password</label>
+                  <label className="block text-xs mb-1.5 uppercase tracking-wider" style={{ color: "#374151" }}>Password</label>
                   <div className="relative">
-                    <input type={showPw ? "text" : "password"} value={form.password} onChange={(e) => update("password", e.target.value)} placeholder="Min. 8 characters" className="w-full px-4 py-3 pr-11 rounded-lg text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-naxcal-teal transition-colors" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }} />
-                    <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 cursor-pointer">{showPw ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+                    <input type={showPw ? "text" : "password"} value={form.password} onChange={(e) => update("password", e.target.value)} placeholder="Min. 8 characters" className="w-full px-4 py-3 pr-11 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-naxcal-teal/20 focus:border-naxcal-teal transition-colors" style={{ backgroundColor: "#ffffff", color: "#0f172a", border: "1px solid #e2e8f0" }} />
+                    <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer" style={{ color: "#9ca3af" }}>{showPw ? <EyeOff size={16} /> : <Eye size={16} />}</button>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs text-white/50 mb-1.5 uppercase tracking-wider">Confirm Password</label>
+                  <label className="block text-xs mb-1.5 uppercase tracking-wider" style={{ color: "#374151" }}>Confirm Password</label>
                   <div className="relative">
-                    <input type={showCpw ? "text" : "password"} value={form.confirmPassword} onChange={(e) => update("confirmPassword", e.target.value)} placeholder="Re-enter password" className="w-full px-4 py-3 pr-11 rounded-lg text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-naxcal-teal transition-colors" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }} />
-                    <button type="button" onClick={() => setShowCpw(!showCpw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 cursor-pointer">{showCpw ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+                    <input type={showCpw ? "text" : "password"} value={form.confirmPassword} onChange={(e) => update("confirmPassword", e.target.value)} placeholder="Re-enter password" className="w-full px-4 py-3 pr-11 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-naxcal-teal/20 focus:border-naxcal-teal transition-colors" style={{ backgroundColor: "#ffffff", color: "#0f172a", border: "1px solid #e2e8f0" }} />
+                    <button type="button" onClick={() => setShowCpw(!showCpw)} className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer" style={{ color: "#9ca3af" }}>{showCpw ? <EyeOff size={16} /> : <Eye size={16} />}</button>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs text-white/50 mb-1.5 uppercase tracking-wider">Referral Code <span className="text-white/25">(optional)</span></label>
-                  <input type="text" value={form.referralCode} onChange={(e) => update("referralCode", e.target.value)} placeholder="e.g. ABCD1234" className="w-full px-4 py-3 rounded-lg text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-naxcal-teal transition-colors" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }} />
+                  <label className="block text-xs mb-1.5 uppercase tracking-wider" style={{ color: "#374151" }}>Referral Code <span style={{ color: "#9ca3af" }}>(optional)</span></label>
+                  <input type="text" value={form.referralCode} onChange={(e) => update("referralCode", e.target.value)} placeholder="e.g. ABCD1234" className="w-full px-4 py-3 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-naxcal-teal/20 focus:border-naxcal-teal transition-colors" style={{ backgroundColor: "#ffffff", color: "#0f172a", border: "1px solid #e2e8f0" }} />
                 </div>
                 <label className="flex items-start gap-2.5 cursor-pointer pt-1">
                   <input type="checkbox" checked={form.agreed} onChange={(e) => update("agreed", e.target.checked)} className="mt-0.5 accent-naxcal-teal" />
-                  <span className="text-xs text-white/40 leading-relaxed">
+                  <span className="text-xs leading-relaxed" style={{ color: "#6b7280" }}>
                     I agree to the <a href="#" className="text-naxcal-teal hover:underline">Terms of Service</a> and <a href="#" className="text-naxcal-teal hover:underline">Privacy Policy</a>
                   </span>
                 </label>
@@ -170,7 +191,7 @@ function RegisterForm() {
                   {loading ? <><Loader2 size={16} className="animate-spin" /> Creating Account...</> : "Create Account"}
                 </button>
               </form>
-              <p className="text-[10px] text-white/20 text-center mt-4 leading-relaxed">
+              <p className="text-[10px] text-center mt-4 leading-relaxed" style={{ color: "#9ca3af" }}>
                 By registering you agree to our terms. Capital at risk.
               </p>
             </>

@@ -18,9 +18,10 @@ export default function RegisterPage() {
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isInvited = searchParams.get("invited") === "true";
   const [form, setForm] = useState({
-    fullName: "",
-    email: "",
+    fullName: searchParams.get("name") || "",
+    email: searchParams.get("email") || "",
     password: "",
     confirmPassword: "",
     referralCode: searchParams.get("ref") || "",

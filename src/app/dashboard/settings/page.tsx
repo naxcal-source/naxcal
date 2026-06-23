@@ -180,13 +180,13 @@ export default function SettingsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 overflow-x-auto pb-1">
+      <div className="flex gap-1 mb-6 overflow-x-auto pb-2 -mx-1 px-1" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
         {tabs.map((tab) => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className={cn("flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium cursor-pointer transition-all whitespace-nowrap",
-              activeTab === tab.id ? "bg-naxcal-teal text-white shadow-sm" : "text-[#6b7280] hover:bg-[#f1f5f9] border border-transparent"
+            className={cn("flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium cursor-pointer transition-all whitespace-nowrap shrink-0",
+              activeTab === tab.id ? "bg-naxcal-teal text-white shadow-sm" : "text-[#6b7280] hover:bg-[#f1f5f9] border border-[#e2e8f0]"
             )}>
-            <tab.icon size={16} />{tab.label}
+            <tab.icon size={14} />{tab.label}
           </button>
         ))}
       </div>
@@ -219,13 +219,13 @@ export default function SettingsPage() {
             <h3 className="text-sm font-semibold text-[#0f172a] mb-5">Profile Information</h3>
             <form onSubmit={handleSaveProfile} className="space-y-4">
               {/* Avatar */}
-              <div className="flex items-center gap-4 mb-2">
-                <div className="w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold text-naxcal-teal" style={{ background: "rgba(26,138,110,0.1)", border: "2px solid rgba(26,138,110,0.3)" }}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-base sm:text-xl font-bold text-naxcal-teal shrink-0" style={{ background: "rgba(26,138,110,0.1)", border: "2px solid rgba(26,138,110,0.3)" }}>
                   {profile?.full_name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "?"}
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-[#0f172a]">{profile?.full_name || "—"}</p>
-                  <p className="text-xs text-[#9ca3af]">{profile?.email}</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-[#0f172a] truncate">{profile?.full_name || "—"}</p>
+                  <p className="text-xs text-[#9ca3af] truncate">{profile?.email}</p>
                 </div>
               </div>
 

@@ -17,10 +17,27 @@ export default function CrispChat() {
     window.$crisp = [];
     window.CRISP_WEBSITE_ID = id;
 
+    // Move chat bubble above mobile bottom nav
+    window.$crisp.push(["config", "position:reverse", true]);
+
     const script = document.createElement("script");
     script.src = "https://client.crisp.chat/l.js";
     script.async = true;
     document.head.appendChild(script);
+
+    // After Crisp loads, push it up on mobile
+    script.onload = () => {
+      const style = document.createElement("style");
+      style.textContent = `
+        @media (max-width: 1023px) {
+          .crisp-client .cc-1brb6 .cc-unoo,
+          .crisp-client .cc-1brb6 {
+            bottom: 80px !important;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    };
 
     return () => {
       script.remove();

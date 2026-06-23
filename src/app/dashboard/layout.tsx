@@ -106,7 +106,7 @@ function NotificationDropdown() {
             ))}
           </div>
           <div className="px-4 py-2 border-t border-[#f1f5f9] text-center">
-            <Link href="/dashboard" className="text-xs text-naxcal-teal font-medium hover:underline" onClick={() => setOpen(false)}>View All</Link>
+            <Link href="/dashboard/transactions" className="text-xs text-naxcal-teal font-medium hover:underline" onClick={() => setOpen(false)}>View All</Link>
           </div>
         </div>
       )}

@@ -10,53 +10,66 @@ export async function POST(req: NextRequest) {
     if (!email || !name) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
 
     const firstName = name.split(" ")[0];
+    const capFirst = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+    const capName = name.split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 
     await resend.emails.send({
       from: "Naxcal <noreply@naxcal.com>",
       replyTo: "support@naxcal.com",
       to: email,
-      subject: `${firstName}, your Naxcal portfolio is ready`,
+      subject: `Your Naxcal investment portfolio is ready`,
       html: `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
-<div style="max-width:600px;margin:0 auto;padding:32px 16px">
+<body style="margin:0;padding:0;background:#f2f2f2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased">
+<div style="max-width:560px;margin:0 auto;padding:40px 16px">
 
-<div style="background:#0a0a0a;padding:32px 40px;border-radius:16px 16px 0 0;text-align:center">
-  <img src="${SITE}/Naxcal_Primary_Logo.png" alt="Naxcal" width="160" style="height:44px;width:auto;display:inline-block" />
+<!-- White card -->
+<div style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08)">
+
+  <!-- Logo -->
+  <div style="padding:32px 40px 0">
+    <img src="${SITE}/Naxcal_Primary_Logo.png" alt="Naxcal" width="180" style="height:56px;width:auto;display:block" />
+  </div>
+
+  <!-- Content -->
+  <div style="padding:32px 40px 40px">
+
+    <h1 style="margin:0 0 24px;font-size:28px;color:#0a0a0a;font-weight:700;line-height:1.3">Your investment portfolio is ready to view</h1>
+
+    <p style="color:#4b5563;font-size:15px;line-height:1.7;margin:0 0 20px">Hi ${capName},</p>
+
+    <p style="color:#4b5563;font-size:15px;line-height:1.7;margin:0 0 20px">We've finished migrating your portfolio to the Naxcal platform. Your complete investment history — including deposits, daily returns, stock holdings, and crypto positions — is now available in your personal dashboard.</p>
+
+    <p style="color:#4b5563;font-size:15px;line-height:1.7;margin:0 0 28px">To get started, create your login credentials below. Your details will be pre-filled.</p>
+
+    <!-- CTA -->
+    <a href="${SITE}/register?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}&invited=true"
+       style="display:block;padding:15px 32px;background:#1a8a6e;color:#ffffff;text-decoration:none;border-radius:12px;font-size:16px;font-weight:600;text-align:center;letter-spacing:0.2px">
+      View my portfolio
+    </a>
+
+    <!-- Divider -->
+    <div style="border-top:1px solid #f3f4f6;margin:32px 0 24px"></div>
+
+    <!-- What's included -->
+    <p style="margin:0 0 16px;font-size:12px;color:#9ca3af;text-transform:uppercase;letter-spacing:1.5px;font-weight:600">Included in your account</p>
+
+    <table style="width:100%">
+      <tr><td style="padding:6px 0;color:#374151;font-size:14px">Deposit history</td><td style="padding:6px 0;color:#9ca3af;font-size:13px;text-align:right">Since May 2025</td></tr>
+      <tr><td style="padding:6px 0;color:#374151;font-size:14px">Daily return records</td><td style="padding:6px 0;color:#9ca3af;font-size:13px;text-align:right">Updated daily</td></tr>
+      <tr><td style="padding:6px 0;color:#374151;font-size:14px">Stock portfolio</td><td style="padding:6px 0;color:#9ca3af;font-size:13px;text-align:right">AAPL, NVDA, MSFT +</td></tr>
+      <tr><td style="padding:6px 0;color:#374151;font-size:14px">Crypto holdings</td><td style="padding:6px 0;color:#9ca3af;font-size:13px;text-align:right">ETH, BTC, SOL</td></tr>
+      <tr><td style="padding:6px 0;color:#374151;font-size:14px">Live market data</td><td style="padding:6px 0;color:#9ca3af;font-size:13px;text-align:right">Real-time</td></tr>
+    </table>
+
+  </div>
 </div>
 
-<div style="background:#ffffff;padding:40px 32px;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb">
-
-<div style="text-align:center;margin-bottom:24px">
-<div style="width:56px;height:56px;border-radius:50%;background:#f0fdf4;display:inline-flex;align-items:center;justify-content:center;font-size:28px;line-height:56px">🎉</div>
-</div>
-<h2 style="margin:0 0 8px;font-size:24px;color:#0a0a0a;font-weight:700;text-align:center">Your Portfolio is Ready</h2>
-<p style="margin:0 0 24px;font-size:14px;color:#9ca3af;text-align:center">Welcome to Naxcal, ${firstName}</p>
-
-<p style="color:#374151;font-size:16px;line-height:1.6;margin:0 0 24px">Hi ${name}, your Naxcal investment portfolio has been migrated to our digital platform. All your historical deposits, returns, and investment positions are now accessible online — 24/7.</p>
-
-<div style="background:#f9fafb;border-radius:12px;padding:20px 24px;margin:0 0 24px">
-<p style="margin:0 0 12px;font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;font-weight:600">What You'll Find</p>
-<div style="margin:0 0 10px"><span style="color:#16a34a;font-size:16px">✓</span> <span style="color:#374151;font-size:14px">Complete deposit history since May 2025</span></div>
-<div style="margin:0 0 10px"><span style="color:#16a34a;font-size:16px">✓</span> <span style="color:#374151;font-size:14px">All daily returns and profit records</span></div>
-<div style="margin:0 0 10px"><span style="color:#16a34a;font-size:16px">✓</span> <span style="color:#374151;font-size:14px">Stock & crypto portfolio with live prices</span></div>
-<div><span style="color:#16a34a;font-size:16px">✓</span> <span style="color:#374151;font-size:14px">Real-time portfolio tracking & market data</span></div>
-</div>
-
-<p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 28px">Create your secure login to access your portfolio:</p>
-
-<div style="text-align:center;margin:28px 0"><a href="${SITE}/register?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}&invited=true" style="display:inline-block;padding:14px 40px;background:#1a8a6e;color:#ffffff;text-decoration:none;border-radius:8px;font-size:16px;font-weight:600">Access My Portfolio →</a></div>
-
-<div style="border-top:1px solid #f3f4f6;margin:24px 0"></div>
-
-<p style="color:#9ca3af;font-size:14px;line-height:1.6;margin:0;text-align:center">Questions? Contact us at <a href="mailto:support@naxcal.com" style="color:#1a8a6e;text-decoration:none">support@naxcal.com</a></p>
-
-</div>
-
-<div style="background:#f9fafb;padding:24px 32px;border-radius:0 0 16px 16px;border:1px solid #e5e7eb;border-top:none;text-align:center">
-<p style="margin:0 0 8px;font-size:11px;color:#9ca3af;line-height:1.6">Naxcal Capital Ltd is authorised and regulated by the Financial Conduct Authority.<br>Your capital is at risk. Past performance is not indicative of future results.</p>
-<p style="margin:0;font-size:10px;color:#d1d5db">&copy; ${new Date().getFullYear()} Naxcal Capital Ltd. All rights reserved.</p>
+<!-- Footer -->
+<div style="padding:24px 16px;text-align:center">
+  <p style="margin:0 0 4px;font-size:11px;color:#9ca3af">Naxcal Capital Ltd · <a href="mailto:support@naxcal.com" style="color:#9ca3af;text-decoration:none">support@naxcal.com</a></p>
+  <p style="margin:0;font-size:11px;color:#c0c0c0">Your capital is at risk. Past performance is not indicative of future results.</p>
 </div>
 
 </div>

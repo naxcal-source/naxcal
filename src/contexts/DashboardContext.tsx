@@ -46,7 +46,13 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     setUser(u);
     if (u) {
       const { data } = await supabase.from("profiles").select("*").eq("id", u.id).single();
-      if (data) setProfile(data as Profile);
+      if (data) {
+        const p = data as Profile;
+        if (!p.full_name) {
+          p.full_name = u.user_metadata?.full_name || u.email?.split("@")[0] || "Investor";
+        }
+        setProfile(p);
+      }
     }
     setLoading(false);
   };

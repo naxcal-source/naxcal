@@ -11,7 +11,7 @@ import {
   Megaphone, Info, AlertCircle, CheckCircle2, Star, BarChart2, MessageCircle,
   Inbox,
 } from "lucide-react";
-import { AreaChart, Area, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { AreaChart, Area, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { cn } from "@/lib/utils";
 
 type Transaction = { id: string; type: string; amount: number; status: string; created_at: string; description: string | null };
@@ -58,10 +58,19 @@ const sparklines: Record<string, number[]> = {
   "S&P500": [45, 46, 44, 47, 48, 47, 49, 50, 49, 51],
 };
 
+const allocationData = [
+  { name: "Forex Trading", value: 35, color: "#1a8a6e" },
+  { name: "Global Equities", value: 25, color: "#3b82f6" },
+  { name: "Crypto Assets", value: 20, color: "#8b5cf6" },
+  { name: "Commodities", value: 12, color: "#f0a500" },
+  { name: "Algorithmic", value: 8, color: "#16a34a" },
+];
+
 export default function DashboardPage() {
-  const { profile } = useDashboard();
+  const { profile, refreshProfile } = useDashboard();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [livePrices, setLivePrices] = useState<Record<string, { price: number; change: number }>>({});
   const supabase = createClient();
 
   useEffect(() => {
@@ -69,6 +78,39 @@ export default function DashboardPage() {
     supabase.from("transactions").select("*").eq("user_id", profile.id).order("created_at", { ascending: false }).limit(5).then(({ data }) => { if (data) setTransactions(data); });
     supabase.from("announcements").select("*").eq("is_active", true).order("created_at", { ascending: false }).limit(2).then(({ data }) => { if (data) setAnnouncements(data); });
   }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Realtime balance subscription
+  useEffect(() => {
+    if (!profile?.id) return;
+    const channel = supabase
+      .channel("profile-changes")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${profile.id}` }, () => {
+        refreshProfile();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [profile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Live crypto prices for market overview
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch("/api/prices");
+        if (res.ok) {
+          const data = await res.json();
+          const mapped: Record<string, { price: number; change: number }> = {};
+          const idMap: Record<string, string> = { bitcoin: "BTC", ethereum: "ETH", tether: "USDT", solana: "SOL", binancecoin: "BNB", ripple: "XRP" };
+          Object.entries(idMap).forEach(([id, sym]) => {
+            if (data[id]) mapped[sym] = { price: data[id].usd, change: data[id].usd_24h_change || 0 };
+          });
+          setLivePrices(mapped);
+        }
+      } catch {}
+    };
+    load();
+    const id = setInterval(load, 60000);
+    return () => clearInterval(id);
+  }, []);
 
   const balance = Number(profile?.balance ?? 0);
   const totalProfit = Number(profile?.total_profit ?? 0);
@@ -346,30 +388,73 @@ export default function DashboardPage() {
           <Link href="/dashboard/markets" className="text-xs text-naxcal-teal hover:underline font-medium">View All</Link>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          {marketData.map((asset) => (
-            <div key={asset.symbol} className="p-3 rounded-xl hover:shadow-md transition-all cursor-pointer" style={{ border: "1px solid #e2e8f0" }}>
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0" style={{ background: asset.color }}>
-                  {asset.symbol.slice(0, 2)}
+          {marketData.map((asset) => {
+            const live = livePrices[asset.symbol];
+            const price = live?.price ?? asset.price;
+            const change = live?.change ?? asset.change;
+            return (
+              <div key={asset.symbol} className="p-3 rounded-xl hover:shadow-md transition-all cursor-pointer" style={{ border: "1px solid #e2e8f0" }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0" style={{ background: asset.color }}>
+                    {asset.symbol.slice(0, 2)}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-[#0f172a] truncate">{asset.symbol}</p>
+                    <p className="text-[9px] text-[#9ca3af] truncate">{asset.name}</p>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-[#0f172a] truncate">{asset.symbol}</p>
-                  <p className="text-[9px] text-[#9ca3af] truncate">{asset.name}</p>
+                <div className="h-8 mb-1.5">
+                  <svg viewBox="0 0 100 30" className="w-full h-full">
+                    <polyline fill="none" stroke={change >= 0 ? "#16a34a" : "#ef4444"} strokeWidth="1.5"
+                      points={sparklines[asset.symbol]?.map((v, i) => `${i * 11},${30 - v * 0.5}`).join(" ") || "0,15 100,15"} />
+                  </svg>
                 </div>
+                <p className="text-xs font-bold text-[#0f172a]">${price < 1 ? price.toFixed(4) : price.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
+                <span className={cn("text-[10px] font-semibold", change >= 0 ? "text-emerald-600" : "text-red-500")}>
+                  {change >= 0 ? "+" : ""}{change.toFixed(2)}%
+                </span>
               </div>
-              <div className="h-8 mb-1.5">
-                <svg viewBox="0 0 100 30" className="w-full h-full">
-                  <polyline fill="none" stroke={asset.change >= 0 ? "#16a34a" : "#ef4444"} strokeWidth="1.5"
-                    points={sparklines[asset.symbol]?.map((v, i) => `${i * 11},${30 - v * 0.5}`).join(" ") || "0,15 100,15"} />
-                </svg>
-              </div>
-              <p className="text-xs font-bold text-[#0f172a]">${asset.price.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
-              <span className={cn("text-[10px] font-semibold", asset.change >= 0 ? "text-emerald-600" : "text-red-500")}>
-                {asset.change >= 0 ? "+" : ""}{asset.change}%
-              </span>
-            </div>
-          ))}
+            );
+          })}
         </div>
+      </motion.div>
+
+      {/* Portfolio Allocation */}
+      <motion.div variants={item} className="card-light p-5">
+        <h3 className="text-sm font-semibold text-[#0f172a] mb-4">Portfolio Allocation</h3>
+        {balance === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-sm text-[#9ca3af]">Your portfolio allocation will appear after your first deposit</p>
+          </div>
+        ) : (
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <div className="w-48 h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={allocationData} cx="50%" cy="50%" innerRadius={55} outerRadius={80} dataKey="value" stroke="none">
+                    {allocationData.map((entry) => (
+                      <Cell key={entry.name} fill={entry.color} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex-1 space-y-2">
+              {allocationData.map((a) => (
+                <div key={a.name} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{ background: a.color }} />
+                    <span className="text-xs text-[#374151]">{a.name}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xs font-semibold text-[#0f172a]">{a.value}%</span>
+                    <span className="text-[10px] text-[#9ca3af] ml-2">{fmt(balance * a.value / 100)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </motion.div>
 
       {/* Daily Returns History */}

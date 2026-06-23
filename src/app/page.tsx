@@ -187,12 +187,19 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen overflow-x-hidden">
+      {/* ═══ FCA BANNER ═══ */}
+      <div className="fixed top-0 left-0 right-0 z-[60] bg-[#0a0a0a] border-b border-white/[0.04]">
+        <div className="mx-auto max-w-7xl px-6 flex items-center justify-center h-8">
+          <p className="text-[10px] text-white/35 tracking-wide"><Lock size={10} className="inline mr-1.5 text-naxcal-teal" />FCA Authorised &amp; Regulated · Naxcal Capital Ltd · Your capital is at risk</p>
+        </div>
+      </div>
+
       {/* ═══ NAVBAR ═══ */}
-      <nav className="fixed top-0 left-0 right-0 z-50">
+      <nav className="fixed top-8 left-0 right-0 z-50">
         <div className="bg-[rgba(2,4,8,0.9)] backdrop-blur-xl border-b border-white/[0.06]">
           <div className="mx-auto max-w-7xl px-6 flex items-center justify-between h-[72px]">
             <div className="flex items-center gap-3">
-              <Image src="/Naxcal_Primary_Logo.png" alt="Naxcal" width={180} height={50} className="w-auto" style={{ height: 44, filter: "drop-shadow(0 0 12px rgba(26,138,110,0.4))" }} priority />
+              <Image src="/Naxcal_Primary_Logo.png" alt="Naxcal" width={180} height={50} className="w-auto" style={{ height: 48, filter: "drop-shadow(0 0 16px rgba(26,138,110,0.5))" }} priority />
               <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/12 border border-emerald-500/25">
                 <LiveDot />
                 <span className="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider">FCA Regulated</span>

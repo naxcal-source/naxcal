@@ -1,87 +1,263 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { createClient } from "@/lib/supabase";
-import { Settings, Loader2, CheckCircle2 } from "lucide-react";
+import { Settings, Loader2, CheckCircle2, User, Shield, Bell, Sliders, ChevronRight, Lock, Eye, EyeOff } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const tabs = [
+  { id: "profile", label: "Profile", icon: User },
+  { id: "security", label: "Security", icon: Shield },
+  { id: "notifications", label: "Notifications", icon: Bell },
+  { id: "preferences", label: "Preferences", icon: Sliders },
+];
 
 export default function SettingsPage() {
   const { profile, refreshProfile } = useDashboard();
-  const [form, setForm] = useState({ full_name: "", phone: "", address: "", city: "", country: "", postal_code: "" });
+  const [activeTab, setActiveTab] = useState("profile");
+  const [form, setForm] = useState({ full_name: "", phone: "", dob: "", nationality: "", address: "", city: "", country: "", postal_code: "" });
+  const [pwForm, setPwForm] = useState({ current: "", newPw: "", confirm: "" });
+  const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState("");
   const [error, setError] = useState("");
+  const [notifications, setNotifications] = useState({ daily_profit: true, deposit: true, withdrawal: true, security: true, marketing: false, announcements: true });
+  const [prefs, setPrefs] = useState({ currency: "USD", auto_compound: true });
   const supabase = createClient();
 
   useEffect(() => {
-    if (profile) setForm({ full_name: profile.full_name || "", phone: (profile as Record<string, unknown>).phone as string || "", address: "", city: "", country: "", postal_code: "" });
+    if (profile) {
+      const p = profile as Record<string, unknown>;
+      setForm({
+        full_name: (p.full_name as string) || "", phone: (p.phone as string) || "",
+        dob: "", nationality: "", address: "", city: "", country: "", postal_code: "",
+      });
+      setPrefs({ currency: "USD", auto_compound: !!p.auto_compound });
+    }
   }, [profile]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); setError(""); setSaved(false);
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault(); setError(""); setSaved("");
     if (!profile) return;
     setLoading(true);
-    const { error: err } = await supabase.from("profiles").update({ full_name: form.full_name, phone: form.phone, address: form.address || null, city: form.city || null, country: form.country || null, postal_code: form.postal_code || null, updated_at: new Date().toISOString() }).eq("id", profile.id);
+    const { error: err } = await supabase.from("profiles").update({
+      full_name: form.full_name, phone: form.phone || null,
+    }).eq("id", profile.id);
     setLoading(false);
     if (err) { setError(err.message); return; }
-    setSaved(true); await refreshProfile(); setTimeout(() => setSaved(false), 3000);
+    setSaved("Profile updated successfully"); await refreshProfile();
+    setTimeout(() => setSaved(""), 3000);
+  };
+
+  const handleSavePrefs = async () => {
+    if (!profile) return;
+    setLoading(true);
+    await supabase.from("profiles").update({ auto_compound: prefs.auto_compound }).eq("id", profile.id);
+    setLoading(false);
+    setSaved("Preferences saved"); setTimeout(() => setSaved(""), 3000);
   };
 
   const update = (field: string, value: string) => setForm((p) => ({ ...p, [field]: value }));
+  const inputCls = "w-full px-4 py-3 rounded-lg text-sm text-[#0f172a] placeholder:text-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-naxcal-teal/20 focus:border-naxcal-teal transition-all";
   const inputStyle = { background: "#ffffff", border: "1px solid #e2e8f0" };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="max-w-2xl mx-auto">
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="max-w-3xl mx-auto">
+      <div className="flex items-center gap-2 text-xs text-[#9ca3af] mb-4">
+        <Link href="/dashboard" className="hover:text-naxcal-teal">Dashboard</Link>
+        <ChevronRight size={12} />
+        <span className="text-[#374151]">Settings</span>
+      </div>
+
       <div className="flex items-center gap-3 mb-6">
         <Settings size={22} className="text-naxcal-teal" />
         <h1 className="text-xl font-bold text-[#0f172a]">Account Settings</h1>
       </div>
 
-      <div className="card-light p-5 mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-semibold text-[#0f172a]">Identity Verification</h3>
-            <p className="text-xs text-[#6b7280] mt-0.5">KYC status: <span className={
-              profile?.kyc_status === "approved" ? "text-emerald-600 font-medium" :
-              profile?.kyc_status === "submitted" ? "text-amber-600 font-medium" : "text-[#6b7280]"
-            } style={{ textTransform: "capitalize" }}>{profile?.kyc_status || "pending"}</span></p>
-          </div>
-          {profile?.kyc_status === "approved" ? (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200">
-              <CheckCircle2 size={14} className="text-emerald-600" /><span className="text-xs text-emerald-700 font-medium">Verified</span>
-            </div>
-          ) : (
-            <span className="px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-xs text-amber-700 font-medium">Pending</span>
-          )}
-        </div>
+      {/* Tabs */}
+      <div className="flex gap-1 mb-6 overflow-x-auto pb-1">
+        {tabs.map((tab) => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+            className={cn("flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium cursor-pointer transition-all whitespace-nowrap",
+              activeTab === tab.id ? "bg-naxcal-teal text-white shadow-sm" : "text-[#6b7280] hover:bg-[#f1f5f9] border border-transparent"
+            )}>
+            <tab.icon size={16} />{tab.label}
+          </button>
+        ))}
       </div>
 
-      <div className="card-light p-6">
-        <h3 className="text-sm font-semibold text-[#0f172a] mb-5">Profile Information</h3>
-        {error && <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">{error}</div>}
-        {saved && <div className="mb-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm flex items-center gap-2"><CheckCircle2 size={14} /> Profile updated successfully.</div>}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div><label className="block text-xs text-[#6b7280] mb-1.5 uppercase tracking-wider">Full Name</label><input type="text" value={form.full_name} onChange={(e) => update("full_name", e.target.value)} className="w-full px-4 py-3 rounded-lg text-sm text-[#0f172a] focus:outline-none focus:border-naxcal-teal" style={inputStyle} /></div>
-            <div><label className="block text-xs text-[#6b7280] mb-1.5 uppercase tracking-wider">Phone</label><input type="tel" value={form.phone} onChange={(e) => update("phone", e.target.value)} placeholder="+44..." className="w-full px-4 py-3 rounded-lg text-sm text-[#0f172a] placeholder:text-[#9ca3af] focus:outline-none focus:border-naxcal-teal" style={inputStyle} /></div>
+      {saved && <div className="mb-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm flex items-center gap-2"><CheckCircle2 size={14} /> {saved}</div>}
+      {error && <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">{error}</div>}
+
+      {/* Profile Tab */}
+      {activeTab === "profile" && (
+        <div className="space-y-4">
+          {/* KYC Status */}
+          <div className="card-light p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-[#0f172a]">Identity Verification</h3>
+                <p className="text-xs text-[#6b7280] mt-0.5">KYC status: <span className={profile?.kyc_status === "approved" ? "text-emerald-600 font-medium" : "text-amber-600 font-medium"} style={{ textTransform: "capitalize" }}>{profile?.kyc_status || "pending"}</span></p>
+              </div>
+              {profile?.kyc_status === "approved" ? (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200">
+                  <CheckCircle2 size={14} className="text-emerald-600" /><span className="text-xs text-emerald-700 font-medium">Verified</span>
+                </div>
+              ) : (
+                <Link href="/dashboard/kyc" className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white btn-teal">Verify Now</Link>
+              )}
+            </div>
           </div>
-          <div><label className="block text-xs text-[#6b7280] mb-1.5 uppercase tracking-wider">Address</label><input type="text" value={form.address} onChange={(e) => update("address", e.target.value)} placeholder="Street address" className="w-full px-4 py-3 rounded-lg text-sm text-[#0f172a] placeholder:text-[#9ca3af] focus:outline-none focus:border-naxcal-teal" style={inputStyle} /></div>
-          <div className="grid sm:grid-cols-3 gap-4">
-            <div><label className="block text-xs text-[#6b7280] mb-1.5 uppercase tracking-wider">City</label><input type="text" value={form.city} onChange={(e) => update("city", e.target.value)} className="w-full px-4 py-3 rounded-lg text-sm text-[#0f172a] focus:outline-none focus:border-naxcal-teal" style={inputStyle} /></div>
-            <div><label className="block text-xs text-[#6b7280] mb-1.5 uppercase tracking-wider">Country</label><input type="text" value={form.country} onChange={(e) => update("country", e.target.value)} className="w-full px-4 py-3 rounded-lg text-sm text-[#0f172a] focus:outline-none focus:border-naxcal-teal" style={inputStyle} /></div>
-            <div><label className="block text-xs text-[#6b7280] mb-1.5 uppercase tracking-wider">Postal Code</label><input type="text" value={form.postal_code} onChange={(e) => update("postal_code", e.target.value)} className="w-full px-4 py-3 rounded-lg text-sm text-[#0f172a] focus:outline-none focus:border-naxcal-teal" style={inputStyle} /></div>
+
+          {/* Profile Form */}
+          <div className="card-light p-6">
+            <h3 className="text-sm font-semibold text-[#0f172a] mb-5">Profile Information</h3>
+            <form onSubmit={handleSaveProfile} className="space-y-4">
+              {/* Avatar */}
+              <div className="flex items-center gap-4 mb-2">
+                <div className="w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold text-naxcal-teal" style={{ background: "rgba(26,138,110,0.1)", border: "2px solid rgba(26,138,110,0.3)" }}>
+                  {profile?.full_name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "?"}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-[#0f172a]">{profile?.full_name || "—"}</p>
+                  <p className="text-xs text-[#9ca3af]">{profile?.email}</p>
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div><label className="block text-xs text-[#6b7280] mb-1.5 uppercase tracking-wider">Full Name</label><input type="text" value={form.full_name} onChange={(e) => update("full_name", e.target.value)} className={inputCls} style={inputStyle} /></div>
+                <div><label className="block text-xs text-[#6b7280] mb-1.5 uppercase tracking-wider">Phone</label><input type="tel" value={form.phone} onChange={(e) => update("phone", e.target.value)} placeholder="+44..." className={inputCls} style={inputStyle} /></div>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div><label className="block text-xs text-[#6b7280] mb-1.5 uppercase tracking-wider">Date of Birth</label><input type="date" value={form.dob} onChange={(e) => update("dob", e.target.value)} className={inputCls} style={inputStyle} /></div>
+                <div><label className="block text-xs text-[#6b7280] mb-1.5 uppercase tracking-wider">Nationality</label><input type="text" value={form.nationality} onChange={(e) => update("nationality", e.target.value)} placeholder="e.g. British" className={inputCls} style={inputStyle} /></div>
+              </div>
+              <div><label className="block text-xs text-[#6b7280] mb-1.5 uppercase tracking-wider">Address</label><input type="text" value={form.address} onChange={(e) => update("address", e.target.value)} placeholder="Street address" className={inputCls} style={inputStyle} /></div>
+              <div className="grid sm:grid-cols-3 gap-4">
+                <div><label className="block text-xs text-[#6b7280] mb-1.5 uppercase tracking-wider">City</label><input type="text" value={form.city} onChange={(e) => update("city", e.target.value)} className={inputCls} style={inputStyle} /></div>
+                <div><label className="block text-xs text-[#6b7280] mb-1.5 uppercase tracking-wider">Country</label><input type="text" value={form.country} onChange={(e) => update("country", e.target.value)} className={inputCls} style={inputStyle} /></div>
+                <div><label className="block text-xs text-[#6b7280] mb-1.5 uppercase tracking-wider">Postal Code</label><input type="text" value={form.postal_code} onChange={(e) => update("postal_code", e.target.value)} className={inputCls} style={inputStyle} /></div>
+              </div>
+              <button type="submit" disabled={loading} className="w-full py-3 rounded-lg font-semibold text-sm cursor-pointer flex items-center justify-center gap-2 btn-teal text-white disabled:opacity-50">
+                {loading ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : "Save Changes"}
+              </button>
+            </form>
           </div>
-          <button type="submit" disabled={loading} className="w-full py-3.5 rounded-lg font-semibold text-sm cursor-pointer flex items-center justify-center gap-2 btn-teal text-white disabled:opacity-50">
-            {loading ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : "Save Changes"}
-          </button>
-        </form>
-        <div className="mt-6 pt-5 border-t border-[#e5e7eb]">
-          <label className="block text-xs text-[#6b7280] mb-1.5 uppercase tracking-wider">Email Address</label>
-          <p className="text-sm text-[#374151]">{profile?.email}</p>
-          <p className="text-[10px] text-[#9ca3af] mt-1">Email cannot be changed. Contact support if needed.</p>
         </div>
-      </div>
+      )}
+
+      {/* Security Tab */}
+      {activeTab === "security" && (
+        <div className="space-y-4">
+          <div className="card-light p-6">
+            <h3 className="text-sm font-semibold text-[#0f172a] mb-5">Change Password</h3>
+            <form onSubmit={(e) => { e.preventDefault(); setSaved("Password feature requires server action"); setTimeout(() => setSaved(""), 3000); }} className="space-y-4">
+              <div>
+                <label className="block text-xs text-[#6b7280] mb-1.5 uppercase tracking-wider">Current Password</label>
+                <div className="relative">
+                  <input type={showPw ? "text" : "password"} value={pwForm.current} onChange={(e) => setPwForm({ ...pwForm, current: e.target.value })} className={inputCls} style={inputStyle} />
+                  <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9ca3af] cursor-pointer">{showPw ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div><label className="block text-xs text-[#6b7280] mb-1.5 uppercase tracking-wider">New Password</label><input type="password" value={pwForm.newPw} onChange={(e) => setPwForm({ ...pwForm, newPw: e.target.value })} className={inputCls} style={inputStyle} /></div>
+                <div><label className="block text-xs text-[#6b7280] mb-1.5 uppercase tracking-wider">Confirm Password</label><input type="password" value={pwForm.confirm} onChange={(e) => setPwForm({ ...pwForm, confirm: e.target.value })} className={inputCls} style={inputStyle} /></div>
+              </div>
+              <button type="submit" className="px-6 py-2.5 rounded-lg font-semibold text-sm cursor-pointer btn-teal text-white">Update Password</button>
+            </form>
+          </div>
+
+          <div className="card-light p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-[#0f172a]">Two-Factor Authentication</h3>
+                <p className="text-xs text-[#6b7280] mt-0.5">Add an extra layer of security to your account</p>
+              </div>
+              <button className="px-4 py-2 rounded-lg text-xs font-semibold text-naxcal-teal border border-naxcal-teal/20 hover:bg-naxcal-teal hover:text-white transition-all cursor-pointer">Enable 2FA</button>
+            </div>
+          </div>
+
+          <div className="card-light p-6">
+            <h3 className="text-sm font-semibold text-[#0f172a] mb-4">Active Sessions</h3>
+            <div className="flex items-center justify-between py-3 px-3 rounded-lg bg-[#f8fafc]">
+              <div>
+                <p className="text-sm text-[#374151] font-medium">Current Session</p>
+                <p className="text-xs text-[#9ca3af]">This device · Active now</p>
+              </div>
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notifications Tab */}
+      {activeTab === "notifications" && (
+        <div className="card-light p-6">
+          <h3 className="text-sm font-semibold text-[#0f172a] mb-5">Email Notifications</h3>
+          <div className="space-y-4">
+            {[
+              { key: "daily_profit", label: "Daily profit emails", desc: "Receive your daily return summary" },
+              { key: "deposit", label: "Deposit confirmations", desc: "When a deposit is confirmed" },
+              { key: "withdrawal", label: "Withdrawal updates", desc: "When a withdrawal is processed" },
+              { key: "security", label: "Security alerts", desc: "New login and security events" },
+              { key: "marketing", label: "Marketing emails", desc: "Product updates and promotions" },
+              { key: "announcements", label: "Platform announcements", desc: "Important platform updates" },
+            ].map((item) => (
+              <div key={item.key} className="flex items-center justify-between py-2">
+                <div>
+                  <p className="text-sm text-[#374151] font-medium">{item.label}</p>
+                  <p className="text-xs text-[#9ca3af]">{item.desc}</p>
+                </div>
+                <button onClick={() => setNotifications((p) => ({ ...p, [item.key]: !p[item.key as keyof typeof p] }))}
+                  className={cn("w-11 h-6 rounded-full transition-all cursor-pointer relative", notifications[item.key as keyof typeof notifications] ? "bg-naxcal-teal" : "bg-[#d1d5db]")}>
+                  <span className={cn("absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-all", notifications[item.key as keyof typeof notifications] ? "left-5.5" : "left-0.5")}
+                    style={{ left: notifications[item.key as keyof typeof notifications] ? "22px" : "2px" }} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Preferences Tab */}
+      {activeTab === "preferences" && (
+        <div className="space-y-4">
+          <div className="card-light p-6">
+            <h3 className="text-sm font-semibold text-[#0f172a] mb-5">Display Preferences</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs text-[#6b7280] mb-1.5 uppercase tracking-wider">Currency</label>
+                <select value={prefs.currency} onChange={(e) => setPrefs({ ...prefs, currency: e.target.value })} className={cn(inputCls, "cursor-pointer")} style={inputStyle}>
+                  <option value="USD">USD ($)</option>
+                  <option value="GBP">GBP (£)</option>
+                  <option value="EUR">EUR (€)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="card-light p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-[#0f172a]">Auto-Compound</h3>
+                <p className="text-xs text-[#6b7280] mt-0.5">Automatically reinvest daily profits</p>
+              </div>
+              <button onClick={() => setPrefs({ ...prefs, auto_compound: !prefs.auto_compound })}
+                className={cn("w-11 h-6 rounded-full transition-all cursor-pointer relative", prefs.auto_compound ? "bg-naxcal-teal" : "bg-[#d1d5db]")}>
+                <span className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-all"
+                  style={{ left: prefs.auto_compound ? "22px" : "2px" }} />
+              </button>
+            </div>
+          </div>
+
+          <button onClick={handleSavePrefs} disabled={loading} className="w-full py-3 rounded-lg font-semibold text-sm cursor-pointer btn-teal text-white disabled:opacity-50">
+            {loading ? "Saving..." : "Save Preferences"}
+          </button>
+        </div>
+      )}
     </motion.div>
   );
 }

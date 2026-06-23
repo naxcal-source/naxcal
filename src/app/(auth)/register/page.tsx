@@ -76,6 +76,14 @@ function RegisterForm() {
         return;
       }
 
+      if (data.user) {
+        await supabase.from("profiles").upsert({
+          id: data.user.id,
+          email: form.email,
+          full_name: form.fullName,
+        });
+      }
+
       if (data.session) {
         router.push("/dashboard");
         router.refresh();

@@ -20,10 +20,44 @@
 ::-webkit-scrollbar-thumb:hover { background: #22a882; }
 html { scroll-behavior: smooth; }
 
+::selection { background: rgba(26,138,110,0.25); color: #ffffff; }
+
+*:focus-visible {
+  outline: 2px solid #1a8a6e;
+  outline-offset: 2px;
+}
+
 body {
   background: #020408;
   color: #ffffff;
   font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* ── Toast notifications ── */
+.toast {
+  position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+  padding: 12px 20px; border-radius: 12px;
+  font-size: 14px; font-weight: 500;
+  animation: toast-in 0.3s ease-out;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+}
+.toast-success { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+.toast-error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+@keyframes toast-in {
+  0% { opacity: 0; transform: translateY(16px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Loading skeleton ── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
 }
 
 /* ── Grain (only on dark sections) ── */

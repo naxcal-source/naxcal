@@ -11,13 +11,14 @@ import {
   LayoutDashboard, History, ArrowDownCircle, ArrowUpCircle,
   Users, Settings, LogOut, Menu, Bell, AlertTriangle,
   Search, BarChart2, ArrowLeftRight, TrendingUp, ShieldCheck,
-  HelpCircle, ChevronRight,
+  HelpCircle, ChevronRight, Briefcase,
 } from "lucide-react";
 import { ToastProvider } from "@/components/Toast";
 import CrispChat from "@/components/CrispChat";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard/portfolio", label: "Portfolio", icon: Briefcase },
   { href: "/dashboard/markets", label: "Markets", icon: BarChart2 },
   { href: "/dashboard/swap", label: "Swap", icon: ArrowLeftRight },
   { href: "/dashboard/invest", label: "Invest", icon: TrendingUp },

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { rateLimit } from "@/lib/rate-limit";
 
 async function getCryptoPrice(geckoId: string): Promise<number> {
   try {
@@ -23,6 +24,9 @@ export async function POST(req: NextRequest) {
   try {
     const user = await getAuthUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const { allowed } = rateLimit(`swap:${user.id}`, 5, 60000);
+    if (!allowed) return NextResponse.json({ error: "Too many swap requests. Please wait." }, { status: 429 });
 
     const { from_token, to_token, from_amount } = await req.json();
     if (!from_token || !to_token || !from_amount || from_amount <= 0) {

@@ -20,6 +20,7 @@ const adminNav = [
   { href: "/admin/withdrawals", label: "Withdrawals", icon: ArrowUpCircle },
   { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
   { href: "/admin/testimonials", label: "Testimonials", icon: MessageSquareQuote },
+  { href: "/admin/audit", label: "Audit Log", icon: Shield },
 ];
 
 type AdminProfile = { id: string; email: string; full_name: string | null; is_admin: boolean };

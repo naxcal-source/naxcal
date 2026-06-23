@@ -332,13 +332,14 @@ export default function SettingsPage() {
 
           <div className="card-light p-6">
             <h3 className="text-sm font-semibold text-[#0f172a] mb-4">Active Sessions</h3>
-            <div className="flex items-center justify-between py-3 px-3 rounded-lg bg-[#f8fafc]">
+            <div className="flex items-center justify-between py-3 px-3 rounded-lg bg-[#f8fafc] mb-2">
               <div>
                 <p className="text-sm text-[#374151] font-medium">Current Session</p>
-                <p className="text-xs text-[#9ca3af]">This device · Active now</p>
+                <p className="text-xs text-[#9ca3af]">{typeof navigator !== "undefined" ? navigator.userAgent.split("(")[1]?.split(")")[0] || "This device" : "This device"} · Active now</p>
               </div>
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
             </div>
+            <p className="text-[10px] text-[#9ca3af]">Last login: {new Date().toLocaleDateString("en-US", { dateStyle: "medium" })} at {new Date().toLocaleTimeString("en-US", { timeStyle: "short" })}</p>
           </div>
         </div>
       )}

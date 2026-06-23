@@ -73,9 +73,9 @@ export default function DashboardPage() {
   const [livePrices, setLivePrices] = useState<Record<string, { price: number; change: number }>>({});
   const supabase = createClient();
 
-  // Redirect new users to onboarding
+  // Redirect new users to onboarding (only if column exists and is explicitly false)
   useEffect(() => {
-    if (profile && !(profile as Record<string, unknown>).onboarding_complete) {
+    if (profile && (profile as Record<string, unknown>).onboarding_complete === false) {
       router.push("/dashboard/onboarding");
     }
   }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps

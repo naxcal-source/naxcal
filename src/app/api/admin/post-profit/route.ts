@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { logAdminAction } from "@/lib/audit-log";
 
 export async function POST(req: NextRequest) {
   try {
@@ -54,6 +55,8 @@ export async function POST(req: NextRequest) {
     await supabaseAdmin.from("daily_profits").insert({
       percentage, fee_percentage: fee, total_distributed: totalDistributed, users_count: usersProcessed,
     });
+
+    await logAdminAction(user.id, "post_profit", undefined, { percentage, fee_percentage: fee, total_distributed: totalDistributed, users_count: usersProcessed });
 
     return NextResponse.json({ users: usersProcessed, total: totalDistributed });
   } catch (err) {

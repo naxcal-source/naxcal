@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchStocks, getStockPrice } from "@/lib/yahoo-finance";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function GET(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for") || "unknown";
+  const { allowed } = rateLimit(`search:${ip}`, 20, 60000);
+  if (!allowed) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+
   const q = req.nextUrl.searchParams.get("q");
   if (!q || q.length < 1) return NextResponse.json([]);
 

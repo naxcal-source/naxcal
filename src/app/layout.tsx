@@ -34,6 +34,7 @@ export const metadata: Metadata = {
     icon: "/Naxcal_Logomark-01.png",
     apple: "/Naxcal_Logomark-01.png",
   },
+  manifest: "/manifest.json",
   metadataBase: new URL("https://naxcal.com"),
 };
 

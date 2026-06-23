@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { PieChart, Briefcase, ChevronRight, ArrowUpRight, ArrowDownRight, TrendingUp, ArrowLeftRight, Wallet } from "lucide-react";
+import StockLogo from "@/components/StockLogo";
 import { cn } from "@/lib/utils";
 
 type StockPos = { symbol: string; name: string; qty: number; avg_entry: number; current_price: number; market_value: number; unrealized_pl: number; unrealized_plpc: number };
@@ -115,7 +116,7 @@ export default function PortfolioPage() {
             {stocks.map((pos) => (
               <div key={pos.symbol} className="flex items-center justify-between py-2.5 px-2 rounded-lg hover:bg-[#f8fafc] transition-colors">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-[9px] font-bold text-blue-600">{pos.symbol.slice(0, 2)}</div>
+                  <StockLogo symbol={pos.symbol} size={32} />
                   <div>
                     <p className="text-sm font-medium text-[#0f172a]">{pos.symbol}</p>
                     <p className="text-[10px] text-[#9ca3af]">{pos.qty.toFixed(4)} shares</p>

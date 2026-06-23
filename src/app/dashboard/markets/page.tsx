@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { BarChart2, ArrowUpRight, ArrowDownRight, ChevronRight, RefreshCw, Search, TrendingUp, Zap, ArrowLeftRight } from "lucide-react";
+import StockLogo from "@/components/StockLogo";
 import { cn } from "@/lib/utils";
 
 const cryptoMap: Record<string, { ticker: string; name: string; color: string }> = {
@@ -164,10 +165,14 @@ export default function MarketsPage() {
                   href={tab === "crypto" ? "/dashboard/swap" : `/dashboard/invest`}
                   className="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_100px_100px_80px] gap-2 items-center px-5 py-3 border-b border-[#f8fafc] hover:bg-[#fafafa] transition-colors">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
-                      style={{ background: asset.color || "#6b7280" }}>
-                      {asset.ticker.slice(0, 2)}
-                    </div>
+                    {tab === "stocks" ? (
+                      <StockLogo symbol={asset.ticker} size={36} />
+                    ) : (
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
+                        style={{ background: asset.color || "#6b7280" }}>
+                        {asset.ticker.slice(0, 2)}
+                      </div>
+                    )}
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-[#0f172a] truncate">{asset.ticker}</p>
                       <p className="text-[11px] text-[#9ca3af] truncate">{asset.name}</p>

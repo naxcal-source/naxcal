@@ -8,6 +8,7 @@ import {
   TrendingUp, ArrowUpRight, ArrowDownRight, ChevronRight, Loader2,
   CheckCircle2, X, Search, Star, Zap, BarChart2, Briefcase,
 } from "lucide-react";
+import StockLogo from "@/components/StockLogo";
 import { cn } from "@/lib/utils";
 
 type Stock = { symbol: string; name: string; price: number; change: number; sector?: string; type?: string; chart?: number[] };
@@ -234,10 +235,7 @@ export default function InvestPage() {
                     className={cn("w-full flex items-center gap-3 px-4 py-3 transition-all cursor-pointer text-left border-b border-[#f8fafc]",
                       selected?.symbol === stock.symbol ? "bg-naxcal-teal/5" : "hover:bg-[#f8fafc]"
                     )}>
-                    <div className="w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
-                      style={{ background: SECTOR_COLORS[stock.sector || "Other"] || "#6b7280" }}>
-                      {stock.symbol.slice(0, 2)}
-                    </div>
+                    <StockLogo symbol={stock.symbol} size={36} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-[#0f172a] truncate">{stock.symbol}</p>
                       <p className="text-[10px] text-[#9ca3af] truncate">{stock.name}</p>

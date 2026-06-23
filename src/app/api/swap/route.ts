@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { rateLimit } from "@/lib/rate-limit";
+import { sendDepositConfirmedEmail } from "@/lib/emails";
 
 async function getCryptoPrice(geckoId: string): Promise<number> {
   try {
@@ -96,6 +97,12 @@ export async function POST(req: NextRequest) {
       user_id: user.id, type: "swap", amount: fromValueUsd, asset: `${from_token}→${to_token}`,
       status: "completed", description: `Swapped ${from_amount.toFixed(6)} ${from_token} for ${toAmount.toFixed(6)} ${to_token}`,
     });
+
+    // Send swap confirmation email
+    const { data: userProfile } = await supabaseAdmin.from("profiles").select("email, full_name").eq("id", user.id).single();
+    if (userProfile?.email) {
+      sendDepositConfirmedEmail(userProfile.email, userProfile.full_name || "Investor", fromValueUsd, `${from_token}→${to_token} Swap`).catch(console.error);
+    }
 
     return NextResponse.json({
       from_token, to_token, from_amount, to_amount: parseFloat(toAmount.toFixed(8)),

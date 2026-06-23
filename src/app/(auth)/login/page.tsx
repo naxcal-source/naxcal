@@ -37,6 +37,13 @@ export default function LoginPage() {
         return;
       }
 
+      // Send security alert email (fire and forget)
+      fetch("/api/auth/login-alert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      }).catch(() => {});
+
       router.push("/dashboard");
       router.refresh();
     } catch (err: unknown) {

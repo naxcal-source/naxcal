@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { logAdminAction } from "@/lib/audit-log";
+import { sendDailyProfitEmail } from "@/lib/emails";
 
 export async function POST(req: NextRequest) {
   try {
@@ -47,6 +48,10 @@ export async function POST(req: NextRequest) {
         description: `Daily return +${percentage}% (net after ${fee}% fee)`,
         balance_before: Number(u.balance), balance_after: newBalance,
       });
+
+      if (u.email) {
+        sendDailyProfitEmail(u.email, u.full_name || "Investor", netProfit, percentage, newTotalProfit, newBalance).catch(console.error);
+      }
 
       totalDistributed += netProfit;
       usersProcessed++;

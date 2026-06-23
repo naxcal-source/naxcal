@@ -67,6 +67,12 @@ export default function WithdrawPage() {
     setLoading(false);
     if (txError) { setError(txError.message); return; }
     await refreshProfile();
+    // Send withdrawal confirmation email
+    fetch("/api/admin/send-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "withdrawal_approved", email: profile!.email, name: profile!.full_name || "Investor", amount: numAmount }),
+    }).catch(() => {});
     setSuccess(true);
   };
 

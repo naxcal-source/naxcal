@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getStockPrice } from "@/lib/yahoo-finance";
+import { sendDepositConfirmedEmail } from "@/lib/emails";
 
 export async function POST(req: NextRequest) {
   try {
@@ -50,6 +51,12 @@ export async function POST(req: NextRequest) {
       description: `Bought ${shares.toFixed(4)} shares of ${symbol} @ $${quote.price.toFixed(2)}`,
       balance_before: oldBalance, balance_after: newBalance,
     });
+
+    // Send trade confirmation email
+    const { data: userProfile } = await supabaseAdmin.from("profiles").select("email, full_name").eq("id", user.id).single();
+    if (userProfile?.email) {
+      sendDepositConfirmedEmail(userProfile.email, userProfile.full_name || "Investor", amount_usd, `${symbol} Stock Purchase`).catch(console.error);
+    }
 
     return NextResponse.json({
       symbol, shares: parseFloat(shares.toFixed(4)), price: quote.price,

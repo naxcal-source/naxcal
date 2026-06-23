@@ -4,15 +4,14 @@ function layout(content: string) {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#f5f5f5;font-family:${FONT}">
 <div style="max-width:600px;margin:0 auto;padding:24px 16px">
-<div style="background:#0a0a0a;padding:28px 32px;border-radius:12px 12px 0 0;text-align:center">
-<h1 style="margin:0;font-size:24px;font-weight:700;color:#ffffff;letter-spacing:1.5px">NAXCAL</h1>
-<p style="margin:6px 0 0;font-size:11px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:3px">Capital Markets</p>
+<div style="background:#0a0a0a;padding:32px 40px;border-radius:16px 16px 0 0;text-align:center">
+<img src="https://naxcal.com/Naxcal_Primary_Logo.png" alt="Naxcal" width="180" height="50" style="height:50px;width:auto;display:inline-block" />
 </div>
 <div style="background:#ffffff;padding:40px 32px;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb">
 ${content}
 </div>
 <div style="background:#f9fafb;padding:24px 32px;border-radius:0 0 12px 12px;border:1px solid #e5e7eb;border-top:none;text-align:center">
-<p style="margin:0 0 8px;font-size:11px;color:#9ca3af;line-height:1.6">Naxcal Capital Ltd is authorised and regulated by the Financial Conduct Authority (FRN: 123456).<br>Your capital is at risk. Past performance is not indicative of future results.</p>
+<p style="margin:0 0 8px;font-size:11px;color:#9ca3af;line-height:1.6">Naxcal Capital Ltd is authorised and regulated by the Financial Conduct Authority.<br>Your capital is at risk. Past performance is not indicative of future results.</p>
 <p style="margin:0;font-size:11px;color:#d1d5db">
 <a href="https://naxcal.com/unsubscribe" style="color:#9ca3af;text-decoration:underline">Unsubscribe</a> · <a href="https://naxcal.com/help" style="color:#9ca3af;text-decoration:underline">Help Centre</a> · <a href="https://naxcal.com/privacy" style="color:#9ca3af;text-decoration:underline">Privacy</a>
 </p>

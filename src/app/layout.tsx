@@ -31,7 +31,10 @@ export const metadata: Metadata = {
     description: "Deposit crypto. We trade forex. You earn daily returns.",
   },
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon.png", sizes: "192x192", type: "image/png" },
+    ],
     apple: "/apple-touch-icon.png",
   },
   manifest: "/manifest.json",

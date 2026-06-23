@@ -25,14 +25,13 @@ export default function CrispChat() {
     script.async = true;
     document.head.appendChild(script);
 
-    // After Crisp loads, push it up on mobile
+    // Hide Crisp button on mobile — users access chat via Support page instead
     script.onload = () => {
       const style = document.createElement("style");
       style.textContent = `
         @media (max-width: 1023px) {
-          .crisp-client .cc-1brb6 .cc-unoo,
           .crisp-client .cc-1brb6 {
-            bottom: 80px !important;
+            display: none !important;
           }
         }
       `;

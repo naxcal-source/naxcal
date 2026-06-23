@@ -199,7 +199,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen flex" style={{ background: "#f1f5f9" }}>
+    <div className="min-h-screen flex" style={{ background: "#f1f5f9", minHeight: "100dvh" }}>
       <aside className="hidden lg:block w-[280px] shrink-0 border-r border-white/[0.06]" style={{ background: "#080f0c" }}>
         <SidebarContent />
       </aside>
@@ -242,7 +242,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 p-6 overflow-auto pb-20 lg:pb-6">
+        <main className="flex-1 p-4 sm:p-6 overflow-auto pb-20 lg:pb-6 overflow-x-hidden">
           {children}
         </main>
       </div>
@@ -271,11 +271,14 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <DashboardProvider>
-      <ToastProvider>
-        <CrispChat />
-        <DashboardShell>{children}</DashboardShell>
-      </ToastProvider>
-    </DashboardProvider>
+    <>
+      <style>{`body { background: #f1f5f9 !important; }`}</style>
+      <DashboardProvider>
+        <ToastProvider>
+          <CrispChat />
+          <DashboardShell>{children}</DashboardShell>
+        </ToastProvider>
+      </DashboardProvider>
+    </>
   );
 }

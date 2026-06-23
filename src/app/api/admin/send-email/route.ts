@@ -1,0 +1,40 @@
+import { NextRequest, NextResponse } from "next/server";
+import {
+  sendKYCApprovedEmail,
+  sendKYCRejectedEmail,
+  sendWithdrawalApprovedEmail,
+  sendDailyProfitEmail,
+} from "@/lib/emails";
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { type, email, name } = body;
+
+    if (!type || !email) {
+      return NextResponse.json({ error: "Missing type or email" }, { status: 400 });
+    }
+
+    switch (type) {
+      case "kyc_approved":
+        await sendKYCApprovedEmail(email, name || "Investor");
+        break;
+      case "kyc_rejected":
+        await sendKYCRejectedEmail(email, name || "Investor", body.reason || "Documents could not be verified");
+        break;
+      case "withdrawal_approved":
+        await sendWithdrawalApprovedEmail(email, name || "Investor", body.amount || 0);
+        break;
+      case "daily_profit":
+        await sendDailyProfitEmail(email, name || "Investor", body.amount || 0, body.percentage || 0);
+        break;
+      default:
+        return NextResponse.json({ error: "Unknown email type" }, { status: 400 });
+    }
+
+    return NextResponse.json({ status: "sent" });
+  } catch (err) {
+    console.error("Send email error:", err);
+    return NextResponse.json({ error: "Failed to send email" }, { status: 500 });
+  }
+}

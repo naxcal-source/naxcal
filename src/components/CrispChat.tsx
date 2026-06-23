@@ -17,29 +17,34 @@ export default function CrispChat() {
     window.$crisp = [];
     window.CRISP_WEBSITE_ID = id;
 
-    // Move chat bubble above mobile bottom nav
-    window.$crisp.push(["config", "position:reverse", true]);
+    // Hide on mobile via Crisp API
+    window.$crisp.push(["config", "hide:on-mobile", true]);
 
     const script = document.createElement("script");
     script.src = "https://client.crisp.chat/l.js";
     script.async = true;
     document.head.appendChild(script);
 
-    // Hide Crisp button on mobile — users access chat via Support page instead
-    script.onload = () => {
-      const style = document.createElement("style");
-      style.textContent = `
-        @media (max-width: 1023px) {
-          .crisp-client .cc-1brb6 {
-            display: none !important;
-          }
+    // Also force-hide with CSS on mobile as fallback
+    const style = document.createElement("style");
+    style.id = "crisp-mobile-hide";
+    style.textContent = `
+      @media (max-width: 1023px) {
+        #crisp-chatbox,
+        .crisp-client,
+        [data-crisp-namespace] {
+          display: none !important;
+          visibility: hidden !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
         }
-      `;
-      document.head.appendChild(style);
-    };
+      }
+    `;
+    document.head.appendChild(style);
 
     return () => {
       script.remove();
+      style.remove();
     };
   }, []);
 
@@ -48,6 +53,7 @@ export default function CrispChat() {
 
 export function openCrispChat() {
   if (typeof window !== "undefined" && window.$crisp) {
+    (window.$crisp as unknown[]).push(["do", "chat:show"]);
     (window.$crisp as unknown[]).push(["do", "chat:open"]);
   }
 }

@@ -142,8 +142,14 @@ export default function DashboardPage() {
   };
   const currentPerks = tierPerks[(profile?.tier as string) || "bronze"] || tierPerks.bronze;
 
+  const [chartRange, setChartRange] = useState("1M");
   const seed = (i: number) => Math.sin(i * 127.1 + 311.7) * 0.5 + 0.5;
-  const sampleChart = Array.from({ length: 14 }, (_, i) => ({ d: `Day ${i + 1}`, v: balance > 0 ? balance * 0.85 + seed(i) * balance * 0.2 + i * balance * 0.01 : 0 }));
+  const chartPoints = chartRange === "1W" ? 7 : chartRange === "1M" ? 30 : chartRange === "3M" ? 90 : 365;
+  const sampleChart = Array.from({ length: Math.min(chartPoints, 60) }, (_, i) => {
+    const step = chartPoints / Math.min(chartPoints, 60);
+    const idx = Math.floor(i * step);
+    return { d: `${idx + 1}`, v: balance > 0 ? balance * 0.7 + seed(idx) * balance * 0.15 + (idx / chartPoints) * balance * 0.3 : 0 };
+  });
 
   const [dailyReturns, setDailyReturns] = useState<{ date: string; rate: string; earnings: string; status: string }[]>([]);
   useEffect(() => {
@@ -249,8 +255,8 @@ export default function DashboardPage() {
             </div>
             <div className="flex gap-1">
               {["1W", "1M", "3M", "ALL"].map((r) => (
-                <button key={r} className={cn("px-3 py-1.5 rounded-lg text-[10px] font-semibold cursor-pointer transition-all",
-                  r === "1M" ? "bg-naxcal-teal text-white shadow-sm" : "text-[#9ca3af] hover:text-[#475569] hover:bg-[#f1f5f9]"
+                <button key={r} onClick={() => setChartRange(r)} className={cn("px-3 py-1.5 rounded-lg text-[10px] font-semibold cursor-pointer transition-all",
+                  chartRange === r ? "bg-naxcal-teal text-white shadow-sm" : "text-[#9ca3af] hover:text-[#475569] hover:bg-[#f1f5f9]"
                 )}>{r}</button>
               ))}
             </div>

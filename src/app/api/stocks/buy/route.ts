@@ -1,63 +1,62 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-const BASE = process.env.ALPACA_BASE_URL || "https://paper-api.alpaca.markets";
+import { getAuthUser } from "@/lib/auth-api";
+import { supabaseAdmin } from "@/lib/supabase-admin";
+import { getStockPrice } from "@/lib/yahoo-finance";
 
 export async function POST(req: NextRequest) {
   try {
-    const { symbol, amount_usd, user_id } = await req.json();
-    if (!symbol || !amount_usd || !user_id) {
-      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
-    }
-    if (amount_usd < 50) {
-      return NextResponse.json({ error: "Minimum investment is $50" }, { status: 400 });
-    }
+    const user = await getAuthUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { data: profile } = await supabaseAdmin.from("profiles").select("balance").eq("id", user_id).single();
-    if (!profile || Number(profile.balance) < amount_usd) {
-      return NextResponse.json({ error: "Insufficient balance" }, { status: 400 });
-    }
+    const { symbol, amount_usd } = await req.json();
+    if (!symbol || !amount_usd) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    if (amount_usd < 50) return NextResponse.json({ error: "Minimum investment is $50" }, { status: 400 });
 
-    const orderRes = await fetch(`${BASE}/v2/orders`, {
-      method: "POST",
-      headers: {
-        "APCA-API-KEY-ID": process.env.ALPACA_API_KEY!,
-        "APCA-API-SECRET-KEY": process.env.ALPACA_API_SECRET!,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        symbol,
-        notional: amount_usd.toString(),
-        side: "buy",
-        type: "market",
-        time_in_force: "day",
-      }),
-    });
+    const { data: profile } = await supabaseAdmin.from("profiles").select("balance, kyc_status").eq("id", user.id).single();
+    if (!profile) return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+    if (profile.kyc_status !== "approved") return NextResponse.json({ error: "Complete KYC verification first" }, { status: 403 });
+    if (Number(profile.balance) < amount_usd) return NextResponse.json({ error: "Insufficient balance" }, { status: 400 });
 
-    if (!orderRes.ok) {
-      const err = await orderRes.json().catch(() => ({}));
-      return NextResponse.json({ error: err.message || "Order failed" }, { status: 502 });
-    }
+    const quote = await getStockPrice(symbol);
+    if (!quote || quote.price <= 0) return NextResponse.json({ error: "Could not fetch current price" }, { status: 502 });
 
-    const order = await orderRes.json();
+    const shares = amount_usd / quote.price;
     const oldBalance = Number(profile.balance);
     const newBalance = oldBalance - amount_usd;
 
-    await supabaseAdmin.from("profiles").update({ balance: newBalance }).eq("id", user_id);
+    // Check if user already has a position in this stock
+    const { data: existing } = await supabaseAdmin
+      .from("stock_positions")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("symbol", symbol)
+      .single();
+
+    if (existing) {
+      const oldQty = Number(existing.qty);
+      const oldCost = Number(existing.avg_price) * oldQty;
+      const newQty = oldQty + shares;
+      const newAvg = (oldCost + amount_usd) / newQty;
+      await supabaseAdmin.from("stock_positions").update({ qty: newQty, avg_price: newAvg }).eq("id", existing.id);
+    } else {
+      await supabaseAdmin.from("stock_positions").insert({
+        user_id: user.id, symbol, qty: shares, avg_price: quote.price,
+      });
+    }
+
+    await supabaseAdmin.from("profiles").update({ balance: newBalance }).eq("id", user.id);
     await supabaseAdmin.from("transactions").insert({
-      user_id,
-      type: "stock_buy",
-      amount: amount_usd,
-      asset: symbol,
-      status: "completed",
-      description: `Bought ${symbol} stock`,
-      balance_before: oldBalance,
-      balance_after: newBalance,
+      user_id: user.id, type: "stock_buy", amount: amount_usd, asset: symbol, status: "completed",
+      description: `Bought ${shares.toFixed(4)} shares of ${symbol} @ $${quote.price.toFixed(2)}`,
+      balance_before: oldBalance, balance_after: newBalance,
     });
 
-    return NextResponse.json({ order_id: order.id, symbol, amount: amount_usd, status: order.status });
-  } catch {
+    return NextResponse.json({
+      symbol, shares: parseFloat(shares.toFixed(4)), price: quote.price,
+      amount: amount_usd, new_balance: newBalance,
+    });
+  } catch (err) {
+    console.error("Stock buy error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

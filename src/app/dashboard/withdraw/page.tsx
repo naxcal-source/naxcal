@@ -19,7 +19,7 @@ const cryptoOptions = [
 ];
 
 export default function WithdrawPage() {
-  const { profile } = useDashboard();
+  const { profile, refreshProfile } = useDashboard();
   const [amount, setAmount] = useState("");
   const [wallet, setWallet] = useState("");
   const [asset, setAsset] = useState("USDT");
@@ -49,14 +49,24 @@ export default function WithdrawPage() {
     if (pin.length !== 6) { setError("Enter your 6-digit withdrawal PIN."); return; }
     if (profile?.kyc_status !== "approved") { setError("Complete KYC verification before withdrawing."); return; }
 
+    // Verify PIN
+    const { data: pinCheck } = await supabase.from("profiles").select("withdrawal_pin").eq("id", profile!.id).single();
+    const storedPin = (pinCheck as Record<string, unknown>)?.withdrawal_pin as string | null;
+    if (!storedPin) { setError("You haven't set a withdrawal PIN yet. Go to Settings → Security to set one."); return; }
+    if (storedPin !== pin) { setError("Incorrect withdrawal PIN."); return; }
+
     setLoading(true);
+    const newBalance = balance - numAmount;
+    const { error: balErr } = await supabase.from("profiles").update({ balance: newBalance }).eq("id", profile!.id);
+    if (balErr) { setError("Failed to process withdrawal."); setLoading(false); return; }
     const { error: txError } = await supabase.from("transactions").insert({
       user_id: profile!.id, type: "withdrawal", amount: numAmount, asset, status: "pending",
       wallet_address: wallet, description: `Withdrawal to ${asset} wallet`,
-      balance_before: balance, balance_after: balance - numAmount,
+      balance_before: balance, balance_after: newBalance,
     });
     setLoading(false);
     if (txError) { setError(txError.message); return; }
+    await refreshProfile();
     setSuccess(true);
   };
 
@@ -83,7 +93,7 @@ export default function WithdrawPage() {
           </div>
           <h2 className="text-lg font-bold text-[#0f172a] mb-2">KYC Required</h2>
           <p className="text-sm text-[#6b7280] mb-4">Complete identity verification before withdrawing funds.</p>
-          <Link href="/dashboard/settings" className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-sm font-semibold text-white btn-teal">
+          <Link href="/dashboard/kyc" className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-sm font-semibold text-white btn-teal">
             Complete KYC
           </Link>
         </div>
@@ -154,6 +164,9 @@ export default function WithdrawPage() {
               <input type="password" value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="6-digit PIN" maxLength={6}
                 className="w-full px-4 py-3 rounded-lg text-sm text-[#0f172a] placeholder:text-[#9ca3af] focus:outline-none focus:border-naxcal-teal tracking-[0.5em] text-center"
                 style={{ border: "1px solid #e2e8f0" }} />
+              <p className="text-[10px] text-[#9ca3af] mt-1">
+                Don&apos;t have a PIN? <Link href="/dashboard/settings" className="text-naxcal-teal hover:underline">Set one in Settings → Security</Link>
+              </p>
             </div>
 
             <button type="submit" disabled={loading}

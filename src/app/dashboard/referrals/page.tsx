@@ -17,11 +17,17 @@ export default function ReferralsPage() {
   const [copiedCode, setCopiedCode] = useState(false);
   const supabase = createClient();
 
-  const code = profile?.referral_code || "";
+  const [code, setCode] = useState(profile?.referral_code || "");
   const referralUrl = code ? `https://naxcal.com/register?ref=${code}` : "";
 
   useEffect(() => {
     if (!profile) return;
+    if (!profile.referral_code) {
+      const generated = "NXC" + Math.random().toString(36).substring(2, 8).toUpperCase();
+      supabase.from("profiles").update({ referral_code: generated }).eq("id", profile.id).then(() => setCode(generated));
+    } else {
+      setCode(profile.referral_code);
+    }
     supabase.from("referrals").select("*").eq("referrer_id", profile.id).order("created_at", { ascending: false }).then(({ data }) => { if (data) setReferrals(data); });
   }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
 

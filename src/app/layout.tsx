@@ -31,8 +31,8 @@ export const metadata: Metadata = {
     description: "Deposit crypto. We trade forex. You earn daily returns.",
   },
   icons: {
-    icon: "/Naxcal_Primary_Logo.png",
-    apple: "/Naxcal_Primary_Logo.png",
+    icon: "/Naxcal_Logomark-01.png",
+    apple: "/Naxcal_Logomark-01.png",
   },
   metadataBase: new URL("https://naxcal.com"),
 };

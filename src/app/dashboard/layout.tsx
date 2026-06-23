@@ -13,6 +13,8 @@ import {
   Search, BarChart2, ArrowLeftRight, TrendingUp, ShieldCheck,
   HelpCircle, ChevronRight,
 } from "lucide-react";
+import { ToastProvider } from "@/components/Toast";
+import CrispChat from "@/components/CrispChat";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -23,6 +25,7 @@ const navItems = [
   { href: "/dashboard/deposit", label: "Deposit", icon: ArrowDownCircle },
   { href: "/dashboard/withdraw", label: "Withdraw", icon: ArrowUpCircle },
   { href: "/dashboard/referrals", label: "Referrals", icon: Users },
+  { href: "/dashboard/support", label: "Support", icon: HelpCircle },
   { href: "/dashboard/kyc", label: "Verification", icon: ShieldCheck },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
@@ -40,7 +43,32 @@ function LiveClock() {
 
 function NotificationDropdown() {
   const [open, setOpen] = useState(false);
+  const [notifs, setNotifs] = useState<{ title: string; desc: string; time: string; color: string }[]>([]);
   const ref = useRef<HTMLDivElement>(null);
+  const { profile } = useDashboard();
+
+  useEffect(() => {
+    if (!profile) return;
+    const items: { title: string; desc: string; time: string; color: string }[] = [];
+    if (profile.kyc_status !== "approved") {
+      items.push({ title: "Complete Verification", desc: "Verify your identity to unlock all features", time: "", color: "bg-amber-500" });
+    }
+    const supabase = createClient();
+    supabase.from("transactions").select("type, amount, created_at").eq("user_id", profile.id).order("created_at", { ascending: false }).limit(5)
+      .then(({ data }) => {
+        if (data) {
+          data.forEach((tx: { type: string; amount: number; created_at: string }) => {
+            const ago = Math.floor((Date.now() - new Date(tx.created_at).getTime()) / 60000);
+            const timeStr = ago < 60 ? `${ago}m ago` : ago < 1440 ? `${Math.floor(ago / 60)}h ago` : `${Math.floor(ago / 1440)}d ago`;
+            if (tx.type === "profit") items.push({ title: "Daily Return Posted", desc: `+$${Number(tx.amount).toFixed(2)} added to your balance`, time: timeStr, color: "bg-emerald-500" });
+            else if (tx.type === "deposit") items.push({ title: "Deposit Confirmed", desc: `$${Number(tx.amount).toFixed(2)} credited`, time: timeStr, color: "bg-naxcal-teal" });
+            else if (tx.type === "withdrawal") items.push({ title: "Withdrawal Requested", desc: `$${Number(tx.amount).toFixed(2)} processing`, time: timeStr, color: "bg-amber-500" });
+          });
+        }
+        if (items.length === 0) items.push({ title: "Welcome to Naxcal", desc: "Get started by completing verification", time: "", color: "bg-naxcal-teal" });
+        setNotifs(items.slice(0, 6));
+      });
+  }, [profile]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
@@ -48,11 +76,13 @@ function NotificationDropdown() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  const count = notifs.length;
+
   return (
     <div ref={ref} className="relative">
       <button onClick={() => setOpen(!open)} className="relative w-9 h-9 rounded-lg flex items-center justify-center text-[#9ca3af] hover:text-[#475569] hover:bg-[#f1f5f9] transition-all cursor-pointer" style={{ border: "1px solid #e2e8f0" }}>
         <Bell size={16} />
-        <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-[9px] text-white font-bold flex items-center justify-center">3</span>
+        {count > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-[9px] text-white font-bold flex items-center justify-center">{count}</span>}
       </button>
 
       {open && (
@@ -61,18 +91,14 @@ function NotificationDropdown() {
             <h3 className="text-sm font-semibold text-[#0f172a]">Notifications</h3>
           </div>
           <div className="max-h-64 overflow-y-auto">
-            {[
-              { title: "Welcome to Naxcal", desc: "Complete verification to get started", time: "Just now", color: "bg-naxcal-teal" },
-              { title: "KYC Required", desc: "Verify your identity to unlock features", time: "2h ago", color: "bg-amber-500" },
-              { title: "New feature", desc: "Crypto swap is now available", time: "1d ago", color: "bg-blue-500" },
-            ].map((n, i) => (
+            {notifs.map((n, i) => (
               <div key={i} className="px-4 py-3 hover:bg-[#f8fafc] transition-colors cursor-pointer border-b border-[#f8fafc]">
                 <div className="flex items-start gap-3">
                   <div className={cn("w-2 h-2 rounded-full mt-1.5 shrink-0", n.color)} />
                   <div className="min-w-0">
                     <p className="text-sm text-[#0f172a] font-medium">{n.title}</p>
                     <p className="text-xs text-[#6b7280]">{n.desc}</p>
-                    <p className="text-[10px] text-[#9ca3af] mt-0.5">{n.time}</p>
+                    {n.time && <p className="text-[10px] text-[#9ca3af] mt-0.5">{n.time}</p>}
                   </div>
                 </div>
               </div>
@@ -93,7 +119,8 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   const { profile, loading } = useDashboard();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const firstName = profile?.full_name?.split(" ")[0] || "there";
+  const rawFirst = profile?.full_name?.split(" ")[0] || "there";
+  const firstName = rawFirst.charAt(0).toUpperCase() + rawFirst.slice(1);
   const initials = profile?.full_name
     ? profile.full_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
     : "?";
@@ -120,7 +147,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
       <div className="absolute inset-x-0 top-0 h-32 pointer-events-none" style={{ background: "linear-gradient(to bottom, rgba(26,138,110,0.12), transparent)" }} />
 
       <div className="p-6 pb-5 relative z-10">
-        <Image src="/Naxcal_Primary_Logo.png" alt="Naxcal" width={160} height={48} className="h-12 w-auto" style={{ filter: "drop-shadow(0 0 16px rgba(26,138,110,0.5))" }} />
+        <Image src="/Naxcal_Primary_Logo.png" alt="Naxcal" width={180} height={52} className="h-12 w-auto" style={{ filter: "brightness(1.5) drop-shadow(0 0 20px rgba(26,138,110,0.6))" }} />
       </div>
 
       <nav className="flex-1 px-3 space-y-0.5 relative z-10 overflow-y-auto">
@@ -138,13 +165,6 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
           );
         })}
       </nav>
-
-      {/* Help link */}
-      <div className="px-3 py-2 relative z-10">
-        <Link href="#" className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-[13px] text-white/30 hover:text-white/60 hover:bg-white/[0.03] transition-all">
-          <HelpCircle size={17} /><span>Help & Support</span>
-        </Link>
-      </div>
 
       <div className="p-4 border-t border-white/[0.06] relative z-10">
         <div className="flex items-center gap-3 mb-3">
@@ -205,10 +225,9 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-              <Search size={14} className="text-[#9ca3af]" />
-              <input type="text" placeholder="Search..." className="bg-transparent outline-none text-xs text-[#374151] placeholder:text-[#9ca3af] w-40" />
-            </div>
+            <Link href="/dashboard/support" className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-[#9ca3af] hover:text-[#6b7280] hover:bg-[#f1f5f9] transition-colors" style={{ border: "1px solid #e2e8f0" }}>
+              <Search size={14} /> Help
+            </Link>
 
             <LiveClock />
 
@@ -252,7 +271,10 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <DashboardProvider>
-      <DashboardShell>{children}</DashboardShell>
+      <ToastProvider>
+        <CrispChat />
+        <DashboardShell>{children}</DashboardShell>
+      </ToastProvider>
     </DashboardProvider>
   );
 }

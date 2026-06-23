@@ -68,11 +68,30 @@ const tagColorsLight: Record<string, string> = {
   purple: "bg-purple-50 text-purple-700 border border-purple-200",
 };
 
-const footerLinks = {
-  Platform: ["How It Works", "Asset Classes", "Investment Tiers", "Calculator", "Performance"],
-  Legal: ["Terms of Service", "Privacy Policy", "Risk Disclosure", "AML Policy", "Cookie Policy"],
-  Support: ["Help Centre", "Contact Us", "FAQs", "Live Chat", "Status Page"],
-  Company: ["About Us", "Careers", "Blog", "Press", "Partners"],
+const footerLinks: Record<string, { label: string; href: string }[]> = {
+  Platform: [
+    { label: "How It Works", href: "#how-it-works" },
+    { label: "Asset Classes", href: "#markets" },
+    { label: "Investment Tiers", href: "#tiers" },
+    { label: "Calculator", href: "#returns" },
+    { label: "Performance", href: "#returns" },
+  ],
+  Legal: [
+    { label: "Terms of Service", href: "/legal/terms" },
+    { label: "Privacy Policy", href: "/legal/privacy" },
+    { label: "Risk Disclosure", href: "/legal/risk" },
+    { label: "AML Policy", href: "/legal/aml" },
+  ],
+  Support: [
+    { label: "Help Centre", href: "/dashboard/support" },
+    { label: "Contact Us", href: "https://t.me/naxcal" },
+    { label: "FAQs", href: "/dashboard/support" },
+  ],
+  Company: [
+    { label: "About Us", href: "#home" },
+    { label: "X (Twitter)", href: "https://x.com/_naxcal" },
+    { label: "Telegram", href: "https://t.me/naxcal" },
+  ],
 };
 
 /* ═══ COMPONENTS ═══ */
@@ -164,6 +183,40 @@ function TestimonialCardLight({ t }: { t: typeof testimonials[number] }) {
 
 /* ═══ MAIN PAGE ═══ */
 
+function PriceTicker() {
+  const [prices, setPrices] = useState<Record<string, { usd: number; usd_24h_change: number }>>({});
+  useEffect(() => {
+    fetch("/api/prices").then((r) => r.json()).then(setPrices).catch(() => {});
+  }, []);
+  const tickers = [
+    { id: "bitcoin", sym: "BTC" }, { id: "ethereum", sym: "ETH" }, { id: "solana", sym: "SOL" },
+    { id: "binancecoin", sym: "BNB" }, { id: "ripple", sym: "XRP" }, { id: "cardano", sym: "ADA" },
+    { id: "dogecoin", sym: "DOGE" }, { id: "tether", sym: "USDT" },
+  ];
+  const items = tickers.map((t) => {
+    const p = prices[t.id];
+    return { sym: t.sym, price: p?.usd || 0, change: p?.usd_24h_change || 0 };
+  }).filter((t) => t.price > 0);
+  if (items.length === 0) return null;
+  const row = items.map((t) => (
+    <span key={t.sym} className="inline-flex items-center gap-1.5 mx-4 whitespace-nowrap">
+      <span className="text-white/50 font-medium">{t.sym}</span>
+      <span className="text-white/70">${t.price < 1 ? t.price.toFixed(4) : t.price.toLocaleString("en-US", { maximumFractionDigits: 2 })}</span>
+      <span className={cn("text-[10px] font-semibold", t.change >= 0 ? "text-emerald-400" : "text-red-400")}>
+        {t.change >= 0 ? "▲" : "▼"}{Math.abs(t.change).toFixed(2)}%
+      </span>
+      <span className="text-white/10 mx-2">·</span>
+    </span>
+  ));
+  return (
+    <div className="overflow-hidden" style={{ background: "#0a0a0a", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+      <div className="flex items-center h-7 text-[11px] marquee-left" style={{ width: "max-content" }}>
+        {row}{row}
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [mobileMenu, setMobileMenu] = useState(false);
   const [deposit, setDeposit] = useState(10000);
@@ -194,12 +247,17 @@ export default function Home() {
         </div>
       </div>
 
+      {/* ═══ PRICE TICKER ═══ */}
+      <div className="fixed top-8 left-0 right-0 z-[55]">
+        <PriceTicker />
+      </div>
+
       {/* ═══ NAVBAR ═══ */}
-      <nav className="fixed top-8 left-0 right-0 z-50">
+      <nav className="fixed top-[60px] left-0 right-0 z-50">
         <div className="bg-[rgba(2,4,8,0.9)] backdrop-blur-xl border-b border-white/[0.06]">
           <div className="mx-auto max-w-7xl px-6 flex items-center justify-between h-[72px]">
             <div className="flex items-center gap-3">
-              <Image src="/Naxcal_Primary_Logo.png" alt="Naxcal" width={180} height={50} className="w-auto" style={{ height: 48, filter: "drop-shadow(0 0 16px rgba(26,138,110,0.5))" }} priority />
+              <Image src="/Naxcal_Primary_Logo.png" alt="Naxcal" width={180} height={50} className="w-auto" style={{ height: 48, filter: "brightness(1.4) drop-shadow(0 0 20px rgba(26,138,110,0.6))" }} priority />
               <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/12 border border-emerald-500/25">
                 <LiveDot />
                 <span className="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider">FCA Regulated</span>
@@ -595,7 +653,7 @@ export default function Home() {
                       <li key={j} className="flex items-start gap-2.5 text-[13px] text-[#475569]"><CheckCircle2 size={15} className="text-naxcal-teal shrink-0 mt-0.5" /><span>{f}</span></li>
                     ))}
                   </ul>
-                  <button className={cn("mt-7 w-full py-3.5 rounded-xl font-semibold text-sm transition-all cursor-pointer", tier.btnStyle)}>Start Investing</button>
+                  <a href="/register" className={cn("mt-7 w-full py-3.5 rounded-xl font-semibold text-sm transition-all cursor-pointer block text-center", tier.btnStyle)}>Start Investing</a>
                   <p className="text-[10px] text-[#9ca3af] text-center mt-3">Minimum deposit {tier.min}</p>
                 </div>
               </FadeUp>
@@ -737,7 +795,7 @@ export default function Home() {
           <FadeUp delay={0.2}>
             <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
               <a href="/register" className="group btn-teal px-10 py-4 rounded-xl text-white font-semibold text-lg cursor-pointer inline-flex items-center justify-center gap-2">Start Investing <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" /></a>
-              <button className="px-10 py-4 rounded-xl border border-white/20 text-white/70 font-semibold text-lg hover:border-white/30 transition-all cursor-pointer inline-flex items-center justify-center gap-2"><Phone size={18} /> Schedule a Call</button>
+              <a href="https://t.me/naxcal" target="_blank" rel="noopener noreferrer" className="px-10 py-4 rounded-xl border border-white/20 text-white/70 font-semibold text-lg hover:border-white/30 transition-all cursor-pointer inline-flex items-center justify-center gap-2"><Send size={18} /> Contact Us on Telegram</a>
             </div>
           </FadeUp>
           <FadeUp delay={0.3}><p className="mt-8 text-[11px] text-white/30">No lock-in periods &bull; Withdraw anytime &bull; FCA regulated</p></FadeUp>
@@ -749,18 +807,18 @@ export default function Home() {
         <div className="mx-auto max-w-6xl">
           <div className="grid grid-cols-2 md:grid-cols-6 gap-8">
             <div className="col-span-2">
-              <Image src="/Naxcal_Primary_Logo.png" alt="Naxcal" width={140} height={40} className="h-9 w-auto mb-4" style={{ filter: "drop-shadow(0 0 12px rgba(26,138,110,0.4))" }} />
+              <Image src="/Naxcal_Primary_Logo.png" alt="Naxcal" width={160} height={44} className="h-10 w-auto mb-4" style={{ filter: "brightness(1.4) drop-shadow(0 0 16px rgba(26,138,110,0.5))" }} />
               <p className="text-sm text-white/30 mb-5 max-w-[280px] leading-relaxed">Institutional-grade capital management. Regulated, transparent, and built for performance.</p>
               <div className="flex items-center gap-2.5">
-                {[{ icon: Globe, label: "X" }, { icon: Link2, label: "LinkedIn" }, { icon: Send, label: "Telegram" }, { icon: MessageCircle, label: "Community" }].map((s) => (
-                  <a key={s.label} href="#" className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-naxcal-teal/15 transition-all" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }} aria-label={s.label}><s.icon size={15} className="text-white/40" /></a>
+                {[{ icon: Globe, label: "X", href: "https://x.com/_naxcal" }, { icon: Send, label: "Telegram", href: "https://t.me/naxcal" }].map((s) => (
+                  <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-naxcal-teal/15 transition-all" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }} aria-label={s.label}><s.icon size={15} className="text-white/40" /></a>
                 ))}
               </div>
             </div>
             {Object.entries(footerLinks).map(([title, links]) => (
               <div key={title}>
                 <h4 className="text-[10px] font-semibold text-white/50 mb-4 uppercase tracking-[0.15em]">{title}</h4>
-                <ul className="space-y-2.5">{links.map((link) => <li key={link}><a href="#" className="text-[13px] text-white/30 hover:text-white/60 transition-colors">{link}</a></li>)}</ul>
+                <ul className="space-y-2.5">{links.map((link) => <li key={link.label}><a href={link.href} className="text-[13px] text-white/30 hover:text-white/60 transition-colors">{link.label}</a></li>)}</ul>
               </div>
             ))}
           </div>
@@ -771,7 +829,7 @@ export default function Home() {
               ))}
             </div>
             <p className="text-[10px] text-white/20 text-center leading-relaxed max-w-3xl mx-auto">Naxcal Ltd is authorised and regulated by the Financial Conduct Authority (FCA). Capital at risk. Past performance is not indicative of future results.</p>
-            <p className="text-[9px] text-white/10 text-center mt-3">&copy; 2025 Naxcal Ltd. All rights reserved.</p>
+            <p className="text-[9px] text-white/10 text-center mt-3">&copy; {new Date().getFullYear()} Naxcal Capital Ltd. All rights reserved.</p>
           </div>
         </div>
       </footer>

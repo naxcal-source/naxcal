@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 import { sendDepositConfirmedEmail } from "@/lib/emails";
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 function verifySignature(payload: string, signature: string): boolean {
   const hmac = crypto.createHmac("sha512", process.env.NOWPAYMENTS_IPN_SECRET!);

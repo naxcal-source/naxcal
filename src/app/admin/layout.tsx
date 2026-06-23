@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
@@ -60,10 +61,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       <div className="p-6 pb-4">
-        <div className="flex items-center gap-2 mb-1">
-          <Shield size={20} className="text-naxcal-teal" />
-          <span className="text-lg font-bold text-white tracking-tight">NAXCAL</span>
-        </div>
+        <Image src="/Naxcal_Primary_Logo.png" alt="Naxcal" width={140} height={40} className="h-9 w-auto mb-2" style={{ filter: "brightness(1.5) drop-shadow(0 0 16px rgba(26,138,110,0.5))" }} />
         <span className="text-[10px] text-red-400 font-semibold uppercase tracking-widest">Admin Panel</span>
       </div>
 

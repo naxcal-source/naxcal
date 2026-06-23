@@ -56,7 +56,7 @@ export default function LoginPage() {
       <div className="hidden lg:flex w-[40%] flex-col justify-between p-10 relative overflow-hidden" style={{ background: "#020408" }}>
         <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 30% 50%, rgba(26,138,110,0.15) 0%, transparent 70%)" }} />
         <div className="relative z-10">
-          <Image src="/Naxcal_Primary_Logo.png" alt="Naxcal" width={160} height={44} className="h-10 w-auto mb-6" style={{ filter: "drop-shadow(0 0 12px rgba(26,138,110,0.4))" }} />
+          <Image src="/Naxcal_Primary_Logo.png" alt="Naxcal" width={180} height={48} className="h-11 w-auto mb-6" style={{ filter: "brightness(1.4) drop-shadow(0 0 16px rgba(26,138,110,0.5))" }} />
           <h2 className="text-2xl font-bold text-white mt-12 mb-3">Welcome Back to <span className="text-naxcal-teal">Naxcal</span></h2>
           <p className="text-white/40 text-sm leading-relaxed max-w-xs">
             Access your portfolio, track your daily returns, and manage your capital deployment.

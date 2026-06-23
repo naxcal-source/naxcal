@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { createClient } from "@/lib/supabase";
@@ -20,24 +21,22 @@ type Announcement = { id: string; title: string; content: string; type: string; 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
 const item = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" as const } } };
 
-function AnimatedNumber({ value, prefix = "$", decimals = 2 }: { value: number; prefix?: string; decimals?: number }) {
+function AnimatedNumber({ value, formatter }: { value: number; formatter: (n: number) => string }) {
   const [display, setDisplay] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
   useEffect(() => {
-    let start = 0;
     const duration = 1200;
     const startTime = performance.now();
     const animate = (now: number) => {
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
-      start = eased * value;
-      setDisplay(start);
+      setDisplay(eased * value);
       if (progress < 1) requestAnimationFrame(animate);
     };
     requestAnimationFrame(animate);
   }, [value]);
-  return <span ref={ref}>{prefix}{display.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}</span>;
+  return <span ref={ref}>{formatter(display)}</span>;
 }
 
 const marketData = [
@@ -67,11 +66,19 @@ const allocationData = [
 ];
 
 export default function DashboardPage() {
-  const { profile, refreshProfile } = useDashboard();
+  const router = useRouter();
+  const { profile, refreshProfile, fmt } = useDashboard();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [livePrices, setLivePrices] = useState<Record<string, { price: number; change: number }>>({});
   const supabase = createClient();
+
+  // Redirect new users to onboarding
+  useEffect(() => {
+    if (profile && !(profile as Record<string, unknown>).onboarding_complete) {
+      router.push("/dashboard/onboarding");
+    }
+  }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!profile) return;
@@ -120,7 +127,6 @@ export default function DashboardPage() {
   const tierThresholds = { bronze: { next: "Silver", target: 5000 }, silver: { next: "Gold", target: 25000 }, gold: { next: null, target: 0 } };
   const currentTierInfo = tierThresholds[(profile?.tier as keyof typeof tierThresholds) || "bronze"];
   const progress = currentTierInfo.target > 0 ? Math.min(100, (balance / currentTierInfo.target) * 100) : 100;
-  const fmt = (n: number) => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const tierColors: Record<string, { text: string; bg: string; border: string }> = {
     bronze: { text: "text-orange-700", bg: "linear-gradient(135deg, rgba(180,83,9,0.08), rgba(180,83,9,0.03))", border: "rgba(180,83,9,0.2)" },
@@ -136,18 +142,24 @@ export default function DashboardPage() {
   };
   const currentPerks = tierPerks[(profile?.tier as string) || "bronze"] || tierPerks.bronze;
 
-  const sampleChart = Array.from({ length: 14 }, (_, i) => ({ d: `Day ${i + 1}`, v: balance > 0 ? 1000 + Math.random() * 500 + i * 80 : 0 }));
+  const seed = (i: number) => Math.sin(i * 127.1 + 311.7) * 0.5 + 0.5;
+  const sampleChart = Array.from({ length: 14 }, (_, i) => ({ d: `Day ${i + 1}`, v: balance > 0 ? balance * 0.85 + seed(i) * balance * 0.2 + i * balance * 0.01 : 0 }));
 
-  const last7Days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (6 - i));
-    return {
-      date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-      rate: (tierRate + (Math.random() * 0.2 - 0.1)).toFixed(2),
-      earnings: balance > 0 ? (balance * tierRate / 100 * (0.9 + Math.random() * 0.2)).toFixed(2) : "0.00",
-      status: "Paid",
-    };
-  });
+  const [dailyReturns, setDailyReturns] = useState<{ date: string; rate: string; earnings: string; status: string }[]>([]);
+  useEffect(() => {
+    if (!profile) return;
+    supabase.from("transactions").select("amount, created_at").eq("user_id", profile.id).eq("type", "profit").order("created_at", { ascending: false }).limit(7)
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setDailyReturns(data.map((tx) => ({
+            date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+            rate: (Number(tx.amount) / Math.max(balance, 1) * 100).toFixed(2),
+            earnings: Number(tx.amount).toFixed(2),
+            status: "Paid",
+          })));
+        }
+      });
+  }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const announcementStyles: Record<string, { bg: string; border: string; icon: React.ReactNode }> = {
     info: { bg: "#eff6ff", border: "#bfdbfe", icon: <Info size={16} className="text-blue-600" /> },
@@ -168,7 +180,7 @@ export default function DashboardPage() {
               <p className="text-xs text-[#6b7280]">Unlock deposits, withdrawals, and full platform access.</p>
             </div>
           </div>
-          <Link href="/dashboard/settings" className="flex items-center gap-1 px-4 py-2 rounded-lg text-xs font-semibold text-white cursor-pointer bg-naxcal-teal hover:bg-naxcal-teal-light transition-colors shrink-0">
+          <Link href="/dashboard/kyc" className="flex items-center gap-1 px-4 py-2 rounded-lg text-xs font-semibold text-white cursor-pointer bg-naxcal-teal hover:bg-naxcal-teal-light transition-colors shrink-0">
             Verify Now <ArrowRight size={14} />
           </Link>
         </motion.div>
@@ -184,7 +196,7 @@ export default function DashboardPage() {
               <Wallet size={20} className="text-naxcal-teal" />
             </div>
           </div>
-          <p className="text-3xl font-bold text-[#0f172a]"><AnimatedNumber value={balance} /></p>
+          <p className="text-3xl font-bold text-[#0f172a]"><AnimatedNumber value={balance} formatter={fmt} /></p>
         </div>
 
         {/* Today's Return */}
@@ -196,7 +208,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <p className="text-3xl font-bold text-emerald-600"><AnimatedNumber value={todayReturn} /></p>
+            <p className="text-3xl font-bold text-emerald-600"><AnimatedNumber value={todayReturn} formatter={fmt} /></p>
             {todayReturn > 0 && <ArrowUpRight size={18} className="text-emerald-500" />}
           </div>
           <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -212,7 +224,7 @@ export default function DashboardPage() {
               <CircleDollarSign size={20} className="text-amber-600" />
             </div>
           </div>
-          <p className="text-3xl font-bold text-amber-600"><AnimatedNumber value={totalProfit} /></p>
+          <p className="text-3xl font-bold text-amber-600"><AnimatedNumber value={totalProfit} formatter={fmt} /></p>
         </div>
 
         {/* Total Deposited */}
@@ -223,7 +235,7 @@ export default function DashboardPage() {
               <ArrowDownCircle size={20} className="text-blue-600" />
             </div>
           </div>
-          <p className="text-3xl font-bold text-blue-600"><AnimatedNumber value={totalDeposited} /></p>
+          <p className="text-3xl font-bold text-blue-600"><AnimatedNumber value={totalDeposited} formatter={fmt} /></p>
         </div>
       </motion.div>
 
@@ -362,8 +374,7 @@ export default function DashboardPage() {
               { href: "/dashboard/withdraw", label: "Withdraw", icon: ArrowUpCircle, color: "text-amber-600", bg: "rgba(240,165,0,0.08)" },
               { href: "/dashboard/referrals", label: "Invite Friends", icon: Users, color: "text-blue-600", bg: "rgba(59,130,246,0.08)" },
               { href: "/dashboard/markets", label: "Markets", icon: BarChart2, color: "text-purple-600", bg: "rgba(147,51,234,0.08)" },
-              { href: "#", label: "Support", icon: MessageCircle, color: "text-pink-600", bg: "rgba(236,72,153,0.08)" },
-              { href: "#", label: "Statement", icon: FileText, color: "text-slate-600", bg: "rgba(100,116,139,0.08)" },
+              { href: "/dashboard/support", label: "Support", icon: MessageCircle, color: "text-pink-600", bg: "rgba(236,72,153,0.08)" },
             ].map((action, i) => (
               <Link key={i} href={action.href} className="flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-[#f8fafc] hover:border-naxcal-teal/20 transition-all group" style={{ border: "1px solid #e2e8f0" }}>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110" style={{ background: action.bg }}>
@@ -372,6 +383,13 @@ export default function DashboardPage() {
                 <span className="text-xs text-[#374151] font-medium">{action.label}</span>
               </Link>
             ))}
+            <button onClick={() => { fetch("/api/statement").then(r => r.blob()).then(blob => { const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "naxcal-statement.csv"; a.click(); URL.revokeObjectURL(url); }); }}
+              className="flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-[#f8fafc] hover:border-naxcal-teal/20 transition-all group cursor-pointer" style={{ border: "1px solid #e2e8f0" }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110" style={{ background: "rgba(100,116,139,0.08)" }}>
+                <FileText size={20} className="text-slate-600" />
+              </div>
+              <span className="text-xs text-[#374151] font-medium">Statement</span>
+            </button>
           </div>
         </div>
       </motion.div>
@@ -460,9 +478,9 @@ export default function DashboardPage() {
       {/* Daily Returns History */}
       <motion.div variants={item} className="card-light p-5">
         <h3 className="text-sm font-semibold text-[#0f172a] mb-4">Recent Returns</h3>
-        {balance === 0 ? (
+        {dailyReturns.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-sm text-[#9ca3af]">Daily returns will appear here after your first deposit</p>
+            <p className="text-sm text-[#9ca3af]">Daily returns will appear here after your first profit posting</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -476,11 +494,11 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {last7Days.map((day, i) => (
+                {dailyReturns.map((day, i) => (
                   <tr key={i} className="border-b border-[#f1f5f9] hover:bg-[#f8fafc] transition-colors">
                     <td className="py-2.5 text-xs text-[#374151]">{day.date}</td>
                     <td className="py-2.5 text-xs font-semibold text-emerald-600">+{day.rate}%</td>
-                    <td className="py-2.5 text-xs font-semibold text-[#0f172a]">${day.earnings}</td>
+                    <td className="py-2.5 text-xs font-semibold text-[#0f172a]">{fmt(Number(day.earnings))}</td>
                     <td className="py-2.5">
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">{day.status}</span>
                     </td>

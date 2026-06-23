@@ -1,59 +1,53 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-const BASE = process.env.ALPACA_BASE_URL || "https://paper-api.alpaca.markets";
+import { getAuthUser } from "@/lib/auth-api";
+import { supabaseAdmin } from "@/lib/supabase-admin";
+import { getStockPrice } from "@/lib/yahoo-finance";
 
 export async function POST(req: NextRequest) {
   try {
-    const { symbol, qty, user_id } = await req.json();
-    if (!symbol || !qty || !user_id) {
-      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    const user = await getAuthUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const { symbol, qty } = await req.json();
+    if (!symbol || !qty || qty <= 0) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+
+    const { data: position } = await supabaseAdmin
+      .from("stock_positions")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("symbol", symbol)
+      .single();
+
+    if (!position || Number(position.qty) < qty) {
+      return NextResponse.json({ error: "Insufficient shares" }, { status: 400 });
     }
 
-    const orderRes = await fetch(`${BASE}/v2/orders`, {
-      method: "POST",
-      headers: {
-        "APCA-API-KEY-ID": process.env.ALPACA_API_KEY!,
-        "APCA-API-SECRET-KEY": process.env.ALPACA_API_SECRET!,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        symbol,
-        qty: qty.toString(),
-        side: "sell",
-        type: "market",
-        time_in_force: "day",
-      }),
+    const quote = await getStockPrice(symbol);
+    if (!quote || quote.price <= 0) return NextResponse.json({ error: "Could not fetch current price" }, { status: 502 });
+
+    const saleValue = qty * quote.price;
+    const remainingQty = Number(position.qty) - qty;
+
+    if (remainingQty < 0.0001) {
+      await supabaseAdmin.from("stock_positions").delete().eq("id", position.id);
+    } else {
+      await supabaseAdmin.from("stock_positions").update({ qty: remainingQty }).eq("id", position.id);
+    }
+
+    const { data: profile } = await supabaseAdmin.from("profiles").select("balance").eq("id", user.id).single();
+    const oldBal = Number(profile?.balance || 0);
+    const newBal = oldBal + saleValue;
+
+    await supabaseAdmin.from("profiles").update({ balance: newBal }).eq("id", user.id);
+    await supabaseAdmin.from("transactions").insert({
+      user_id: user.id, type: "stock_sell", amount: saleValue, asset: symbol, status: "completed",
+      description: `Sold ${qty.toFixed(4)} shares of ${symbol} @ $${quote.price.toFixed(2)}`,
+      balance_before: oldBal, balance_after: newBal,
     });
 
-    if (!orderRes.ok) {
-      const err = await orderRes.json().catch(() => ({}));
-      return NextResponse.json({ error: err.message || "Sell failed" }, { status: 502 });
-    }
-
-    const order = await orderRes.json();
-
-    const { data: profile } = await supabaseAdmin.from("profiles").select("balance").eq("id", user_id).single();
-    const estimatedValue = Number(qty) * (order.filled_avg_price || 0);
-    if (profile && estimatedValue > 0) {
-      const oldBal = Number(profile.balance);
-      const newBal = oldBal + estimatedValue;
-      await supabaseAdmin.from("profiles").update({ balance: newBal }).eq("id", user_id);
-      await supabaseAdmin.from("transactions").insert({
-        user_id,
-        type: "stock_sell",
-        amount: estimatedValue,
-        asset: symbol,
-        status: "completed",
-        description: `Sold ${qty} shares of ${symbol}`,
-        balance_before: oldBal,
-        balance_after: newBal,
-      });
-    }
-
-    return NextResponse.json({ order_id: order.id, symbol, qty, status: order.status });
-  } catch {
+    return NextResponse.json({ symbol, qty, price: quote.price, value: parseFloat(saleValue.toFixed(2)), new_balance: newBal });
+  } catch (err) {
+    console.error("Stock sell error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

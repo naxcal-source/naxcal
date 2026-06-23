@@ -112,7 +112,7 @@ function RegisterForm() {
       <div className="hidden lg:flex w-[40%] flex-col justify-between p-10 relative overflow-hidden" style={{ background: "#020408" }}>
         <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 30% 50%, rgba(26,138,110,0.15) 0%, transparent 70%)" }} />
         <div className="relative z-10">
-          <Image src="/Naxcal_Primary_Logo.png" alt="Naxcal" width={160} height={44} className="h-10 w-auto mb-6" style={{ filter: "drop-shadow(0 0 12px rgba(26,138,110,0.4))" }} />
+          <Image src="/Naxcal_Primary_Logo.png" alt="Naxcal" width={180} height={48} className="h-11 w-auto mb-6" style={{ filter: "brightness(1.4) drop-shadow(0 0 16px rgba(26,138,110,0.5))" }} />
           <h2 className="text-2xl font-bold text-white mt-12 mb-3">Deploy Capital. <span className="text-naxcal-teal">Earn Daily.</span></h2>
           <p className="text-white/40 text-sm leading-relaxed max-w-xs">
             Join 4,200+ investors accessing institutional-grade strategies across forex, equities, and crypto markets.
@@ -192,7 +192,7 @@ function RegisterForm() {
                 <label className="flex items-start gap-2.5 cursor-pointer pt-1">
                   <input type="checkbox" checked={form.agreed} onChange={(e) => update("agreed", e.target.checked)} className="mt-0.5 accent-naxcal-teal" />
                   <span className="text-xs leading-relaxed" style={{ color: "#6b7280" }}>
-                    I agree to the <a href="#" className="text-naxcal-teal hover:underline">Terms of Service</a> and <a href="#" className="text-naxcal-teal hover:underline">Privacy Policy</a>
+                    I agree to the <a href="/legal/terms" target="_blank" className="text-naxcal-teal hover:underline">Terms of Service</a> and <a href="/legal/privacy" target="_blank" className="text-naxcal-teal hover:underline">Privacy Policy</a>
                   </span>
                 </label>
                 <button type="submit" disabled={loading} className="w-full py-3.5 rounded-lg text-white font-semibold text-sm cursor-pointer flex items-center justify-center gap-2 transition-all disabled:opacity-50" style={{ background: "linear-gradient(135deg, #1a8a6e, #22a882)", boxShadow: "0 0 20px rgba(26,138,110,0.35)" }}>

@@ -46,52 +46,20 @@ export default function AdminProfitPage() {
     setResult(null);
 
     try {
-      let totalDistributed = 0;
-      let usersProcessed = 0;
-
-      for (const user of eligible) {
-        const grossProfit = user.balance * (pct / 100);
-        const userFee = grossProfit * (fee / 100);
-        const netProfit = grossProfit - userFee;
-        const newBalance = user.balance + netProfit;
-
-        const { error: updateErr } = await supabase.from("profiles")
-          .update({
-            balance: newBalance,
-            total_profit: user.balance + netProfit, // will be recalculated
-          })
-          .eq("id", user.id);
-
-        if (updateErr) { console.error("Profit update error for", user.id, updateErr); continue; }
-
-        await supabase.from("transactions").insert({
-          user_id: user.id,
-          type: "profit",
-          amount: netProfit,
-          status: "completed",
-          description: `Daily return +${pct}% (net after ${fee}% fee)`,
-          balance_before: user.balance,
-          balance_after: newBalance,
-        });
-
-        totalDistributed += netProfit;
-        usersProcessed++;
-      }
-
-      await supabase.from("daily_profits").insert({
-        percentage: pct,
-        fee_percentage: fee,
-        total_distributed: totalDistributed,
-        users_count: usersProcessed,
+      const res = await fetch("/api/admin/post-profit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ percentage: pct, fee_percentage: fee }),
       });
+      const data = await res.json();
 
-      setResult({ users: usersProcessed, total: totalDistributed });
+      if (!res.ok) { setError(data.error || "Failed to post profit"); setPosting(false); return; }
 
-      // Refresh history
+      setResult({ users: data.users, total: data.total });
+
       const { data: newHistory } = await supabase.from("daily_profits").select("*").order("created_at", { ascending: false }).limit(10);
       if (newHistory) setHistory(newHistory as ProfitHistory[]);
 
-      // Refresh eligible
       const { data: newEligible } = await supabase.from("profiles").select("id, email, full_name, balance, tier").gt("balance", 0).eq("is_active", true);
       if (newEligible) setEligible(newEligible as EligibleUser[]);
 

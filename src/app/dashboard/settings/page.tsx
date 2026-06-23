@@ -146,8 +146,13 @@ export default function SettingsPage() {
     if (!profile) return;
     setLoading(true);
     const { error: err } = await supabase.from("profiles").update({
-      full_name: form.full_name, phone: form.phone || null,
-    }).eq("id", profile.id);
+      full_name: form.full_name,
+      phone: form.phone || null,
+      address: form.address || null,
+      city: form.city || null,
+      country: form.country || null,
+      postal_code: form.postal_code || null,
+    } as Record<string, unknown>).eq("id", profile.id);
     setLoading(false);
     if (err) { setError(err.message); return; }
     setSaved("Profile updated successfully"); await refreshProfile();

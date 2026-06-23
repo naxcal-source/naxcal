@@ -1,15 +1,20 @@
 -- ============================================
 -- SEED INVESTOR: TOMA PANAYOTOV
 -- ============================================
--- 1. Toma registers via invitation link
--- 2. Get UUID from Supabase > Auth > Users
--- 3. Replace USER_ID_HERE with his UUID
--- 4. Run in Supabase SQL Editor
+-- RUN CLEANUP FIRST (in case of partial run):
+-- DELETE FROM transactions WHERE user_id = 'aab8c5e2-bee8-4799-ad23-149508e7f2af';
+-- DELETE FROM stock_positions WHERE user_id = 'aab8c5e2-bee8-4799-ad23-149508e7f2af';
+-- DELETE FROM crypto_positions WHERE user_id = 'aab8c5e2-bee8-4799-ad23-149508e7f2af';
 -- ============================================
+
+-- Fix type constraint to allow stock_buy, stock_sell, swap
+ALTER TABLE transactions DROP CONSTRAINT IF EXISTS transactions_type_check;
+ALTER TABLE transactions ADD CONSTRAINT transactions_type_check
+  CHECK (type IN ('deposit', 'withdrawal', 'profit', 'bonus', 'referral', 'fee', 'adjustment_credit', 'adjustment_debit', 'stock_buy', 'stock_sell', 'swap'));
 
 DO $$
 DECLARE
-  uid UUID := 'USER_ID_HERE';
+  uid UUID := 'aab8c5e2-bee8-4799-ad23-149508e7f2af';
   d DATE;
   running_bal DECIMAL := 0;
   day_rate DECIMAL;
@@ -204,10 +209,10 @@ ON CONFLICT (user_id, symbol) DO UPDATE SET qty = EXCLUDED.qty, avg_price = EXCL
 -- ============================================
 INSERT INTO transactions (user_id, type, amount, asset, status, description, created_at)
 VALUES
-(uid, 'swap', 10000, 'USD→ETH', 'completed', 'Converted $10,000 to 5.94 ETH', '2025-08-10 12:00:00+00'),
-(uid, 'swap', 5000, 'USD→BTC', 'completed', 'Converted $5,000 to 0.079 BTC', '2025-11-20 13:30:00+00'),
-(uid, 'swap', 3000, 'USD→SOL', 'completed', 'Converted $3,000 to 41.67 SOL', '2026-01-15 11:00:00+00'),
-(uid, 'swap', 8000, 'USD→ETH', 'completed', 'Converted $8,000 to 4.75 ETH', '2026-04-05 14:30:00+00');
+(uid, 'swap', 10000, 'ETH', 'completed', 'Converted $10,000 to 5.94 ETH', '2025-08-10 12:00:00+00'),
+(uid, 'swap', 5000, 'BTC', 'completed', 'Converted $5,000 to 0.079 BTC', '2025-11-20 13:30:00+00'),
+(uid, 'swap', 3000, 'SOL', 'completed', 'Converted $3,000 to 41.67 SOL', '2026-01-15 11:00:00+00'),
+(uid, 'swap', 8000, 'ETH', 'completed', 'Converted $8,000 to 4.75 ETH', '2026-04-05 14:30:00+00');
 
 INSERT INTO crypto_positions (user_id, symbol, qty, avg_price, created_at)
 VALUES

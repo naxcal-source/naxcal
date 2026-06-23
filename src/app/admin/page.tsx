@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase";
-import { Users, Wallet, ArrowDownCircle, ArrowUpCircle, ShieldCheck, TrendingUp, ArrowRight } from "lucide-react";
+import { Users, Wallet, ArrowDownCircle, ArrowUpCircle, ShieldCheck, TrendingUp, ArrowRight, Send, Loader2, CheckCircle2, UserPlus } from "lucide-react";
 
 type Stats = { totalUsers: number; totalAUM: number; depositsToday: number; pendingWithdrawals: number; pendingKYC: number };
 type User = { id: string; full_name: string | null; email: string; balance: number; tier: string; kyc_status: string; created_at: string };
@@ -47,6 +47,35 @@ export default function AdminDashboard() {
     { label: "Pending KYC", value: stats.pendingKYC.toString(), icon: ShieldCheck, color: "#ef4444" },
   ];
 
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName] = useState("");
+  const [inviting, setInviting] = useState(false);
+  const [inviteResult, setInviteResult] = useState("");
+
+  const handleInvite = async () => {
+    if (!inviteEmail || !inviteName) return;
+    setInviting(true);
+    setInviteResult("");
+    try {
+      const res = await fetch("/api/admin/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: inviteEmail, name: inviteName }),
+      });
+      if (res.ok) {
+        setInviteResult(`Invitation sent to ${inviteEmail}`);
+        setInviteEmail("");
+        setInviteName("");
+      } else {
+        setInviteResult("Failed to send invitation");
+      }
+    } catch {
+      setInviteResult("Network error");
+    }
+    setInviting(false);
+    setTimeout(() => setInviteResult(""), 5000);
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <h1 className="text-xl font-bold text-white">Admin Dashboard</h1>
@@ -79,6 +108,32 @@ export default function AdminDashboard() {
             <ArrowRight size={14} className="text-white/30" />
           </Link>
         ))}
+      </div>
+
+      {/* Invite Investor */}
+      <div className="rounded-xl p-5" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="flex items-center gap-2 mb-4">
+          <UserPlus size={18} className="text-naxcal-teal" />
+          <h3 className="text-sm font-semibold text-white">Invite Investor</h3>
+        </div>
+        {inviteResult && (
+          <div className="flex items-center gap-2 p-3 rounded-lg mb-3" style={{ background: inviteResult.includes("sent") ? "rgba(22,163,74,0.1)" : "rgba(239,68,68,0.1)", border: inviteResult.includes("sent") ? "1px solid rgba(22,163,74,0.2)" : "1px solid rgba(239,68,68,0.2)" }}>
+            {inviteResult.includes("sent") ? <CheckCircle2 size={14} className="text-emerald-400" /> : null}
+            <span className={`text-xs ${inviteResult.includes("sent") ? "text-emerald-400" : "text-red-400"}`}>{inviteResult}</span>
+          </div>
+        )}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <input type="text" value={inviteName} onChange={(e) => setInviteName(e.target.value)} placeholder="Full name"
+            className="flex-1 px-3 py-2.5 rounded-lg text-sm text-white placeholder:text-white/20 outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)" }} />
+          <input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="Email address"
+            className="flex-1 px-3 py-2.5 rounded-lg text-sm text-white placeholder:text-white/20 outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)" }} />
+          <button onClick={handleInvite} disabled={inviting || !inviteEmail || !inviteName}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white bg-naxcal-teal hover:bg-naxcal-teal-light transition-colors cursor-pointer disabled:opacity-50 shrink-0">
+            {inviting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+            {inviting ? "Sending..." : "Send Invite"}
+          </button>
+        </div>
+        <p className="text-[10px] text-white/20 mt-2">Sends a professional invitation email with a link to register. Their portfolio data can be seeded after they sign up.</p>
       </div>
 
       {/* Recent Users + Transactions */}

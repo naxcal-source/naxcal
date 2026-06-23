@@ -82,6 +82,12 @@ function RegisterForm() {
           email: form.email,
           full_name: form.fullName,
         });
+        // Send welcome email
+        fetch("/api/auth/welcome", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: form.email, name: form.fullName }),
+        }).catch(() => {});
       }
 
       if (data.session) {

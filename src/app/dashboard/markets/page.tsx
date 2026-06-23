@@ -7,18 +7,18 @@ import { BarChart2, ArrowUpRight, ArrowDownRight, ChevronRight, RefreshCw, Searc
 import StockLogo from "@/components/StockLogo";
 import { cn } from "@/lib/utils";
 
-const cryptoMap: Record<string, { ticker: string; name: string; color: string }> = {
-  bitcoin: { ticker: "BTC", name: "Bitcoin", color: "#f7931a" },
-  ethereum: { ticker: "ETH", name: "Ethereum", color: "#627eea" },
-  tether: { ticker: "USDT", name: "Tether", color: "#26a17b" },
-  binancecoin: { ticker: "BNB", name: "BNB", color: "#f3ba2f" },
-  solana: { ticker: "SOL", name: "Solana", color: "#9945ff" },
-  ripple: { ticker: "XRP", name: "XRP", color: "#23292f" },
-  cardano: { ticker: "ADA", name: "Cardano", color: "#0033ad" },
-  dogecoin: { ticker: "DOGE", name: "Dogecoin", color: "#c2a633" },
+const cryptoMap: Record<string, { ticker: string; name: string; color: string; icon: string }> = {
+  bitcoin: { ticker: "BTC", name: "Bitcoin", color: "#f7931a", icon: "https://assets.coingecko.com/coins/images/1/small/bitcoin.png" },
+  ethereum: { ticker: "ETH", name: "Ethereum", color: "#627eea", icon: "https://assets.coingecko.com/coins/images/279/small/ethereum.png" },
+  tether: { ticker: "USDT", name: "Tether", color: "#26a17b", icon: "https://assets.coingecko.com/coins/images/325/small/Tether.png" },
+  binancecoin: { ticker: "BNB", name: "BNB", color: "#f3ba2f", icon: "https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png" },
+  solana: { ticker: "SOL", name: "Solana", color: "#9945ff", icon: "https://assets.coingecko.com/coins/images/4128/small/solana.png" },
+  ripple: { ticker: "XRP", name: "XRP", color: "#23292f", icon: "https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png" },
+  cardano: { ticker: "ADA", name: "Cardano", color: "#0033ad", icon: "https://assets.coingecko.com/coins/images/975/small/cardano.png" },
+  dogecoin: { ticker: "DOGE", name: "Dogecoin", color: "#c2a633", icon: "https://assets.coingecko.com/coins/images/5/small/dogecoin.png" },
 };
 
-type Asset = { ticker: string; name: string; price: number; change: number; color: string; chart?: number[]; sector?: string; type?: string };
+type Asset = { ticker: string; name: string; price: number; change: number; color: string; chart?: number[]; sector?: string; type?: string; icon?: string };
 
 export default function MarketsPage() {
   const [tab, setTab] = useState<"crypto" | "stocks">("crypto");
@@ -36,7 +36,7 @@ export default function MarketsPage() {
       if (!res.ok) throw new Error();
       const data = await res.json();
       const mapped: Asset[] = Object.entries(cryptoMap).map(([id, info]) => ({
-        ticker: info.ticker, name: info.name, color: info.color,
+        ticker: info.ticker, name: info.name, color: info.color, icon: info.icon,
         price: data[id]?.usd ?? 0, change: data[id]?.usd_24h_change ?? 0,
       })).filter((c) => c.price > 0);
       setCryptos(mapped);
@@ -167,6 +167,8 @@ export default function MarketsPage() {
                   <div className="flex items-center gap-3 min-w-0">
                     {tab === "stocks" ? (
                       <StockLogo symbol={asset.ticker} size={36} />
+                    ) : asset.icon ? (
+                      <img src={asset.icon} alt={asset.ticker} width={36} height={36} className="w-9 h-9 rounded-full object-cover shrink-0" style={{ background: "#f1f5f9" }} />
                     ) : (
                       <div className="w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
                         style={{ background: asset.color || "#6b7280" }}>

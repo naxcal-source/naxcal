@@ -9,14 +9,19 @@ import { Shield, TrendingUp, Wallet, ArrowRight, CheckCircle2, Star, ShieldCheck
 import { cn } from "@/lib/utils";
 
 export default function OnboardingPage() {
-  const { profile } = useDashboard();
+  const { profile, refreshProfile } = useDashboard();
   const router = useRouter();
   const [step, setStep] = useState(0);
+  const [completing, setCompleting] = useState(false);
   const supabase = createClient();
   const firstName = profile?.full_name?.split(" ")[0] || "there";
 
   const complete = async () => {
-    if (profile) await supabase.from("profiles").update({ onboarding_complete: true } as Record<string, unknown>).eq("id", profile.id);
+    setCompleting(true);
+    if (profile) {
+      await supabase.from("profiles").update({ onboarding_complete: true } as Record<string, unknown>).eq("id", profile.id);
+      await refreshProfile();
+    }
     router.push("/dashboard");
   };
 

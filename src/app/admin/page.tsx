@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase";
 import { Users, Wallet, ArrowDownCircle, ArrowUpCircle, ShieldCheck, TrendingUp, ArrowRight, Send, Loader2, CheckCircle2, UserPlus } from "lucide-react";
 
 type Stats = { totalUsers: number; totalAUM: number; depositsToday: number; pendingWithdrawals: number; pendingKYC: number };
@@ -13,29 +12,27 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats>({ totalUsers: 0, totalAUM: 0, depositsToday: 0, pendingWithdrawals: 0, pendingKYC: 0 });
   const [recentUsers, setRecentUsers] = useState<User[]>([]);
   const [recentTx, setRecentTx] = useState<Tx[]>([]);
-  const supabase = createClient();
-
   useEffect(() => {
     const load = async () => {
-      const { data: profiles } = await supabase.from("profiles").select("id, full_name, email, balance, tier, kyc_status, created_at");
-      if (profiles) {
-        const totalAUM = profiles.reduce((s, p) => s + Number(p.balance), 0);
-        const pendingKYC = profiles.filter((p) => p.kyc_status === "pending" || p.kyc_status === "submitted").length;
+      const profiles = await fetch("/api/admin/data?type=profiles").then(r => r.json()).catch(() => []);
+      if (Array.isArray(profiles)) {
+        const totalAUM = profiles.reduce((s: number, p: Record<string, unknown>) => s + Number(p.balance), 0);
+        const pendingKYC = profiles.filter((p: Record<string, unknown>) => p.kyc_status === "pending" || p.kyc_status === "submitted").length;
         setStats((prev) => ({ ...prev, totalUsers: profiles.length, totalAUM, pendingKYC }));
-        setRecentUsers(profiles.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5) as User[]);
+        setRecentUsers(profiles.slice(0, 5) as User[]);
       }
 
       const today = new Date().toISOString().split("T")[0];
-      const { data: txs } = await supabase.from("transactions").select("*").order("created_at", { ascending: false }).limit(10);
-      if (txs) {
-        const depositsToday = txs.filter((t) => t.type === "deposit" && t.status === "completed" && t.created_at.startsWith(today)).reduce((s, t) => s + Number(t.amount), 0);
-        const pendingWithdrawals = txs.filter((t) => t.type === "withdrawal" && t.status === "pending").length;
+      const txs = await fetch("/api/admin/data?type=transactions").then(r => r.json()).catch(() => []);
+      if (Array.isArray(txs)) {
+        const depositsToday = txs.filter((t: Tx) => t.type === "deposit" && t.status === "completed" && t.created_at.startsWith(today)).reduce((s: number, t: Tx) => s + Number(t.amount), 0);
+        const pendingWithdrawals = txs.filter((t: Tx) => t.type === "withdrawal" && t.status === "pending").length;
         setStats((prev) => ({ ...prev, depositsToday, pendingWithdrawals }));
-        setRecentTx(txs as Tx[]);
+        setRecentTx(txs.slice(0, 10) as Tx[]);
       }
     };
     load();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const fmt = (n: number) => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 

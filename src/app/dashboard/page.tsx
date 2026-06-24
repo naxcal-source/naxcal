@@ -389,7 +389,7 @@ export default function DashboardPage() {
                 <span className="text-xs text-[#374151] font-medium">{action.label}</span>
               </Link>
             ))}
-            <button onClick={() => { fetch("/api/statement").then(r => r.blob()).then(blob => { const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "naxcal-statement.csv"; a.click(); URL.revokeObjectURL(url); }); }}
+            <button onClick={() => { window.open("/api/statement", "_blank"); }}
               className="flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-[#f8fafc] hover:border-naxcal-teal/20 transition-all group cursor-pointer" style={{ border: "1px solid #e2e8f0" }}>
               <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110" style={{ background: "rgba(100,116,139,0.08)" }}>
                 <FileText size={20} className="text-slate-600" />

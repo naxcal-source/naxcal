@@ -145,12 +145,9 @@ export async function GET() {
 </body>
 </html>`;
 
-    const filename = `naxcal-statement-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}.html`;
-
     return new NextResponse(html, {
       headers: {
         "Content-Type": "text/html",
-        "Content-Disposition": `attachment; filename="${filename}"`,
       },
     });
   } catch {

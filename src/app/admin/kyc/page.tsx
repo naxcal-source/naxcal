@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase";
 import { ShieldCheck, Check, X, Loader2 } from "lucide-react";
-import { sendKYCApprovedEmail, sendKYCRejectedEmail } from "@/lib/emails";
 
 type User = { id: string; full_name: string | null; email: string; kyc_status: string; created_at: string; tier: string; balance: number };
 
@@ -14,21 +12,16 @@ export default function AdminKYCPage() {
   const [rejectModal, setRejectModal] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [message, setMessage] = useState("");
-  const supabase = createClient();
-
   const load = async () => {
-    const { data } = await supabase.from("profiles")
-      .select("id, full_name, email, kyc_status, created_at, tier, balance")
-      .in("kyc_status", ["pending", "submitted"])
-      .order("created_at", { ascending: true });
-    if (data) setUsers(data as User[]);
+    const data = await fetch("/api/admin/data?type=kyc").then(r => r.json()).catch(() => []);
+    if (Array.isArray(data)) setUsers(data as User[]);
   };
 
   useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleApprove = async (user: User) => {
     setProcessing(user.id);
-    await supabase.from("profiles").update({ kyc_status: "approved" }).eq("id", user.id);
+    await fetch("/api/admin/data", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "update_profile", user_id: user.id, updates: { kyc_status: "approved" } }) });
     try {
       await fetch("/api/admin/send-email", {
         method: "POST",
@@ -46,7 +39,7 @@ export default function AdminKYCPage() {
     const user = users.find((u) => u.id === rejectModal);
     if (!user) return;
     setProcessing(user.id);
-    await supabase.from("profiles").update({ kyc_status: "rejected" }).eq("id", user.id);
+    await fetch("/api/admin/data", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "update_profile", user_id: user.id, updates: { kyc_status: "rejected" } }) });
     try {
       await fetch("/api/admin/send-email", {
         method: "POST",

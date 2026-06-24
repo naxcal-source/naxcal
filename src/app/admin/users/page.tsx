@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase";
 import { Search, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -16,13 +15,11 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
   const [filterKYC, setFilterKYC] = useState("all");
   const [filterTier, setFilterTier] = useState("all");
-  const supabase = createClient();
-
   useEffect(() => {
-    supabase.from("profiles").select("id, full_name, email, balance, tier, kyc_status, created_at, is_active")
-      .order("created_at", { ascending: false })
-      .then(({ data }) => { if (data) setUsers(data as User[]); });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    fetch("/api/admin/data?type=profiles").then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setUsers(data as User[]);
+    }).catch(() => {});
+  }, []);
 
   const fmt = (n: number) => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 

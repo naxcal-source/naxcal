@@ -50,8 +50,7 @@ export default function WithdrawPage() {
     if (profile?.kyc_status !== "approved") { setError("Complete KYC verification before withdrawing."); return; }
 
     // Verify PIN
-    const { data: pinCheck } = await supabase.from("profiles").select("withdrawal_pin").eq("id", profile!.id).single();
-    const storedPin = (pinCheck as Record<string, unknown>)?.withdrawal_pin as string | null;
+    const storedPin = (profile as Record<string, unknown>)?.withdrawal_pin as string | null;
     if (!storedPin) { setError("You haven't set a withdrawal PIN yet. Go to Settings → Security to set one."); return; }
     if (storedPin !== pin) { setError("Incorrect withdrawal PIN."); return; }
 

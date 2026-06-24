@@ -86,17 +86,7 @@ export default function DashboardPage() {
     supabase.from("announcements").select("*").eq("is_active", true).order("created_at", { ascending: false }).limit(2).then(({ data }) => { if (data) setAnnouncements(data); });
   }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Realtime balance subscription
-  useEffect(() => {
-    if (!profile?.id) return;
-    const channel = supabase
-      .channel("profile-changes")
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${profile.id}` }, () => {
-        refreshProfile();
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [profile?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Removed realtime subscription — was causing balance flickering
 
   // Live crypto prices for market overview
   useEffect(() => {

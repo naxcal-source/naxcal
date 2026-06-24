@@ -45,9 +45,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Admin route protection: check is_admin flag
+  // Admin route protection: use service role to bypass RLS
   if (user && path.startsWith("/admin")) {
-    const { data: profile } = await supabase
+    const { createClient } = await import("@supabase/supabase-js");
+    const adminClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    const { data: profile } = await adminClient
       .from("profiles")
       .select("is_admin")
       .eq("id", user.id)

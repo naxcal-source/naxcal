@@ -43,36 +43,24 @@ export default function WithdrawPage() {
     e.preventDefault(); setError("");
     const numAmount = parseFloat(amount);
     if (!numAmount || numAmount <= 0) { setError("Enter a valid amount."); return; }
-    if (numAmount < 100) { setError("Minimum withdrawal is $100."); return; }
     if (numAmount > balance) { setError("Insufficient balance."); return; }
     if (!wallet) { setError("Enter a wallet address."); return; }
-    if (pin.length !== 6) { setError("Enter your 6-digit withdrawal PIN."); return; }
-    if (profile?.kyc_status !== "approved") { setError("Complete KYC verification before withdrawing."); return; }
-
-    // Verify PIN
-    const storedPin = (profile as Record<string, unknown>)?.withdrawal_pin as string | null;
-    if (!storedPin) { setError("You haven't set a withdrawal PIN yet. Go to Settings → Security to set one."); return; }
-    if (storedPin !== pin) { setError("Incorrect withdrawal PIN."); return; }
 
     setLoading(true);
-    const newBalance = balance - numAmount;
-    const { error: balErr } = await supabase.from("profiles").update({ balance: newBalance }).eq("id", profile!.id);
-    if (balErr) { setError("Failed to process withdrawal."); setLoading(false); return; }
-    const { error: txError } = await supabase.from("transactions").insert({
-      user_id: profile!.id, type: "withdrawal", amount: numAmount, asset, status: "pending",
-      wallet_address: wallet, description: `Withdrawal to ${asset} wallet`,
-      balance_before: balance, balance_after: newBalance,
-    });
+    try {
+      const res = await fetch("/api/withdraw", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: numAmount, asset, wallet, pin }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || "Withdrawal failed."); setLoading(false); return; }
+      await refreshProfile();
+      setSuccess(true);
+    } catch {
+      setError("Network error. Please try again.");
+    }
     setLoading(false);
-    if (txError) { setError(txError.message); return; }
-    await refreshProfile();
-    // Send withdrawal confirmation email
-    fetch("/api/admin/send-email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "withdrawal_approved", email: profile!.email, name: profile!.full_name || "Investor", amount: numAmount }),
-    }).catch(() => {});
-    setSuccess(true);
   };
 
   const kycBlocked = profile?.kyc_status !== "approved";

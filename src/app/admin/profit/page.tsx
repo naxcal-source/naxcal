@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
-import { TrendingUp, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
+import { TrendingUp, Loader2, CheckCircle2, AlertTriangle, CalendarClock } from "lucide-react";
 
 type EligibleUser = { id: string; email: string; full_name: string | null; balance: number; tier: string; is_active: boolean };
 type ProfitHistory = { id: string; profit_percentage: number; total_distributed: number; users_credited: number; notes: string | null; created_at: string };
@@ -13,23 +13,25 @@ export default function AdminProfitPage() {
   const [eligible, setEligible] = useState<EligibleUser[]>([]);
   const [history, setHistory] = useState<ProfitHistory[]>([]);
   const [posting, setPosting] = useState(false);
+  const [catchingUp, setCatchingUp] = useState(false);
+  const [missedDays, setMissedDays] = useState<string[]>([]);
   const [confirmModal, setConfirmModal] = useState(false);
-  const [result, setResult] = useState<{ users: number; total: number } | null>(null);
+  const [result, setResult] = useState<{ users: number; total: number; days?: number } | null>(null);
   const [error, setError] = useState("");
   const supabase = createClient();
 
   useEffect(() => {
-    // Profiles need service role — fetch via admin API
     fetch("/api/admin/users").then(r => r.json()).then(data => {
       if (Array.isArray(data)) setEligible((data as EligibleUser[]).filter(u => u.balance > 0 && u.is_active));
     }).catch(() => {});
 
-    // daily_profits is public-read, browser client works
-    supabase.from("daily_profits")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(10)
+    supabase.from("daily_profits").select("*").order("created_at", { ascending: false }).limit(10)
       .then(({ data }) => { if (data) setHistory(data as ProfitHistory[]); });
+
+    // Check for missed days
+    fetch("/api/admin/catch-up-profit").then(r => r.json()).then(data => {
+      if (data.missedDays?.length > 0) setMissedDays(data.missedDays);
+    }).catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const pct = parseFloat(percentage) || 0;
@@ -72,6 +74,30 @@ export default function AdminProfitPage() {
     }
   };
 
+  const handleCatchUp = async () => {
+    if (!confirm(`Post missed daily returns for ${missedDays.length} day(s)?\n\n${missedDays.join(", ")}\n\nThis will apply tier-based rates (Bronze 1.5%, Silver 1.8%, Gold 2.1%) for each missed day.`)) return;
+    setCatchingUp(true);
+    setError("");
+    setResult(null);
+    try {
+      const res = await fetch("/api/admin/catch-up-profit", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || "Catch-up failed"); return; }
+      setResult({ users: data.users, total: data.total, days: data.days });
+      setMissedDays([]);
+      const [histRes, usersRes] = await Promise.all([
+        supabase.from("daily_profits").select("*").order("created_at", { ascending: false }).limit(10),
+        fetch("/api/admin/users").then(r => r.json()),
+      ]);
+      if (histRes.data) setHistory(histRes.data as ProfitHistory[]);
+      if (Array.isArray(usersRes)) setEligible((usersRes as EligibleUser[]).filter(u => u.balance > 0 && u.is_active));
+    } catch {
+      setError("Catch-up failed.");
+    } finally {
+      setCatchingUp(false);
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
@@ -79,10 +105,26 @@ export default function AdminProfitPage() {
         <h1 className="text-xl font-bold text-white">Post Daily Profit</h1>
       </div>
 
+      {missedDays.length > 0 && (
+        <div className="p-4 rounded-xl mb-4 flex items-start justify-between gap-3" style={{ background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.25)" }}>
+          <div className="flex items-start gap-3">
+            <CalendarClock size={20} className="text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm text-amber-300 font-semibold mb-0.5">{missedDays.length} missed day{missedDays.length > 1 ? "s" : ""} detected</p>
+              <p className="text-xs text-amber-400/70">{missedDays.join(" · ")}</p>
+            </div>
+          </div>
+          <button onClick={handleCatchUp} disabled={catchingUp}
+            className="shrink-0 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-amber-500 hover:bg-amber-600 cursor-pointer disabled:opacity-50 flex items-center gap-1.5">
+            {catchingUp ? <><Loader2 size={12} className="animate-spin" /> Posting...</> : "Catch Up Now"}
+          </button>
+        </div>
+      )}
+
       {result && (
         <div className="p-4 rounded-xl mb-6 flex items-center gap-3" style={{ background: "rgba(22,163,74,0.1)", border: "1px solid rgba(22,163,74,0.2)" }}>
           <CheckCircle2 size={20} className="text-emerald-400" />
-          <p className="text-sm text-emerald-400">Profit posted to {result.users} users. Total distributed: {fmt(result.total)}</p>
+          <p className="text-sm text-emerald-400">{result.days ? `${result.days} day(s) caught up — ` : ""}Profit posted to {result.users} users. Total distributed: {fmt(result.total)}</p>
         </div>
       )}
 

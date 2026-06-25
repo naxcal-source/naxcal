@@ -53,10 +53,7 @@ export default function SwapPage() {
 
   useEffect(() => {
     if (!profile) return;
-    const { createClient } = require("@/lib/supabase");
-    const supabase = createClient();
-    supabase.from("transactions").select("description, created_at, amount").eq("user_id", profile.id).eq("type", "swap").order("created_at", { ascending: false }).limit(5)
-      .then(({ data }: { data: { description: string; created_at: string; amount: number }[] | null }) => { if (data) setRecentSwaps(data); });
+    fetch("/api/me/transactions?type=swap&limit=5").then(r => r.json()).then(data => { if (Array.isArray(data)) setRecentSwaps(data); }).catch(() => {});
   }, [profile]);
 
   useEffect(() => {

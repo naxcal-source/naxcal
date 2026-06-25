@@ -71,8 +71,6 @@ export default function DashboardPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [livePrices, setLivePrices] = useState<Record<string, { price: number; change: number }>>({});
-  const supabase = createClient();
-
   // Redirect new users to onboarding (only if column exists and is explicitly false)
   useEffect(() => {
     if (profile && (profile as Record<string, unknown>).onboarding_complete === false) {
@@ -82,7 +80,9 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!profile) return;
-    supabase.from("transactions").select("*").eq("user_id", profile.id).order("created_at", { ascending: false }).limit(5).then(({ data }) => { if (data) setTransactions(data); });
+    fetch("/api/me/transactions?limit=5").then(r => r.json()).then(data => { if (Array.isArray(data)) setTransactions(data); }).catch(() => {});
+    // Announcements are public — anon key works fine
+    const supabase = createClient();
     supabase.from("announcements").select("*").eq("is_active", true).order("created_at", { ascending: false }).limit(2).then(({ data }) => { if (data) setAnnouncements(data); });
   }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -144,17 +144,16 @@ export default function DashboardPage() {
   const [dailyReturns, setDailyReturns] = useState<{ date: string; rate: string; earnings: string; status: string }[]>([]);
   useEffect(() => {
     if (!profile) return;
-    supabase.from("transactions").select("amount, created_at").eq("user_id", profile.id).eq("type", "profit").order("created_at", { ascending: false }).limit(7)
-      .then(({ data }) => {
-        if (data && data.length > 0) {
-          setDailyReturns(data.map((tx) => ({
-            date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-            rate: (Number(tx.amount) / Math.max(balance, 1) * 100).toFixed(2),
-            earnings: Number(tx.amount).toFixed(2),
-            status: "Paid",
-          })));
-        }
-      });
+    fetch("/api/me/transactions?type=profit&limit=7").then(r => r.json()).then(data => {
+      if (Array.isArray(data) && data.length > 0) {
+        setDailyReturns(data.map((tx: { amount: number; created_at: string }) => ({
+          date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+          rate: (Number(tx.amount) / Math.max(balance, 1) * 100).toFixed(2),
+          earnings: Number(tx.amount).toFixed(2),
+          status: "Paid",
+        })));
+      }
+    }).catch(() => {});
   }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const announcementStyles: Record<string, { bg: string; border: string; icon: React.ReactNode }> = {

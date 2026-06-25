@@ -59,15 +59,15 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     const { data: { user: u } } = await supabase.auth.getUser();
     setUser(u);
     if (u) {
-      const { data } = await supabase.from("profiles").select("*").eq("id", u.id).single();
-      if (data) {
-        const p = data as Profile;
-        if (!p.full_name) {
-          p.full_name = u.user_metadata?.full_name || u.email?.split("@")[0] || "Investor";
+      try {
+        const res = await fetch("/api/me");
+        if (res.ok) {
+          const data = await res.json();
+          const p = data as Profile;
+          if (p.display_currency) setCurrencyState(p.display_currency);
+          setProfile(p);
         }
-        if (p.display_currency) setCurrencyState(p.display_currency);
-        setProfile(p);
-      }
+      } catch {}
     }
     setLoading(false);
   };

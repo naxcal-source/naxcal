@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useDashboard } from "@/contexts/DashboardContext";
-import { createClient } from "@/lib/supabase";
 import { Users, Copy, CheckCircle2, Gift, ChevronRight, Share2, MessageCircle, Mail, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -15,8 +14,6 @@ export default function ReferralsPage() {
   const [referrals, setReferrals] = useState<Referral[]>([]);
   const [copied, setCopied] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
-  const supabase = createClient();
-
   const [code, setCode] = useState(profile?.referral_code || "");
   const referralUrl = code ? `https://naxcal.com/register?ref=${code}` : "";
 
@@ -24,11 +21,11 @@ export default function ReferralsPage() {
     if (!profile) return;
     if (!profile.referral_code) {
       const generated = "NXC" + Math.random().toString(36).substring(2, 8).toUpperCase();
-      supabase.from("profiles").update({ referral_code: generated }).eq("id", profile.id).then(() => setCode(generated));
+      fetch("/api/me", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ referral_code: generated }) }).then(() => setCode(generated));
     } else {
       setCode(profile.referral_code);
     }
-    supabase.from("referrals").select("*").eq("referrer_id", profile.id).order("created_at", { ascending: false }).then(({ data }) => { if (data) setReferrals(data); });
+    fetch("/api/me/referrals").then(r => r.json()).then(data => { if (Array.isArray(data)) setReferrals(data); }).catch(() => {});
   }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const copyLink = () => { navigator.clipboard.writeText(referralUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); };

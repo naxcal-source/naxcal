@@ -127,7 +127,6 @@ export default function SettingsPage() {
   const [error, setError] = useState("");
   const [notifications, setNotifications] = useState({ daily_profit: true, deposit: true, withdrawal: true, security: true, marketing: false, announcements: true });
   const [prefs, setPrefs] = useState({ auto_compound: true });
-  const supabase = createClient();
 
   useEffect(() => {
     if (profile) {
@@ -145,16 +144,20 @@ export default function SettingsPage() {
     e.preventDefault(); setError(""); setSaved("");
     if (!profile) return;
     setLoading(true);
-    const { error: err } = await supabase.from("profiles").update({
-      full_name: form.full_name,
-      phone: form.phone || null,
-      address: form.address || null,
-      city: form.city || null,
-      country: form.country || null,
-      postal_code: form.postal_code || null,
-    } as Record<string, unknown>).eq("id", profile.id);
+    const res = await fetch("/api/me", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        full_name: form.full_name,
+        phone: form.phone || null,
+        address: form.address || null,
+        city: form.city || null,
+        country: form.country || null,
+        postal_code: form.postal_code || null,
+      }),
+    });
     setLoading(false);
-    if (err) { setError(err.message); return; }
+    if (!res.ok) { setError("Failed to update profile"); return; }
     setSaved("Profile updated successfully"); await refreshProfile();
     setTimeout(() => setSaved(""), 3000);
   };
@@ -162,7 +165,11 @@ export default function SettingsPage() {
   const handleSavePrefs = async () => {
     if (!profile) return;
     setLoading(true);
-    await supabase.from("profiles").update({ auto_compound: prefs.auto_compound }).eq("id", profile.id);
+    await fetch("/api/me", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ auto_compound: prefs.auto_compound }),
+    });
     setLoading(false);
     setSaved("Preferences saved"); setTimeout(() => setSaved(""), 3000);
   };
@@ -266,7 +273,8 @@ export default function SettingsPage() {
               if (pwForm.newPw.length < 8) { setError("Password must be at least 8 characters."); return; }
               if (pwForm.newPw !== pwForm.confirm) { setError("Passwords do not match."); return; }
               setLoading(true);
-              const { error: pwErr } = await supabase.auth.updateUser({ password: pwForm.newPw });
+              const { createClient: makeClient } = await import("@/lib/supabase");
+              const { error: pwErr } = await makeClient().auth.updateUser({ password: pwForm.newPw });
               setLoading(false);
               if (pwErr) { setError(pwErr.message); return; }
               setPwForm({ current: "", newPw: "", confirm: "" });
@@ -299,11 +307,11 @@ export default function SettingsPage() {
               if (pinForm.newPin !== pinForm.confirmPin) { setError("PINs do not match."); return; }
               if (hasPin && pinForm.current.length !== 6) { setError("Enter your current PIN."); return; }
               if (hasPin) {
-                const { data: check } = await supabase.from("profiles").select("withdrawal_pin").eq("id", profile.id).single();
-                if ((check as Record<string, unknown>)?.withdrawal_pin !== pinForm.current) { setError("Current PIN is incorrect."); return; }
+                const check = await fetch("/api/me").then(r => r.json());
+                if (check?.withdrawal_pin !== pinForm.current) { setError("Current PIN is incorrect."); return; }
               }
               setLoading(true);
-              await supabase.from("profiles").update({ withdrawal_pin: pinForm.newPin } as Record<string, unknown>).eq("id", profile.id);
+              await fetch("/api/me", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ withdrawal_pin: pinForm.newPin }) });
               setLoading(false);
               setHasPin(true);
               setPinForm({ current: "", newPin: "", confirmPin: "" });

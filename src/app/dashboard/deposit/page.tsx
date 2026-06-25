@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useDashboard } from "@/contexts/DashboardContext";
-import { createClient } from "@/lib/supabase";
 import { ArrowDownCircle, ChevronRight, AlertTriangle, Loader2, Copy, Check, CheckCircle2, RefreshCw } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { cn } from "@/lib/utils";
@@ -42,12 +41,9 @@ export default function DepositPage() {
   const [recentDeposits, setRecentDeposits] = useState<Transaction[]>([]);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const supabase = createClient();
-
   useEffect(() => {
     if (!profile) return;
-    supabase.from("transactions").select("*").eq("user_id", profile.id).eq("type", "deposit").order("created_at", { ascending: false }).limit(5)
-      .then(({ data }) => { if (data) setRecentDeposits(data); });
+    fetch("/api/me/transactions?type=deposit&limit=5").then(r => r.json()).then(data => { if (Array.isArray(data)) setRecentDeposits(data); }).catch(() => {});
   }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {

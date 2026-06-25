@@ -2,19 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useDashboard } from "@/contexts/DashboardContext";
-import { createClient } from "@/lib/supabase";
 
 type Tx = { id: string; type: string; amount: number; asset: string | null; status: string; description: string | null; balance_after: number | null; created_at: string };
 
 export default function StatementPage() {
   const { profile, fmt } = useDashboard();
   const [txs, setTxs] = useState<Tx[]>([]);
-  const supabase = createClient();
-
   useEffect(() => {
     if (!profile) return;
-    supabase.from("transactions").select("*").eq("user_id", profile.id).order("created_at", { ascending: false })
-      .then(({ data }) => { if (data) setTxs(data as Tx[]); });
+    fetch("/api/me/transactions").then(r => r.json()).then(data => { if (Array.isArray(data)) setTxs(data as Tx[]); }).catch(() => {});
   }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!profile) return null;

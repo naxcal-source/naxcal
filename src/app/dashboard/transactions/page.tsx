@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useDashboard } from "@/contexts/DashboardContext";
-import { createClient } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { History, ArrowUpRight, ArrowDownRight, Search, Download, ChevronRight, ChevronLeft, Star, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 import { motion } from "framer-motion";
@@ -20,15 +19,18 @@ export default function TransactionsPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const supabase = createClient();
 
   useEffect(() => {
     if (!profile) return;
-    let q = supabase.from("transactions").select("*").eq("user_id", profile.id).order("created_at", { ascending: false });
-    if (filter !== "all") q = q.eq("type", filter);
-    if (statusFilter !== "all") q = q.eq("status", statusFilter);
-    q.then(({ data }) => { if (data) setTxs(data as Transaction[]); });
-  }, [profile, filter, statusFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+    const params = new URLSearchParams({ limit: "200" });
+    if (filter !== "all") params.set("type", filter);
+    fetch(`/api/me/transactions?${params}`).then(r => r.json()).then(data => {
+      if (Array.isArray(data)) {
+        const filtered = statusFilter !== "all" ? data.filter((t: Transaction) => t.status === statusFilter) : data;
+        setTxs(filtered as Transaction[]);
+      }
+    }).catch(() => {});
+  }, [profile, filter, statusFilter]);
 
   const filtered = txs.filter((tx) => {
     if (!search) return true;

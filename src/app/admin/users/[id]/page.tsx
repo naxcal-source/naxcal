@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ChevronRight, ArrowLeft, Loader2 } from "lucide-react";
+import { ChevronRight, ArrowLeft, Loader2, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Profile = {
@@ -69,6 +69,22 @@ export default function AdminUserDetail() {
     const data = await post({ action: "freeze" });
     setMessage(data.is_active ? "Account unfrozen" : "Account frozen");
     await load();
+  };
+
+  const sendDepositEmail = async () => {
+    if (!profile) return;
+    const amtStr = window.prompt("Deposit amount to notify user about ($):");
+    if (!amtStr) return;
+    const amount = parseFloat(amtStr);
+    if (isNaN(amount) || amount <= 0) return;
+    setSaving(true);
+    await fetch("/api/admin/send-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "deposit_approved", email: profile.email, name: profile.full_name || "Investor", amount, currency: "USDT" }),
+    });
+    setMessage(`Deposit confirmation email sent to ${profile.email}`);
+    setSaving(false);
   };
 
   if (!profile) {
@@ -158,6 +174,10 @@ export default function AdminUserDetail() {
                 profile.is_active ? "text-amber-400 border-amber-500/20 hover:bg-amber-500/10" : "text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/10"
               )}>
               {profile.is_active ? "Freeze Account" : "Unfreeze Account"}
+            </button>
+            <button onClick={sendDepositEmail} disabled={saving}
+              className="w-full py-2 rounded-lg text-xs font-semibold text-blue-400 border border-blue-500/20 hover:bg-blue-500/10 transition-colors cursor-pointer disabled:opacity-30 flex items-center justify-center gap-1.5">
+              <Mail size={12} /> Send Deposit Confirmation Email
             </button>
           </div>
         </div>

@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase";
 import { TrendingUp, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 
 type EligibleUser = { id: string; email: string; full_name: string | null; balance: number; tier: string; is_active: boolean };
-type ProfitHistory = { id: string; percentage: number; fee_percentage: number; total_distributed: number; users_count: number; created_at: string };
+type ProfitHistory = { id: string; profit_percentage: number; total_distributed: number; users_credited: number; notes: string | null; created_at: string };
 
 export default function AdminProfitPage() {
   const [percentage, setPercentage] = useState("");
@@ -150,7 +150,7 @@ export default function AdminProfitPage() {
                 <tr className="border-b border-white/[0.06]">
                   <th className="text-left text-[10px] text-white/30 uppercase px-3 py-2 font-medium">Date</th>
                   <th className="text-left text-[10px] text-white/30 uppercase px-3 py-2 font-medium">Rate</th>
-                  <th className="text-left text-[10px] text-white/30 uppercase px-3 py-2 font-medium">Fee</th>
+                  <th className="text-left text-[10px] text-white/30 uppercase px-3 py-2 font-medium">Notes</th>
                   <th className="text-left text-[10px] text-white/30 uppercase px-3 py-2 font-medium">Distributed</th>
                   <th className="text-left text-[10px] text-white/30 uppercase px-3 py-2 font-medium">Users</th>
                 </tr>
@@ -159,10 +159,10 @@ export default function AdminProfitPage() {
                 {history.map((h) => (
                   <tr key={h.id} className="border-b border-white/[0.03]">
                     <td className="px-3 py-2 text-white/50 text-xs">{new Date(h.created_at).toLocaleDateString()}</td>
-                    <td className="px-3 py-2 text-emerald-400 font-semibold">+{h.percentage}%</td>
-                    <td className="px-3 py-2 text-amber-400">{h.fee_percentage}%</td>
+                    <td className="px-3 py-2 text-emerald-400 font-semibold">+{h.profit_percentage}%</td>
+                    <td className="px-3 py-2 text-amber-400 text-xs">{h.notes || "—"}</td>
                     <td className="px-3 py-2 text-white/80 font-semibold">{fmt(h.total_distributed)}</td>
-                    <td className="px-3 py-2 text-white/50">{h.users_count}</td>
+                    <td className="px-3 py-2 text-white/50">{h.users_credited}</td>
                   </tr>
                 ))}
               </tbody>

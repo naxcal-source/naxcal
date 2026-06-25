@@ -4,6 +4,7 @@ import {
   sendKYCRejectedEmail,
   sendWithdrawalApprovedEmail,
   sendDailyProfitEmail,
+  sendDepositConfirmedEmail,
 } from "@/lib/emails";
 
 export async function POST(req: NextRequest) {
@@ -23,7 +24,22 @@ export async function POST(req: NextRequest) {
         await sendKYCRejectedEmail(email, name || "Investor", body.reason || "Documents could not be verified");
         break;
       case "withdrawal_approved":
-        await sendWithdrawalApprovedEmail(email, name || "Investor", body.amount || 0);
+        await sendWithdrawalApprovedEmail(
+          email,
+          name || "Investor",
+          body.amount || 0,
+          body.currency || "USDT",
+          body.walletAddress || "",
+        );
+        break;
+      case "deposit_approved":
+        await sendDepositConfirmedEmail(
+          email,
+          name || "Investor",
+          body.amount || 0,
+          body.currency || "USDT",
+          body.txHash || "",
+        );
         break;
       case "daily_profit":
         await sendDailyProfitEmail(email, name || "Investor", body.amount || 0, body.percentage || 0);

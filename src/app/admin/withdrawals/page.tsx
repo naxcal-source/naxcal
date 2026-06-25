@@ -53,6 +53,8 @@ export default function AdminWithdrawalsPage() {
           email: w.profiles?.email,
           name: w.profiles?.full_name || "Investor",
           amount: w.amount,
+          currency: w.asset || "USDT",
+          walletAddress: w.wallet_address,
         }),
       });
     } catch {}

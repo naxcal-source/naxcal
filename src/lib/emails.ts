@@ -2,6 +2,7 @@ import { Resend } from "resend";
 import {
   welcomeEmail, depositConfirmedEmail, dailyProfitEmail,
   kycApprovedEmail, kycRejectedEmail, withdrawalApprovedEmail, securityAlertEmail,
+  investorOutreachEmail,
 } from "./email-templates";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -35,6 +36,11 @@ export async function sendWithdrawalApprovedEmail(email: string, name: string, a
 
 export async function sendDailyProfitEmail(email: string, name: string, amount: number, percentage: number, totalEarned?: number, balance?: number) {
   const { subject, html } = dailyProfitEmail(name, amount, percentage, totalEarned || 0, balance || 0);
+  return resend.emails.send({ from: FROM, replyTo: REPLY_TO, to: email, subject, html });
+}
+
+export async function sendInvestorOutreachEmail(email: string, name: string) {
+  const { subject, html } = investorOutreachEmail(name);
   return resend.emails.send({ from: FROM, replyTo: REPLY_TO, to: email, subject, html });
 }
 

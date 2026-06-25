@@ -5,6 +5,7 @@ import {
   sendWithdrawalApprovedEmail,
   sendDailyProfitEmail,
   sendDepositConfirmedEmail,
+  sendInvestorOutreachEmail,
 } from "@/lib/emails";
 
 export async function POST(req: NextRequest) {
@@ -43,6 +44,9 @@ export async function POST(req: NextRequest) {
         break;
       case "daily_profit":
         await sendDailyProfitEmail(email, name || "Investor", body.amount || 0, body.percentage || 0);
+        break;
+      case "investor_outreach":
+        await sendInvestorOutreachEmail(email, name || "Investor");
         break;
       default:
         return NextResponse.json({ error: "Unknown email type" }, { status: 400 });

@@ -7,9 +7,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import {
-  LayoutDashboard, Users, ShieldCheck, History, TrendingUp,
+  LayoutDashboard, Users, ShieldCheck, TrendingUp,
   ArrowUpCircle, Megaphone, MessageSquareQuote,
-  LogOut, Menu, ChevronRight, Shield,
+  LogOut, Menu, ChevronRight, Shield, Mail,
 } from "lucide-react";
 
 const adminNav = [
@@ -18,6 +18,7 @@ const adminNav = [
   { href: "/admin/kyc", label: "KYC Review", icon: ShieldCheck },
   { href: "/admin/profit", label: "Post Profit", icon: TrendingUp },
   { href: "/admin/withdrawals", label: "Withdrawals", icon: ArrowUpCircle },
+  { href: "/admin/outreach", label: "Outreach", icon: Mail },
   { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
   { href: "/admin/testimonials", label: "Testimonials", icon: MessageSquareQuote },
   { href: "/admin/audit", label: "Audit Log", icon: Shield },

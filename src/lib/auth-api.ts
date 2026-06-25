@@ -9,7 +9,12 @@ export async function getAuthUser() {
     {
       cookies: {
         getAll() { return cookieStore.getAll(); },
-        setAll() {},
+        setAll(cookiesToSet) {
+          // Persist refreshed tokens so the browser gets updated cookies
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options);
+          });
+        },
       },
     }
   );

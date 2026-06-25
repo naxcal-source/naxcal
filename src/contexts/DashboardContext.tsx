@@ -20,6 +20,7 @@ export type Profile = {
   is_active: boolean;
   created_at: string;
   display_currency?: string;
+  withdrawal_pin?: string | null;
 };
 
 const RATES: Record<string, { rate: number; symbol: string; code: string }> = {
@@ -53,31 +54,32 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [currency, setCurrencyState] = useState("USD");
-  const supabase = createClient();
 
   const fetchProfile = async () => {
-    const { data: { user: u } } = await supabase.auth.getUser();
-    setUser(u);
-    if (u) {
-      try {
-        const res = await fetch("/api/me");
-        if (res.ok) {
-          const data = await res.json();
-          const p = data as Profile;
-          if (p.display_currency) setCurrencyState(p.display_currency);
-          setProfile(p);
-        }
-      } catch {}
-    }
+    try {
+      // Use server-side auth — browser client can't always read HttpOnly session cookies
+      const res = await fetch("/api/me", { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json() as Profile;
+        if (data.display_currency) setCurrencyState(data.display_currency);
+        setProfile(data);
+        // Sync browser-side auth state best-effort (for logout detection etc.)
+        createClient().auth.getUser().then(({ data: { user: u } }) => setUser(u)).catch(() => {});
+      }
+    } catch {}
     setLoading(false);
   };
 
   const setCurrency = useCallback(async (c: string) => {
     setCurrencyState(c);
     if (profile) {
-      await supabase.from("profiles").update({ display_currency: c } as Record<string, unknown>).eq("id", profile.id);
+      await fetch("/api/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ display_currency: c }),
+      });
     }
-  }, [profile, supabase]);
+  }, [profile]);
 
   const fmt = useCallback((n: number) => {
     const r = RATES[currency] || RATES.USD;

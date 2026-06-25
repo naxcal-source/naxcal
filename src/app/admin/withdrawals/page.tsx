@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 type Withdrawal = {
   id: string; user_id: string; amount: number; asset: string | null;
-  wallet_address: string | null; status: string; created_at: string;
+  wallet_address: string | null; status: string; admin_note: string | null; created_at: string;
   profiles: { full_name: string | null; email: string } | null;
 };
 
@@ -62,7 +62,7 @@ export default function AdminWithdrawalsPage() {
       await fetch("/api/admin/transactions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "reject", id: w.id, user_id: w.user_id, amount: w.amount }),
+        body: JSON.stringify({ action: "reject", id: w.id, user_id: w.user_id, amount: w.amount, reason: rejectReason || undefined }),
       });
     }
     setMessage("Withdrawal rejected — balance refunded");
@@ -126,9 +126,12 @@ export default function AdminWithdrawalsPage() {
                     </div>
                   )}
                   {w.status !== "pending" && (
-                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium border",
-                      w.status === "completed" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/20" : "bg-red-500/15 text-red-400 border-red-500/20"
-                    )}>{w.status}</span>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium border",
+                        w.status === "completed" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/20" : "bg-red-500/15 text-red-400 border-red-500/20"
+                      )}>{w.status}</span>
+                      {w.admin_note && <span className="text-[10px] text-white/30 max-w-[160px] text-right truncate">{w.admin_note}</span>}
+                    </div>
                   )}
                 </div>
               </div>

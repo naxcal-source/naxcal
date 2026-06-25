@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthUser } from "@/lib/auth-api";
+import { getAuthUserWithClient } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 async function verifyAdmin() {
-  const user = await getAuthUser();
+  const { user } = await getAuthUserWithClient();
   if (!user) return null;
   const { data } = await supabaseAdmin.from("profiles").select("is_admin").eq("id", user.id).single();
   if (!data?.is_admin) return null;
@@ -16,7 +16,7 @@ export async function GET() {
 
   const { data } = await supabaseAdmin
     .from("transactions")
-    .select("id, user_id, amount, asset, wallet_address, status, created_at, profiles(full_name, email)")
+    .select("id, user_id, amount, asset, wallet_address, status, admin_note, created_at, profiles(full_name, email)")
     .eq("type", "withdrawal")
     .order("created_at", { ascending: false });
 
@@ -28,20 +28,35 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();
-  const { action, id } = body;
+  const { action, id, reason } = body;
 
   if (action === "approve") {
-    await supabaseAdmin.from("transactions").update({ status: "completed" }).eq("id", id);
+    await supabaseAdmin
+      .from("transactions")
+      .update({ status: "completed", admin_note: reason || "Approved by admin" })
+      .eq("id", id);
     return NextResponse.json({ status: "ok" });
   }
 
   if (action === "reject") {
     const { user_id, amount } = body;
-    await supabaseAdmin.from("transactions").update({ status: "failed" }).eq("id", id);
+    await supabaseAdmin
+      .from("transactions")
+      .update({ status: "failed", admin_note: reason || "Rejected by admin" })
+      .eq("id", id);
 
-    const { data: profile } = await supabaseAdmin.from("profiles").select("balance").eq("id", user_id).single();
+    // Refund the balance
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("balance")
+      .eq("id", user_id)
+      .single();
+
     if (profile) {
-      await supabaseAdmin.from("profiles").update({ balance: Number(profile.balance) + amount }).eq("id", user_id);
+      await supabaseAdmin
+        .from("profiles")
+        .update({ balance: Number(profile.balance) + Number(amount) })
+        .eq("id", user_id);
     }
     return NextResponse.json({ status: "ok" });
   }

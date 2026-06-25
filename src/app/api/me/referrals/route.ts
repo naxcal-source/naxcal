@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
-import { getAuthUser } from "@/lib/auth-api";
+import { getAuthUserWithClient } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export async function GET() {
-  const user = await getAuthUser();
+  const { user, supabase } = await getAuthUserWithClient();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data } = await supabaseAdmin
+  const client = process.env.SUPABASE_SERVICE_ROLE_KEY ? supabaseAdmin : supabase;
+
+  const { data } = await client
     .from("referrals")
     .select("*")
     .eq("referrer_id", user.id)

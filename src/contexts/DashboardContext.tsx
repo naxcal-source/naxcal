@@ -59,6 +59,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     try {
       // Use server-side auth — browser client can't always read HttpOnly session cookies
       const res = await fetch("/api/me", { credentials: "include" });
+      if (res.status === 401) {
+        window.location.replace("/login");
+        return;
+      }
       if (res.ok) {
         const data = await res.json() as Profile;
         if (data.display_currency) setCurrencyState(data.display_currency);

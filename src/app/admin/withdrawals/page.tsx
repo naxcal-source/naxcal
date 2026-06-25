@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase";
 import { ArrowUpCircle, Check, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -18,15 +17,13 @@ export default function AdminWithdrawalsPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [message, setMessage] = useState("");
   const [tab, setTab] = useState<"pending" | "completed">("pending");
-  const supabase = createClient();
 
   const load = async () => {
-    const { data } = await supabase
-      .from("transactions")
-      .select("id, user_id, amount, asset, wallet_address, status, created_at, profiles(full_name, email)")
-      .eq("type", "withdrawal")
-      .order("created_at", { ascending: false });
-    if (data) setWithdrawals(data as unknown as Withdrawal[]);
+    const res = await fetch("/api/admin/transactions");
+    if (res.ok) {
+      const data = await res.json();
+      setWithdrawals(data as Withdrawal[]);
+    }
   };
 
   useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -35,7 +32,11 @@ export default function AdminWithdrawalsPage() {
 
   const handleApprove = async (w: Withdrawal) => {
     setProcessing(w.id);
-    await supabase.from("transactions").update({ status: "completed" }).eq("id", w.id);
+    await fetch("/api/admin/transactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "approve", id: w.id }),
+    });
     try {
       await fetch("/api/admin/send-email", {
         method: "POST",
@@ -57,15 +58,13 @@ export default function AdminWithdrawalsPage() {
     if (!rejectModal) return;
     setProcessing(rejectModal);
     const w = withdrawals.find((x) => x.id === rejectModal);
-    await supabase.from("transactions").update({ status: "failed" }).eq("id", rejectModal);
-
     if (w) {
-      const { data: profile } = await supabase.from("profiles").select("balance").eq("id", w.user_id).single();
-      if (profile) {
-        await supabase.from("profiles").update({ balance: Number(profile.balance) + w.amount }).eq("id", w.user_id);
-      }
+      await fetch("/api/admin/transactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reject", id: w.id, user_id: w.user_id, amount: w.amount }),
+      });
     }
-
     setMessage("Withdrawal rejected — balance refunded");
     setRejectModal(null); setRejectReason(""); setProcessing(null);
     load();

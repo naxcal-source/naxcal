@@ -16,7 +16,7 @@ export default function AdminUsersPage() {
   const [filterKYC, setFilterKYC] = useState("all");
   const [filterTier, setFilterTier] = useState("all");
   useEffect(() => {
-    fetch("/api/admin/data?type=profiles").then(r => r.json()).then(data => {
+    fetch("/api/admin/users").then(r => r.json()).then(data => {
       if (Array.isArray(data)) setUsers(data as User[]);
     }).catch(() => {});
   }, []);

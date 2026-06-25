@@ -52,6 +52,16 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(data || []);
     }
 
+    if (type === "testimonials") {
+      const { data } = await supabaseAdmin.from("testimonials").select("*").order("created_at", { ascending: false });
+      return NextResponse.json(data || []);
+    }
+
+    if (type === "audit") {
+      const { data } = await supabaseAdmin.from("admin_audit_log").select("*").order("created_at", { ascending: false }).limit(50);
+      return NextResponse.json(data || []);
+    }
+
     return NextResponse.json({ error: "Invalid type" }, { status: 400 });
   } catch {
     return NextResponse.json({ error: "Failed" }, { status: 500 });
@@ -92,6 +102,14 @@ export async function POST(req: NextRequest) {
       if (operation === "insert") await supabaseAdmin.from("announcements").insert(data);
       if (operation === "update") await supabaseAdmin.from("announcements").update(data).eq("id", data.id);
       if (operation === "delete") await supabaseAdmin.from("announcements").delete().eq("id", data.id);
+      return NextResponse.json({ status: "ok" });
+    }
+
+    if (action === "manage_testimonial") {
+      const { operation, data } = body;
+      if (operation === "insert") await supabaseAdmin.from("testimonials").insert(data);
+      if (operation === "update") await supabaseAdmin.from("testimonials").update(data).eq("id", data.id);
+      if (operation === "delete") await supabaseAdmin.from("testimonials").delete().eq("id", data.id);
       return NextResponse.json({ status: "ok" });
     }
 

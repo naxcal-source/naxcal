@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowUpCircle, Check, X, Loader2 } from "lucide-react";
+import { ArrowUpCircle, Check, X, Loader2, Copy, CheckCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Withdrawal = {
@@ -17,6 +17,13 @@ export default function AdminWithdrawalsPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [message, setMessage] = useState("");
   const [tab, setTab] = useState<"pending" | "completed">("pending");
+  const [copiedWallet, setCopiedWallet] = useState<string | null>(null);
+
+  const copyWallet = (addr: string) => {
+    navigator.clipboard.writeText(addr);
+    setCopiedWallet(addr);
+    setTimeout(() => setCopiedWallet(null), 2000);
+  };
 
   const load = async () => {
     const res = await fetch("/api/admin/transactions");
@@ -102,14 +109,20 @@ export default function AdminWithdrawalsPage() {
           {filtered.map((w) => (
             <div key={w.id} className="rounded-xl p-4" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.06)" }}>
               <div className="flex items-center justify-between flex-wrap gap-3">
-                <div>
+                <div className="min-w-0">
                   <p className="text-sm text-white/80 font-medium">{w.profiles?.full_name || "Unknown"}</p>
-                  <p className="text-xs text-white/30">{w.profiles?.email}</p>
-                  <div className="flex items-center gap-3 mt-1 text-[10px] text-white/20">
-                    <span>{w.asset || "USDT"}</span>
-                    <span className="font-mono truncate max-w-[200px]">{w.wallet_address}</span>
-                    <span>{new Date(w.created_at).toLocaleDateString()}</span>
-                  </div>
+                  <p className="text-xs text-white/40 mb-2">{w.profiles?.email} · {new Date(w.created_at).toLocaleDateString()}</p>
+                  {w.wallet_address ? (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)" }}>
+                      <span className="text-[10px] font-semibold text-amber-400 uppercase shrink-0">{w.asset || "USDT"}</span>
+                      <span className="text-xs text-amber-200 font-mono break-all">{w.wallet_address}</span>
+                      <button onClick={() => copyWallet(w.wallet_address!)} className="shrink-0 p-1 rounded hover:bg-amber-500/20 cursor-pointer transition-colors">
+                        {copiedWallet === w.wallet_address ? <CheckCheck size={13} className="text-emerald-400" /> : <Copy size={13} className="text-amber-400" />}
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-white/20 italic">No wallet address</span>
+                  )}
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-lg font-bold text-white">{fmt(w.amount)}</span>

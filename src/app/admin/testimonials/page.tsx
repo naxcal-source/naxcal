@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase";
 import { MessageSquareQuote, Plus, Trash2, Eye, EyeOff, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +10,9 @@ type Testimonial = {
   is_visible: boolean; created_at: string;
 };
 
+const adminPost = (body: object) =>
+  fetch("/api/admin/data", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+
 export default function AdminTestimonialsPage() {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [form, setForm] = useState({
@@ -19,11 +21,10 @@ export default function AdminTestimonialsPage() {
   });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
-  const supabase = createClient();
 
   const load = async () => {
-    const { data } = await supabase.from("testimonials").select("*").order("created_at", { ascending: false });
-    if (data) setTestimonials(data as Testimonial[]);
+    const data = await fetch("/api/admin/data?type=testimonials").then(r => r.json()).catch(() => []);
+    if (Array.isArray(data)) setTestimonials(data as Testimonial[]);
   };
 
   useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -34,20 +35,20 @@ export default function AdminTestimonialsPage() {
     if (!form.client_name || !form.quote) return;
     setSaving(true);
     const initials = form.initials || form.client_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
-    await supabase.from("testimonials").insert({ ...form, initials, is_visible: true });
+    await adminPost({ action: "manage_testimonial", operation: "insert", data: { ...form, initials, is_visible: true } });
     setForm({ client_name: "", location: "", profit_amount: "", quote: "", tier: "gold", rating: 5, initials: "" });
     setMessage("Testimonial added");
     await load();
     setSaving(false);
   };
 
-  const toggleVisible = async (id: string, visible: boolean) => {
-    await supabase.from("testimonials").update({ is_visible: !visible }).eq("id", id);
+  const toggleVisible = async (t: Testimonial) => {
+    await adminPost({ action: "manage_testimonial", operation: "update", data: { id: t.id, is_visible: !t.is_visible } });
     load();
   };
 
   const handleDelete = async (id: string) => {
-    await supabase.from("testimonials").delete().eq("id", id);
+    await adminPost({ action: "manage_testimonial", operation: "delete", data: { id } });
     load();
   };
 
@@ -117,7 +118,7 @@ export default function AdminTestimonialsPage() {
                 </div>
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <button onClick={() => toggleVisible(t.id, t.is_visible)} className="p-2 rounded-lg hover:bg-white/[0.05] cursor-pointer text-white/30 hover:text-white/60">
+                <button onClick={() => toggleVisible(t)} className="p-2 rounded-lg hover:bg-white/[0.05] cursor-pointer text-white/30 hover:text-white/60">
                   {t.is_visible ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
                 <button onClick={() => handleDelete(t.id)} className="p-2 rounded-lg hover:bg-red-500/10 cursor-pointer text-white/30 hover:text-red-400">

@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase";
 import { Megaphone, Plus, Trash2, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Announcement = { id: string; title: string; content: string; type: string; is_active: boolean; created_at: string };
+
+const adminPost = (body: object) =>
+  fetch("/api/admin/data", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
 
 export default function AdminAnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -14,11 +16,10 @@ export default function AdminAnnouncementsPage() {
   const [type, setType] = useState("info");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
-  const supabase = createClient();
 
   const load = async () => {
-    const { data } = await supabase.from("announcements").select("*").order("created_at", { ascending: false });
-    if (data) setAnnouncements(data as Announcement[]);
+    const data = await fetch("/api/admin/data?type=announcements").then(r => r.json()).catch(() => []);
+    if (Array.isArray(data)) setAnnouncements(data as Announcement[]);
   };
 
   useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -26,20 +27,20 @@ export default function AdminAnnouncementsPage() {
   const handleCreate = async () => {
     if (!title || !content) return;
     setSaving(true);
-    await supabase.from("announcements").insert({ title, content, type, is_active: true });
+    await adminPost({ action: "manage_announcement", operation: "insert", data: { title, content, type, is_active: true } });
     setTitle(""); setContent(""); setType("info");
     setMessage("Announcement created");
     await load();
     setSaving(false);
   };
 
-  const toggleActive = async (id: string, active: boolean) => {
-    await supabase.from("announcements").update({ is_active: !active }).eq("id", id);
+  const toggleActive = async (a: Announcement) => {
+    await adminPost({ action: "manage_announcement", operation: "update", data: { id: a.id, is_active: !a.is_active } });
     load();
   };
 
   const handleDelete = async (id: string) => {
-    await supabase.from("announcements").delete().eq("id", id);
+    await adminPost({ action: "manage_announcement", operation: "delete", data: { id } });
     load();
   };
 
@@ -94,7 +95,7 @@ export default function AdminAnnouncementsPage() {
               <p className="text-[10px] text-white/20 mt-1">{new Date(a.created_at).toLocaleDateString()}</p>
             </div>
             <div className="flex items-center gap-1 shrink-0">
-              <button onClick={() => toggleActive(a.id, a.is_active)} className="p-2 rounded-lg hover:bg-white/[0.05] cursor-pointer text-white/30 hover:text-white/60">
+              <button onClick={() => toggleActive(a)} className="p-2 rounded-lg hover:bg-white/[0.05] cursor-pointer text-white/30 hover:text-white/60">
                 {a.is_active ? <EyeOff size={14} /> : <Eye size={14} />}
               </button>
               <button onClick={() => handleDelete(a.id)} className="p-2 rounded-lg hover:bg-red-500/10 cursor-pointer text-white/30 hover:text-red-400">

@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { createClient } from "@/lib/supabase";
 import { ChevronRight, ArrowLeft, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,55 +23,52 @@ export default function AdminUserDetail() {
   const [adjType, setAdjType] = useState<"add" | "subtract">("add");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
-  const supabase = createClient();
 
   const load = async () => {
-    const { data } = await supabase.from("profiles").select("*").eq("id", id).single();
-    if (data) setProfile(data as Profile);
-    const { data: txs } = await supabase.from("transactions").select("*").eq("user_id", id).order("created_at", { ascending: false }).limit(20);
-    if (txs) setTransactions(txs as Tx[]);
+    const res = await fetch(`/api/admin/users/${id}`);
+    if (res.ok) {
+      const { profile: p, transactions: txs } = await res.json();
+      setProfile(p as Profile);
+      setTransactions(txs as Tx[]);
+    }
   };
 
   useEffect(() => { load(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fmt = (n: number) => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+  const post = async (body: object) => {
+    setSaving(true); setMessage("");
+    const res = await fetch(`/api/admin/users/${id}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    setSaving(false);
+    return data;
+  };
+
   const handleAdjust = async () => {
     if (!profile || !adjAmount) return;
-    setSaving(true); setMessage("");
-    const amt = parseFloat(adjAmount);
-    const newBal = adjType === "add" ? profile.balance + amt : Math.max(0, profile.balance - amt);
-
-    await supabase.from("profiles").update({ balance: newBal }).eq("id", id);
-    await supabase.from("transactions").insert({
-      user_id: id, type: adjType === "add" ? "adjustment_credit" : "adjustment_debit",
-      amount: amt, status: "completed",
-      description: `Admin adjustment: ${adjNote || "Manual balance change"}`,
-      balance_before: profile.balance, balance_after: newBal,
-    });
-
-    setMessage(`Balance updated to ${fmt(newBal)}`);
+    const data = await post({ action: "adjust", amount: adjAmount, type: adjType, note: adjNote });
+    setMessage(`Balance updated to ${fmt(data.balance)}`);
     setAdjAmount(""); setAdjNote("");
     await load();
-    setSaving(false);
   };
 
   const handleKYC = async (status: string) => {
     if (!profile) return;
-    setSaving(true);
-    await supabase.from("profiles").update({ kyc_status: status }).eq("id", id);
+    await post({ action: "kyc", status });
     setMessage(`KYC ${status}`);
     await load();
-    setSaving(false);
   };
 
   const handleFreeze = async () => {
     if (!profile) return;
-    setSaving(true);
-    await supabase.from("profiles").update({ is_active: !profile.is_active }).eq("id", id);
-    setMessage(profile.is_active ? "Account frozen" : "Account unfrozen");
+    const data = await post({ action: "freeze" });
+    setMessage(data.is_active ? "Account unfrozen" : "Account frozen");
     await load();
-    setSaving(false);
   };
 
   if (!profile) {
@@ -188,7 +184,7 @@ export default function AdminUserDetail() {
                 {transactions.map((tx) => (
                   <tr key={tx.id} className="border-b border-white/[0.03]">
                     <td className="px-3 py-2 text-white/70 capitalize">{tx.type}</td>
-                    <td className={cn("px-3 py-2 font-semibold", ["deposit", "profit", "bonus", "adjustment_credit"].includes(tx.type) ? "text-emerald-400" : "text-red-400")}>{fmt(tx.amount)}</td>
+                    <td className={cn("px-3 py-2 font-semibold", ["deposit", "profit", "bonus"].includes(tx.type) ? "text-emerald-400" : "text-red-400")}>{fmt(tx.amount)}</td>
                     <td className="px-3 py-2 text-white/50 capitalize">{tx.status}</td>
                     <td className="px-3 py-2 text-white/40 text-xs">{tx.description || "—"}</td>
                     <td className="px-3 py-2 text-white/30 text-xs">{new Date(tx.created_at).toLocaleDateString()}</td>

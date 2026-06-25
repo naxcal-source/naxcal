@@ -1,19 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase";
 import { Shield } from "lucide-react";
 
 type AuditEntry = { id: string; admin_id: string; action: string; target_user_id: string | null; details: Record<string, unknown>; created_at: string };
 
 export default function AdminAuditPage() {
   const [logs, setLogs] = useState<AuditEntry[]>([]);
-  const supabase = createClient();
 
   useEffect(() => {
-    supabase.from("admin_audit_log").select("*").order("created_at", { ascending: false }).limit(50)
-      .then(({ data }) => { if (data) setLogs(data as AuditEntry[]); });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    fetch("/api/admin/data?type=audit").then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setLogs(data as AuditEntry[]);
+    }).catch(() => {});
+  }, []);
 
   return (
     <div className="max-w-4xl mx-auto">

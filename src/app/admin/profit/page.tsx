@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase";
 import { TrendingUp, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 
-type EligibleUser = { id: string; email: string; full_name: string | null; balance: number; tier: string };
+type EligibleUser = { id: string; email: string; full_name: string | null; balance: number; tier: string; is_active: boolean };
 type ProfitHistory = { id: string; percentage: number; fee_percentage: number; total_distributed: number; users_count: number; created_at: string };
 
 export default function AdminProfitPage() {
@@ -19,12 +19,12 @@ export default function AdminProfitPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    supabase.from("profiles")
-      .select("id, email, full_name, balance, tier")
-      .gt("balance", 0)
-      .eq("is_active", true)
-      .then(({ data }) => { if (data) setEligible(data as EligibleUser[]); });
+    // Profiles need service role — fetch via admin API
+    fetch("/api/admin/users").then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setEligible((data as EligibleUser[]).filter(u => u.balance > 0 && u.is_active));
+    }).catch(() => {});
 
+    // daily_profits is public-read, browser client works
     supabase.from("daily_profits")
       .select("*")
       .order("created_at", { ascending: false })
@@ -57,11 +57,12 @@ export default function AdminProfitPage() {
 
       setResult({ users: data.users, total: data.total });
 
-      const { data: newHistory } = await supabase.from("daily_profits").select("*").order("created_at", { ascending: false }).limit(10);
-      if (newHistory) setHistory(newHistory as ProfitHistory[]);
-
-      const { data: newEligible } = await supabase.from("profiles").select("id, email, full_name, balance, tier").gt("balance", 0).eq("is_active", true);
-      if (newEligible) setEligible(newEligible as EligibleUser[]);
+      const [histRes, usersRes] = await Promise.all([
+        supabase.from("daily_profits").select("*").order("created_at", { ascending: false }).limit(10),
+        fetch("/api/admin/users").then(r => r.json()),
+      ]);
+      if (histRes.data) setHistory(histRes.data as ProfitHistory[]);
+      if (Array.isArray(usersRes)) setEligible((usersRes as EligibleUser[]).filter(u => u.balance > 0 && u.is_active));
 
     } catch (err) {
       console.error("Post profit error:", err);

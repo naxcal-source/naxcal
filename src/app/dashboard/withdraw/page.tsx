@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useDashboard } from "@/contexts/DashboardContext";
-import { createClient } from "@/lib/supabase";
 import { ArrowUpCircle, Loader2, AlertTriangle, ChevronRight, Lock, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -28,16 +27,15 @@ export default function WithdrawPage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const [recentWithdrawals, setRecentWithdrawals] = useState<Transaction[]>([]);
-  const supabase = createClient();
-
   const balance = Number(profile?.balance ?? 0);
   const fmt = (n: number) => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   useEffect(() => {
     if (!profile) return;
-    supabase.from("transactions").select("*").eq("user_id", profile.id).eq("type", "withdrawal").order("created_at", { ascending: false }).limit(5)
-      .then(({ data }) => { if (data) setRecentWithdrawals(data); });
-  }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
+    fetch("/api/me/transactions?type=withdrawal&limit=5")
+      .then((r) => r.json())
+      .then((data) => { if (Array.isArray(data)) setRecentWithdrawals(data); });
+  }, [profile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setError("");

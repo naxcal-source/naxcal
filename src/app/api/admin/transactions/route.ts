@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       .update({ status: "failed", admin_note: reason || "Rejected by admin" })
       .eq("id", id);
 
-    // Refund the balance
+    // Refund the balance and create a credit transaction
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("balance")
@@ -53,10 +53,22 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (profile) {
+      const oldBalance = Number(profile.balance);
+      const newBalance = oldBalance + Number(amount);
       await supabaseAdmin
         .from("profiles")
-        .update({ balance: Number(profile.balance) + Number(amount) })
+        .update({ balance: newBalance })
         .eq("id", user_id);
+
+      await supabaseAdmin.from("transactions").insert({
+        user_id,
+        type: "adjustment_credit",
+        amount: Number(amount),
+        status: "completed",
+        description: "Withdrawal refund — request declined",
+        balance_before: oldBalance,
+        balance_after: newBalance,
+      });
     }
     return NextResponse.json({ status: "ok" });
   }

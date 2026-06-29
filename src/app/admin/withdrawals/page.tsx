@@ -73,8 +73,22 @@ export default function AdminWithdrawalsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "reject", id: w.id, user_id: w.user_id, amount: w.amount, reason: rejectReason || undefined }),
       });
+      // Notify the user by email
+      if (w.profiles?.email) {
+        await fetch("/api/admin/send-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "withdrawal_rejected",
+            email: w.profiles.email,
+            name: w.profiles.full_name || "Investor",
+            amount: w.amount,
+            reason: rejectReason || "",
+          }),
+        });
+      }
     }
-    setMessage("Withdrawal rejected — balance refunded");
+    setMessage("Withdrawal rejected — balance refunded & user notified");
     setRejectModal(null); setRejectReason(""); setProcessing(null);
     load();
   };

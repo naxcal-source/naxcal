@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 import {
   welcomeEmail, depositConfirmedEmail, dailyProfitEmail,
-  kycApprovedEmail, kycRejectedEmail, withdrawalApprovedEmail, securityAlertEmail,
+  kycApprovedEmail, kycRejectedEmail, withdrawalApprovedEmail, withdrawalRejectedEmail, securityAlertEmail,
   investorOutreachEmail,
 } from "./email-templates";
 
@@ -26,6 +26,11 @@ export async function sendKYCRejectedEmail(email: string, name: string, reason: 
 
 export async function sendDepositConfirmedEmail(email: string, name: string, amount: number, currency: string, txHash?: string) {
   const { subject, html } = depositConfirmedEmail(name, amount, currency, txHash || "");
+  return resend.emails.send({ from: FROM, replyTo: REPLY_TO, to: email, subject, html });
+}
+
+export async function sendWithdrawalRejectedEmail(email: string, name: string, amount: number, reason: string) {
+  const { subject, html } = withdrawalRejectedEmail(name, amount, reason);
   return resend.emails.send({ from: FROM, replyTo: REPLY_TO, to: email, subject, html });
 }
 

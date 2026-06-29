@@ -3,6 +3,7 @@ import {
   sendKYCApprovedEmail,
   sendKYCRejectedEmail,
   sendWithdrawalApprovedEmail,
+  sendWithdrawalRejectedEmail,
   sendDailyProfitEmail,
   sendDepositConfirmedEmail,
   sendInvestorOutreachEmail,
@@ -31,6 +32,14 @@ export async function POST(req: NextRequest) {
           body.amount || 0,
           body.currency || "USDT",
           body.walletAddress || "",
+        );
+        break;
+      case "withdrawal_rejected":
+        await sendWithdrawalRejectedEmail(
+          email,
+          name || "Investor",
+          body.amount || 0,
+          body.reason || "",
         );
         break;
       case "deposit_approved":

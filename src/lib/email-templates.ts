@@ -166,6 +166,33 @@ ${divider}
   };
 }
 
+export function withdrawalRejectedEmail(name: string, amount: number, reason: string) {
+  const fmt = "$" + amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return {
+    subject: `Withdrawal Update — ${fmt} Returned to Your Balance`,
+    html: layout(`
+<div style="background:#ef4444;border-radius:12px;padding:28px;text-align:center;margin-bottom:24px">
+<p style="margin:0;font-size:32px">↩</p>
+<p style="margin:8px 0 0;font-size:22px;font-weight:700;color:#ffffff">Withdrawal Unsuccessful</p>
+</div>
+<p style="color:#374151;font-size:16px;line-height:1.6;margin:0 0 16px">Hi ${name}, your withdrawal request could not be processed at this time.</p>
+<table style="width:100%;border-collapse:collapse;margin:0 0 20px">
+${row("Requested Amount", fmt)}
+${row("Status", "❌ Rejected")}
+</table>
+${reason ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:16px 20px;margin:0 0 20px"><p style="margin:0 0 4px;font-size:13px;color:#6b7280;font-weight:600">Reason</p><p style="margin:0;font-size:14px;color:#dc2626">${reason}</p></div>` : ""}
+<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:16px 20px;margin:0 0 24px">
+<p style="margin:0;font-size:14px;color:#16a34a;font-weight:600">✓ ${fmt} has been returned to your Naxcal balance</p>
+<p style="margin:6px 0 0;font-size:13px;color:#6b7280">Your funds are safe and available in your account.</p>
+</div>
+<p style="color:#374151;font-size:14px;line-height:1.6;margin:0 0 24px">If you have any questions or would like to submit a new withdrawal request, please visit your dashboard or contact our support team.</p>
+${btn("Return to Dashboard →", "https://naxcal.com/dashboard")}
+${divider}
+<p style="color:#9ca3af;font-size:14px;line-height:1.6;margin:0;text-align:center">Questions? Contact <a href="mailto:support@naxcal.com" style="color:#1a8a6e;text-decoration:none">support@naxcal.com</a></p>
+`),
+  };
+}
+
 export function withdrawalApprovedEmail(name: string, amount: number, currency: string, walletAddress: string) {
   const fmt = "$" + amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const truncAddr = walletAddress ? walletAddress.slice(0, 8) + "..." + walletAddress.slice(-6) : "—";

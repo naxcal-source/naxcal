@@ -65,6 +65,17 @@ export default function WithdrawPage() {
 
   const kycBlocked = profile?.kyc_status !== "approved";
 
+  const LOCKUP_DAYS: Record<string, number> = { bronze: 7, silver: 14, gold: 30 };
+  const lockupDays = LOCKUP_DAYS[profile?.tier?.toLowerCase() ?? "bronze"] ?? 7;
+  const accountAge = profile?.created_at
+    ? Math.floor((Date.now() - new Date(profile.created_at).getTime()) / 86_400_000)
+    : 0;
+  const daysRemaining = Math.max(0, lockupDays - accountAge);
+  const lockupBlocked = daysRemaining > 0;
+  const unlockDate = profile?.created_at
+    ? new Date(new Date(profile.created_at).getTime() + lockupDays * 86_400_000).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+    : "";
+
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="max-w-2xl mx-auto">
       <div className="flex items-center gap-2 text-xs text-[#9ca3af] mb-4">
@@ -92,7 +103,32 @@ export default function WithdrawPage() {
         </div>
       )}
 
-      <div className={cn("card-light p-6", kycBlocked && "opacity-50 pointer-events-none")}>
+      {/* Lock-up Period Notice */}
+      {lockupBlocked ? (
+        <div className="card-light p-6 text-center mb-6" style={{ borderLeft: "4px solid #f59e0b" }}>
+          <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(245,158,11,0.1)" }}>
+            <Lock size={24} className="text-amber-500" />
+          </div>
+          <h2 className="text-lg font-bold text-[#0f172a] mb-1">Withdrawal Locked</h2>
+          <p className="text-sm text-[#6b7280] mb-3">
+            Your <span className="font-semibold capitalize text-[#374151]">{profile?.tier ?? "Bronze"}</span> account has a {lockupDays}-day lock-up period from the date of registration.
+          </p>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg mb-3" style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)" }}>
+            <Clock size={14} className="text-amber-500 shrink-0" />
+            <span className="text-sm font-semibold text-amber-600">
+              {daysRemaining} day{daysRemaining !== 1 ? "s" : ""} remaining — unlocks {unlockDate}
+            </span>
+          </div>
+          <p className="text-xs text-[#9ca3af]">Your balance continues to earn daily returns during this period.</p>
+        </div>
+      ) : !kycBlocked && (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg mb-4" style={{ background: "rgba(26,138,110,0.06)", border: "1px solid rgba(26,138,110,0.15)" }}>
+          <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+          <span className="text-xs text-[#374151] font-medium">Lock-up period complete — withdrawals are available</span>
+        </div>
+      )}
+
+      <div className={cn("card-light p-6", (kycBlocked || lockupBlocked) && "opacity-50 pointer-events-none")}>
         {success ? (
           <div className="text-center py-8">
             <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(26,138,110,0.1)" }}>

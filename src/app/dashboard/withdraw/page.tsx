@@ -27,15 +27,34 @@ export default function WithdrawPage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const [recentWithdrawals, setRecentWithdrawals] = useState<Transaction[]>([]);
+  const [hasMonthlyDeposit, setHasMonthlyDeposit] = useState<boolean | null>(null);
   const balance = Number(profile?.balance ?? 0);
   const fmt = (n: number) => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const now = new Date();
+  const currentMonthName = now.toLocaleString("en-US", { month: "long", year: "numeric" });
 
   useEffect(() => {
     if (!profile) return;
     fetch("/api/me/transactions?type=withdrawal&limit=5")
       .then((r) => r.json())
       .then((data) => { if (Array.isArray(data)) setRecentWithdrawals(data); });
-  }, [profile]);
+
+    // Check if user has a completed deposit this calendar month
+    fetch("/api/me/transactions?type=deposit&limit=50")
+      .then((r) => r.json())
+      .then((data: Transaction[]) => {
+        if (!Array.isArray(data)) return;
+        const y = now.getFullYear(), m = now.getMonth();
+        const found = data.some((tx) => {
+          const d = new Date(tx.created_at);
+          return tx.status === "completed" && d.getFullYear() === y && d.getMonth() === m;
+        });
+        setHasMonthlyDeposit(found);
+      });
+  }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const depositBlocked = hasMonthlyDeposit === false;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setError("");
@@ -101,6 +120,23 @@ export default function WithdrawPage() {
         </div>
       )}
 
+      {/* Monthly Deposit Requirement */}
+      {depositBlocked && !lockupBlocked && (
+        <div className="card-light p-6 text-center mb-6" style={{ borderLeft: "4px solid #6366f1" }}>
+          <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(99,102,241,0.1)" }}>
+            <AlertTriangle size={24} className="text-indigo-500" />
+          </div>
+          <h2 className="text-lg font-bold text-[#0f172a] mb-1">Monthly Deposit Required</h2>
+          <p className="text-sm text-[#6b7280] mb-3">
+            You must make your <span className="font-semibold text-[#374151]">{currentMonthName}</span> deposit before you can initiate a withdrawal.
+          </p>
+          <p className="text-xs text-[#9ca3af] mb-4">Once your deposit is confirmed, your withdrawal access will be available immediately.</p>
+          <Link href="/dashboard/deposit" className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-sm font-semibold text-white btn-teal">
+            Make Deposit
+          </Link>
+        </div>
+      )}
+
       {/* Lock-up Period Notice */}
       {lockupBlocked ? (
         <div className="card-light p-6 text-center mb-6" style={{ borderLeft: "4px solid #f59e0b" }}>
@@ -126,7 +162,7 @@ export default function WithdrawPage() {
         </div>
       )}
 
-      <div className={cn("card-light p-6", (kycBlocked || lockupBlocked) && "opacity-50 pointer-events-none")}>
+      <div className={cn("card-light p-6", (kycBlocked || lockupBlocked || depositBlocked) && "opacity-50 pointer-events-none")}>
         {success ? (
           <div className="text-center py-8">
             <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(26,138,110,0.1)" }}>

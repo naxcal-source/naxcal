@@ -193,6 +193,30 @@ ${divider}
   };
 }
 
+export function withdrawalUnlockedEmail(name: string, balance: number) {
+  const fmt = "$" + balance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return {
+    subject: "Your withdrawals are now available — Naxcal Capital",
+    html: layout(`
+<div style="background:linear-gradient(135deg,#1a8a6e,#22a882);border-radius:12px;padding:28px;text-align:center;margin-bottom:24px">
+<p style="margin:0;font-size:32px">🔓</p>
+<p style="margin:8px 0 0;font-size:22px;font-weight:700;color:#ffffff">Withdrawals Unlocked</p>
+</div>
+<p style="color:#374151;font-size:16px;line-height:1.6;margin:0 0 16px">Hi ${name}, your lock-up period has ended — you can now withdraw funds from your Naxcal account.</p>
+<table style="width:100%;border-collapse:collapse;margin:0 0 24px">
+${row("Account Status", "✅ Withdrawals Active")}
+${row("Available Balance", fmt)}
+${row("Minimum Withdrawal", "$100")}
+${row("Processing Time", "Within 24 hours")}
+</table>
+<p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 24px">To make a withdrawal, log in to your dashboard, navigate to <strong>Withdraw</strong>, and enter your wallet address and PIN.</p>
+${btn("Withdraw Now →", "https://naxcal.com/dashboard/withdraw")}
+${divider}
+<p style="color:#9ca3af;font-size:14px;line-height:1.6;margin:0;text-align:center">Questions? Contact <a href="mailto:support@naxcal.com" style="color:#1a8a6e;text-decoration:none">support@naxcal.com</a></p>
+`),
+  };
+}
+
 export function withdrawalApprovedEmail(name: string, amount: number, currency: string, walletAddress: string) {
   const fmt = "$" + amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const truncAddr = walletAddress ? walletAddress.slice(0, 8) + "..." + walletAddress.slice(-6) : "—";

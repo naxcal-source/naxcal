@@ -4,6 +4,7 @@ import {
   sendKYCRejectedEmail,
   sendWithdrawalApprovedEmail,
   sendWithdrawalRejectedEmail,
+  sendWithdrawalUnlockedEmail,
   sendDailyProfitEmail,
   sendDepositConfirmedEmail,
   sendInvestorOutreachEmail,
@@ -33,6 +34,9 @@ export async function POST(req: NextRequest) {
           body.currency || "USDT",
           body.walletAddress || "",
         );
+        break;
+      case "withdrawal_unlocked":
+        await sendWithdrawalUnlockedEmail(email, name || "Investor", body.balance || 0);
         break;
       case "withdrawal_rejected":
         await sendWithdrawalRejectedEmail(

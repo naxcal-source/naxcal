@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { unsubscribeUrl } from "./unsubscribe-token";
 
 // Requires a Full-access Resend API key (not the send-only one) — audience
 // and broadcast management aren't available to restricted keys.
@@ -56,14 +57,17 @@ export async function deleteBroadcast(id: string) {
 }
 
 // Resend's broadcast API has no "send test" endpoint — it's dashboard-only.
-// We replicate it with a normal transactional send to one address.
+// We replicate it with a normal transactional send to one address. That
+// bypasses Resend's own merge-tag resolution, so {{{RESEND_UNSUBSCRIBE_URL}}}
+// would otherwise show up as literal broken text — swap in a real link.
 export async function sendBroadcastTest(subject: string, html: string, testEmail: string) {
+  const resolvedHtml = html.replaceAll("{{{RESEND_UNSUBSCRIBE_URL}}}", unsubscribeUrl(testEmail));
   const { error } = await resend.emails.send({
     from: FROM,
     replyTo: REPLY_TO,
     to: testEmail,
     subject: `[TEST] ${subject}`,
-    html,
+    html: resolvedHtml,
   });
   if (error) throw new Error(error.message);
 }

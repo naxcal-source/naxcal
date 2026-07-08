@@ -49,7 +49,12 @@ function personalize(subject: string, html: string, contact: CampaignContact) {
   const name = contact.name || "there";
   const unsubUrl = unsubscribeUrl(contact.email);
 
-  let body = html.replaceAll("{{name}}", name).replaceAll("{{unsubscribe_url}}", unsubUrl);
+  // Support both our own placeholder and Resend Broadcast's reserved merge
+  // tag, so the same template file works unmodified through either tool.
+  let body = html
+    .replaceAll("{{name}}", name)
+    .replaceAll("{{unsubscribe_url}}", unsubUrl)
+    .replaceAll("{{{RESEND_UNSUBSCRIBE_URL}}}", unsubUrl);
   // If the pasted HTML didn't include an unsubscribe link, add one — every
   // marketing send needs a working one, not just the transactional templates.
   if (!body.includes(unsubUrl)) {

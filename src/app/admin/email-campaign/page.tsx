@@ -1,12 +1,13 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { Send, Loader2, CheckCircle2, AlertTriangle, Mail, Upload } from "lucide-react";
+import { Send, Loader2, CheckCircle2, AlertTriangle, Mail, Upload, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const CHUNK_SIZE = 100;
 
 type Contact = { email: string; name?: string };
+type Template = { subject: string; html: string };
 
 function parseContacts(raw: string): Contact[] {
   return raw
@@ -29,9 +30,29 @@ function chunk<T>(items: T[], size: number): T[][] {
 }
 
 export default function EmailCampaignPage() {
-  const [subject, setSubject] = useState("");
-  const [html, setHtml] = useState("");
+  const [templates, setTemplates] = useState<Template[]>([{ subject: "", html: "" }]);
+  const [activeTemplate, setActiveTemplate] = useState(0);
   const [contactsRaw, setContactsRaw] = useState("");
+
+  const subject = templates[activeTemplate].subject;
+  const html = templates[activeTemplate].html;
+  const setSubject = (value: string) => setTemplates((t) => t.map((tpl, i) => (i === activeTemplate ? { ...tpl, subject: value } : tpl)));
+  const setHtml = (value: string) => setTemplates((t) => t.map((tpl, i) => (i === activeTemplate ? { ...tpl, html: value } : tpl)));
+
+  const selectTemplate = (i: number) => {
+    setActiveTemplate(i);
+    setUploadedFileName("");
+  };
+  const addTemplate = () => {
+    setTemplates((t) => [...t, { subject: "", html: "" }]);
+    selectTemplate(templates.length);
+  };
+  const removeTemplate = (i: number) => {
+    if (templates.length === 1) return;
+    setTemplates((t) => t.filter((_, idx) => idx !== i));
+    setActiveTemplate((a) => (a >= i && a > 0 ? a - 1 : a));
+    setUploadedFileName("");
+  };
 
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
@@ -45,7 +66,7 @@ export default function EmailCampaignPage() {
   const contactsFileRef = useRef<HTMLInputElement>(null);
 
   const contacts = useMemo(() => parseContacts(contactsRaw), [contactsRaw]);
-  const canSend = subject.trim() && html.trim() && contacts.length > 0 && !sending;
+  const canSend = templates.every((t) => t.subject.trim() && t.html.trim()) && contacts.length > 0 && !sending;
 
   const handleHtmlUpload = (file: File | undefined) => {
     if (!file) return;
@@ -78,11 +99,12 @@ export default function EmailCampaignPage() {
 
     const batches = chunk(contacts, CHUNK_SIZE);
     for (let i = 0; i < batches.length; i++) {
+      const template = templates[i % templates.length];
       try {
         const res = await fetch("/api/admin/email-campaign", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ subject, html, contacts: batches[i] }),
+          body: JSON.stringify({ subject: template.subject, html: template.html, contacts: batches[i] }),
         });
         const body = await res.json();
         if (!res.ok) {
@@ -139,6 +161,29 @@ export default function EmailCampaignPage() {
           <p className="text-sm text-white/70">{error}</p>
         </div>
       )}
+
+      <div className="max-w-3xl mb-6">
+        <label className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-2 block">
+          Templates — batches of {CHUNK_SIZE} rotate through these in order
+        </label>
+        <div className="flex flex-wrap items-center gap-2">
+          {templates.map((_, i) => (
+            <div key={i} className={cn("flex items-center gap-1.5 pl-3 pr-1.5 py-1.5 rounded-lg text-xs cursor-pointer",
+              activeTemplate === i ? "bg-naxcal-teal/20 text-naxcal-teal" : "bg-white/[0.04] text-white/40 hover:text-white/70"
+            )} onClick={() => selectTemplate(i)}>
+              Template {i + 1}
+              {templates.length > 1 && (
+                <button onClick={(e) => { e.stopPropagation(); removeTemplate(i); }} className="p-0.5 rounded hover:bg-white/10 cursor-pointer">
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+          ))}
+          <button onClick={addTemplate} className="flex items-center gap-1 text-xs text-white/40 hover:text-naxcal-teal cursor-pointer px-2.5 py-1.5 rounded-lg" style={{ background: "rgba(255,255,255,0.04)" }}>
+            <Plus size={13} /> Add template
+          </button>
+        </div>
+      </div>
 
       <div className="max-w-3xl space-y-4 mb-6">
         <div>

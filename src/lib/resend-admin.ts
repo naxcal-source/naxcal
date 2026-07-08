@@ -56,6 +56,21 @@ export async function deleteBroadcast(id: string) {
   return data;
 }
 
+export type AddContactsResult = { added: number; failed: number; failedEmails: string[] };
+
+// Adds pasted emails to an audience one at a time — Resend's contacts API
+// has no batch-create endpoint, unlike email sending.
+export async function addContactsToAudience(audienceId: string, emails: string[]): Promise<AddContactsResult> {
+  let added = 0;
+  const failedEmails: string[] = [];
+  for (const email of emails) {
+    const { error } = await resend.contacts.create({ audienceId, email });
+    if (error) failedEmails.push(email);
+    else added++;
+  }
+  return { added, failed: failedEmails.length, failedEmails };
+}
+
 // Resend's broadcast API has no "send test" endpoint — it's dashboard-only.
 // We replicate it with a normal transactional send to one address. That
 // bypasses Resend's own merge-tag resolution, so {{{RESEND_UNSUBSCRIBE_URL}}}

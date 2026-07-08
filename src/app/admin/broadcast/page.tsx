@@ -27,6 +27,9 @@ export default function BroadcastPage() {
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
+  const [pastedEmails, setPastedEmails] = useState("");
+  const [addingContacts, setAddingContacts] = useState(false);
+
   const htmlFileRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
@@ -152,6 +155,28 @@ export default function BroadcastPage() {
     setSending(false);
   };
 
+  const handleAddContacts = async () => {
+    if (!audienceId || !pastedEmails.trim()) return;
+    setAddingContacts(true);
+    setError("");
+    setStatus("");
+    try {
+      const res = await fetch("/api/admin/broadcast/contacts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ audienceId, emails: pastedEmails }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error);
+      const { added, failed } = body.result;
+      setStatus(`Added ${added} contact${added === 1 ? "" : "s"} to the audience.${failed ? ` ${failed} failed (likely already existed).` : ""}`);
+      setPastedEmails("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to add contacts");
+    }
+    setAddingContacts(false);
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this draft?")) return;
     await fetch(`/api/admin/broadcast/${id}`, { method: "DELETE" });
@@ -228,6 +253,27 @@ export default function BroadcastPage() {
             {audiences.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
           </select>
         </div>
+
+        {audienceId && (
+          <div>
+            <label className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-2 block">Paste emails to add to this audience</label>
+            <textarea
+              value={pastedEmails}
+              onChange={(e) => setPastedEmails(e.target.value)}
+              placeholder="One per line, or comma/space separated"
+              rows={3}
+              className="w-full px-3 py-2.5 rounded-lg text-sm text-white placeholder:text-white/20 outline-none resize-none mb-2"
+              style={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)" }}
+            />
+            <button
+              onClick={handleAddContacts}
+              disabled={!pastedEmails.trim() || addingContacts}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-white/10 hover:bg-white/15 cursor-pointer disabled:opacity-50"
+            >
+              {addingContacts ? <><Loader2 size={13} className="animate-spin" /> Adding...</> : "Add to audience"}
+            </button>
+          </div>
+        )}
 
         <div>
           <label className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-2 block">Internal name</label>

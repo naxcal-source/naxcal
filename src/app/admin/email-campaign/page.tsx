@@ -32,7 +32,6 @@ export default function EmailCampaignPage() {
   const [subject, setSubject] = useState("");
   const [html, setHtml] = useState("");
   const [contactsRaw, setContactsRaw] = useState("");
-  const [showPreview, setShowPreview] = useState(false);
 
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
@@ -109,7 +108,7 @@ export default function EmailCampaignPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-6xl mx-auto">
       <div className="flex items-center gap-3 mb-2">
         <Mail size={22} className="text-naxcal-teal" />
         <h1 className="text-xl font-bold text-white">Email Campaign</h1>
@@ -141,7 +140,7 @@ export default function EmailCampaignPage() {
         </div>
       )}
 
-      <div className="space-y-4 mb-6">
+      <div className="max-w-3xl space-y-4 mb-6">
         <div>
           <label className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-2 block">Subject</label>
           <input
@@ -152,44 +151,46 @@ export default function EmailCampaignPage() {
             style={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)" }}
           />
         </div>
+      </div>
 
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-xs font-semibold text-white/50 uppercase tracking-wider block">HTML body</label>
-            <div className="flex items-center gap-2">
-              {uploadedFileName && <span className="text-[11px] text-white/30 truncate max-w-[160px]">{uploadedFileName}</span>}
-              <button
-                onClick={() => htmlFileRef.current?.click()}
-                className="flex items-center gap-1.5 text-xs text-white/40 hover:text-naxcal-teal cursor-pointer transition-colors px-2.5 py-1 rounded-md"
-                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
-              >
-                <Upload size={12} /> Upload .html
-              </button>
-              <input
-                ref={htmlFileRef}
-                type="file"
-                accept=".html,text/html"
-                className="hidden"
-                onChange={(e) => handleHtmlUpload(e.target.files?.[0])}
-              />
-            </div>
-          </div>
-          <textarea
-            value={html}
-            onChange={(e) => { setHtml(e.target.value); setUploadedFileName(""); }}
-            placeholder="Paste full HTML, or upload a .html file above. {{name}} and {{unsubscribe_url}} are replaced per recipient. An unsubscribe link is auto-added if you don't include one."
-            rows={10}
-            className="w-full px-3 py-2.5 rounded-lg text-xs font-mono text-white placeholder:text-white/20 outline-none resize-y"
-            style={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)" }}
-          />
-          <button onClick={() => setShowPreview((v) => !v)} className="text-xs text-white/30 hover:text-naxcal-teal mt-2 cursor-pointer">
-            {showPreview ? "Hide preview" : "Show preview"}
+      <div className="flex items-center justify-between mb-2">
+        <label className="text-xs font-semibold text-white/50 uppercase tracking-wider block">HTML body — edit and preview</label>
+        <div className="flex items-center gap-2">
+          {uploadedFileName && <span className="text-[11px] text-white/30 truncate max-w-[160px]">{uploadedFileName}</span>}
+          <button
+            onClick={() => htmlFileRef.current?.click()}
+            className="flex items-center gap-1.5 text-xs text-white/40 hover:text-naxcal-teal cursor-pointer transition-colors px-2.5 py-1 rounded-md"
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+          >
+            <Upload size={12} /> Upload .html
           </button>
-          {showPreview && html.trim() && (
-            <iframe title="preview" srcDoc={html} className="w-full h-96 mt-2 rounded-lg bg-white" />
+          <input
+            ref={htmlFileRef}
+            type="file"
+            accept=".html,text/html"
+            className="hidden"
+            onChange={(e) => handleHtmlUpload(e.target.files?.[0])}
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-6">
+        <textarea
+          value={html}
+          onChange={(e) => { setHtml(e.target.value); setUploadedFileName(""); }}
+          placeholder="Paste full HTML, or upload a .html file above. {{name}} and {{unsubscribe_url}} are replaced per recipient. An unsubscribe link is auto-added if you don't include one. Edits update the preview live."
+          className="w-full h-[420px] px-3 py-2.5 rounded-lg text-xs font-mono text-white placeholder:text-white/20 outline-none resize-none"
+          style={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)" }}
+        />
+        <div className="h-[420px] rounded-lg overflow-hidden bg-white" style={{ border: "1px solid rgba(255,255,255,0.08)" }}>
+          {html.trim() ? (
+            <iframe title="preview" srcDoc={html} className="w-full h-full" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-xs text-black/30">Preview appears here as you type</div>
           )}
         </div>
+      </div>
 
+      <div className="max-w-3xl space-y-4 mb-6">
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="text-xs font-semibold text-white/50 uppercase tracking-wider block">
@@ -221,6 +222,7 @@ export default function EmailCampaignPage() {
         </div>
       </div>
 
+      <div className="max-w-3xl">
       {sending && (
         <div className="mb-4">
           <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
@@ -240,6 +242,7 @@ export default function EmailCampaignPage() {
           : <><Send size={16} /> Send to {contacts.length || 0} recipient{contacts.length === 1 ? "" : "s"}</>
         }
       </button>
+      </div>
     </div>
   );
 }

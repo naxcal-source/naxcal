@@ -19,7 +19,6 @@ export default function BroadcastPage() {
   const [subject, setSubject] = useState("");
   const [html, setHtml] = useState("");
   const [audienceId, setAudienceId] = useState("");
-  const [showPreview, setShowPreview] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [testEmail, setTestEmail] = useState("");
@@ -164,7 +163,7 @@ export default function BroadcastPage() {
   if (loadError) return <div className="text-red-400 text-sm">{loadError}. Make sure RESEND_API_KEY is a Full-access key.</div>;
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-6xl mx-auto">
       <div className="flex items-center gap-3 mb-2">
         <Radio size={22} className="text-naxcal-teal" />
         <h1 className="text-xl font-bold text-white">Resend Broadcast</h1>
@@ -173,6 +172,7 @@ export default function BroadcastPage() {
         Sends via Resend&apos;s native Broadcast feature to an Audience — no daily send cap, unlike the Email Campaign tool.
       </p>
 
+      <div className="max-w-3xl">
       {broadcasts.length > 0 && (
         <div className="mb-6">
           <label className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-2 block">Existing broadcasts</label>
@@ -250,34 +250,38 @@ export default function BroadcastPage() {
             style={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)" }}
           />
         </div>
+      </div>
+      </div>
 
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-xs font-semibold text-white/50 uppercase tracking-wider block">HTML body</label>
-            <button
-              onClick={() => htmlFileRef.current?.click()}
-              className="flex items-center gap-1.5 text-xs text-white/40 hover:text-naxcal-teal cursor-pointer transition-colors px-2.5 py-1 rounded-md"
-              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
-            >
-              <Upload size={12} /> Upload .html
-            </button>
-            <input ref={htmlFileRef} type="file" accept=".html,text/html" className="hidden" onChange={(e) => handleHtmlUpload(e.target.files?.[0])} />
-          </div>
-          <textarea
-            value={html}
-            onChange={(e) => setHtml(e.target.value)}
-            placeholder="Paste full HTML, or upload a .html file above."
-            rows={10}
-            className="w-full px-3 py-2.5 rounded-lg text-xs font-mono text-white placeholder:text-white/20 outline-none resize-y"
-            style={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)" }}
-          />
-          <button onClick={() => setShowPreview((v) => !v)} className="text-xs text-white/30 hover:text-naxcal-teal mt-2 cursor-pointer">
-            {showPreview ? "Hide preview" : "Show preview"}
-          </button>
-          {showPreview && html.trim() && <iframe title="preview" srcDoc={html} className="w-full h-96 mt-2 rounded-lg bg-white" />}
+      <div className="flex items-center justify-between mb-2">
+        <label className="text-xs font-semibold text-white/50 uppercase tracking-wider block">HTML body — edit and preview</label>
+        <button
+          onClick={() => htmlFileRef.current?.click()}
+          className="flex items-center gap-1.5 text-xs text-white/40 hover:text-naxcal-teal cursor-pointer transition-colors px-2.5 py-1 rounded-md"
+          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+        >
+          <Upload size={12} /> Upload .html
+        </button>
+        <input ref={htmlFileRef} type="file" accept=".html,text/html" className="hidden" onChange={(e) => handleHtmlUpload(e.target.files?.[0])} />
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-6">
+        <textarea
+          value={html}
+          onChange={(e) => setHtml(e.target.value)}
+          placeholder="Paste full HTML, or upload a .html file above. Edits here update the preview live."
+          className="w-full h-[520px] px-3 py-2.5 rounded-lg text-xs font-mono text-white placeholder:text-white/20 outline-none resize-none"
+          style={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)" }}
+        />
+        <div className="h-[520px] rounded-lg overflow-hidden bg-white" style={{ border: "1px solid rgba(255,255,255,0.08)" }}>
+          {html.trim() ? (
+            <iframe title="preview" srcDoc={html} className="w-full h-full" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-xs text-black/30">Preview appears here as you type</div>
+          )}
         </div>
       </div>
 
+      <div className="max-w-3xl">
       <button
         onClick={handleSave}
         disabled={!canSave}
@@ -315,6 +319,7 @@ export default function BroadcastPage() {
           </button>
         </>
       )}
+      </div>
     </div>
   );
 }

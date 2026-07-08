@@ -4,6 +4,8 @@ import {
   kycApprovedEmail, kycRejectedEmail, withdrawalApprovedEmail, withdrawalRejectedEmail, withdrawalUnlockedEmail, securityAlertEmail,
   investorOutreachEmail,
 } from "./email-templates";
+import { unsubscribeUrl } from "./unsubscribe-token";
+import { supabaseAdmin } from "./supabase-admin";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = "Naxcal <noreply@naxcal.com>";
@@ -50,8 +52,27 @@ export async function sendDailyProfitEmail(email: string, name: string, amount: 
 }
 
 export async function sendInvestorOutreachEmail(email: string, name: string) {
-  const { subject, html } = investorOutreachEmail(name);
-  return resend.emails.send({ from: FROM, replyTo: REPLY_TO, to: email, subject, html });
+  const normalized = email.trim().toLowerCase();
+  const { data: suppressed } = await supabaseAdmin
+    .from("email_suppressions")
+    .select("email")
+    .eq("email", normalized)
+    .maybeSingle();
+  if (suppressed) return { data: null, error: null, skipped: true };
+
+  const unsubUrl = unsubscribeUrl(normalized);
+  const { subject, html } = investorOutreachEmail(name, unsubUrl);
+  return resend.emails.send({
+    from: FROM,
+    replyTo: REPLY_TO,
+    to: email,
+    subject,
+    html,
+    headers: {
+      "List-Unsubscribe": `<${unsubUrl}>, <mailto:support@naxcal.com?subject=unsubscribe>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    },
+  });
 }
 
 export async function sendSecurityAlertEmail(email: string, name: string, device: string, location: string) {

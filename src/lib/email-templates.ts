@@ -243,7 +243,7 @@ ${btn("View Dashboard →", "https://naxcal.com/dashboard")}
   };
 }
 
-export function investorOutreachEmail(name: string) {
+export function investorOutreachEmail(name: string, unsubscribeUrl: string) {
   const F = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
   return {
     subject: `A private invitation from Naxcal Capital`,
@@ -391,7 +391,7 @@ export function investorOutreachEmail(name: string) {
     <p style="margin:0 0 8px;font-size:11px;color:rgba(255,255,255,0.35);line-height:1.7">Naxcal Capital LLC &nbsp;·&nbsp; All rights reserved.<br>Your capital is at risk. Past performance is not indicative of future results.</p>
     <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.25)">
       <a href="https://naxcal.com/legal/privacy" style="color:rgba(255,255,255,0.4);text-decoration:none">Privacy Policy</a> &nbsp;·&nbsp;
-      <a href="https://naxcal.com/unsubscribe" style="color:rgba(255,255,255,0.4);text-decoration:none">Unsubscribe</a>
+      <a href="${unsubscribeUrl}" style="color:rgba(255,255,255,0.4);text-decoration:none">Unsubscribe</a>
     </p>
   </td></tr>
 

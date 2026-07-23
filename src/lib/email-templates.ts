@@ -5,7 +5,7 @@ function layout(content: string) {
 <body style="margin:0;padding:0;background:#f5f5f5;font-family:${FONT}">
 <div style="max-width:600px;margin:0 auto;padding:24px 16px">
 <div style="background:#0a0a0a;padding:28px 32px;border-radius:12px 12px 0 0;text-align:center">
-<img src="https://naxcal.com/Naxcal_Primary_Logo.png" alt="Naxcal" width="180" style="height:56px;width:auto;display:inline-block" />
+<img src="https://naxcal.us/Naxcal_Primary_Logo.png" alt="Naxcal" width="180" style="height:56px;width:auto;display:inline-block" />
 </div>
 <div style="background:#ffffff;padding:40px 32px;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb">
 ${content}
@@ -13,7 +13,7 @@ ${content}
 <div style="background:#f9fafb;padding:24px 32px;border-radius:0 0 12px 12px;border:1px solid #e5e7eb;border-top:none;text-align:center">
 <p style="margin:0 0 8px;font-size:11px;color:#9ca3af;line-height:1.6">Naxcal Capital Ltd is authorised and regulated by the Financial Conduct Authority.<br>Your capital is at risk. Past performance is not indicative of future results.</p>
 <p style="margin:0;font-size:11px;color:#d1d5db">
-<a href="https://naxcal.com/unsubscribe" style="color:#9ca3af;text-decoration:underline">Unsubscribe</a> &middot; <a href="https://naxcal.com/dashboard/support" style="color:#9ca3af;text-decoration:underline">Help Centre</a> &middot; <a href="https://naxcal.com/legal/privacy" style="color:#9ca3af;text-decoration:underline">Privacy</a>
+<a href="https://naxcal.us/unsubscribe" style="color:#9ca3af;text-decoration:underline">Unsubscribe</a> &middot; <a href="https://naxcal.us/dashboard/support" style="color:#9ca3af;text-decoration:underline">Help Centre</a> &middot; <a href="https://naxcal.us/legal/privacy" style="color:#9ca3af;text-decoration:underline">Privacy</a>
 </p>
 <p style="margin:12px 0 0;font-size:10px;color:#d1d5db">&copy; ${new Date().getFullYear()} Naxcal Capital Ltd. All rights reserved.</p>
 </div>
@@ -45,9 +45,9 @@ export function welcomeEmail(name: string) {
 <div style="display:flex;align-items:center;gap:12px;margin:0 0 12px"><span style="color:#1a8a6e;font-size:16px">→</span><span style="color:#374151;font-size:14px">Make Your First Deposit</span></div>
 <div style="display:flex;align-items:center;gap:12px"><span style="color:#1a8a6e;font-size:16px">→</span><span style="color:#374151;font-size:14px">Start Earning Daily Returns</span></div>
 </div>
-${btn("Complete Verification →", "https://naxcal.com/dashboard/kyc")}
+${btn("Complete Verification →", "https://naxcal.us/dashboard/kyc")}
 ${divider}
-<p style="color:#9ca3af;font-size:14px;line-height:1.6;margin:0;text-align:center">Questions? Reply to this email or visit our <a href="https://naxcal.com/help" style="color:#1a8a6e;text-decoration:none">Help Centre</a></p>
+<p style="color:#9ca3af;font-size:14px;line-height:1.6;margin:0;text-align:center">Questions? Reply to this email or visit our <a href="https://naxcal.us/help" style="color:#1a8a6e;text-decoration:none">Help Centre</a></p>
 `),
   };
 }
@@ -74,7 +74,7 @@ ${row("Processing Time", "Within 30 minutes")}
 <div style="background:#eff6ff;border-radius:12px;padding:16px 20px;margin:24px 0">
 <p style="margin:0;font-size:14px;color:#1e40af;line-height:1.6">💡 Your balance will be updated within 30 minutes. You'll receive another notification once your funds are available to invest.</p>
 </div>
-${btn("View Dashboard →", "https://naxcal.com/dashboard")}
+${btn("View Dashboard →", "https://naxcal.us/dashboard")}
 `),
   };
 }
@@ -109,9 +109,9 @@ ${divider}
 </table>
 <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 16px">Hi ${name}, your capital continues to work hard across our diversified trading strategies. Today's return has been added to your portfolio balance.</p>
 <div style="background:#f9fafb;border-radius:8px;padding:12px 16px;margin:0 0 24px">
-<p style="margin:0;font-size:13px;color:#6b7280">⚙️ Returns are set to <strong>auto-reinvest</strong>. <a href="https://naxcal.com/dashboard/settings" style="color:#1a8a6e;text-decoration:none">Manage in Settings</a></p>
+<p style="margin:0;font-size:13px;color:#6b7280">⚙️ Returns are set to <strong>auto-reinvest</strong>. <a href="https://naxcal.us/dashboard/settings" style="color:#1a8a6e;text-decoration:none">Manage in Settings</a></p>
 </div>
-${btn("View Portfolio →", "https://naxcal.com/dashboard")}
+${btn("View Portfolio →", "https://naxcal.us/dashboard")}
 ${divider}
 <p style="color:#9ca3af;font-size:12px;line-height:1.5;margin:0;text-align:center">Past performance is not indicative of future results. Capital at risk.</p>
 `),
@@ -134,7 +134,7 @@ export function kycApprovedEmail(name: string) {
 <div style="margin:0 0 10px"><span style="color:#16a34a">✓</span> <span style="color:#374151;font-size:14px">Withdrawal requests</span></div>
 <div><span style="color:#16a34a">✓</span> <span style="color:#374151;font-size:14px">Stock investing (coming soon)</span></div>
 </div>
-${btn("Make Your First Deposit →", "https://naxcal.com/dashboard/deposit")}
+${btn("Make Your First Deposit →", "https://naxcal.us/dashboard/deposit")}
 `),
   };
 }
@@ -159,9 +159,9 @@ export function kycRejectedEmail(name: string, reason: string) {
 <li>Take a new photo in good lighting with all corners visible</li>
 <li>Resubmit via your account settings</li>
 </ol>
-${btn("Resubmit Documents →", "https://naxcal.com/dashboard/kyc")}
+${btn("Resubmit Documents →", "https://naxcal.us/dashboard/kyc")}
 ${divider}
-<p style="color:#9ca3af;font-size:14px;line-height:1.6;margin:0;text-align:center">Need help? Contact <a href="mailto:support@naxcal.com" style="color:#1a8a6e;text-decoration:none">support@naxcal.com</a></p>
+<p style="color:#9ca3af;font-size:14px;line-height:1.6;margin:0;text-align:center">Need help? Contact <a href="mailto:support@naxcal.us" style="color:#1a8a6e;text-decoration:none">support@naxcal.us</a></p>
 `),
   };
 }
@@ -186,9 +186,9 @@ ${reason ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radiu
 <p style="margin:6px 0 0;font-size:13px;color:#6b7280">Your funds are safe and available in your account.</p>
 </div>
 <p style="color:#374151;font-size:14px;line-height:1.6;margin:0 0 24px">If you have any questions or would like to submit a new withdrawal request, please visit your dashboard or contact our support team.</p>
-${btn("Return to Dashboard →", "https://naxcal.com/dashboard")}
+${btn("Return to Dashboard →", "https://naxcal.us/dashboard")}
 ${divider}
-<p style="color:#9ca3af;font-size:14px;line-height:1.6;margin:0;text-align:center">Questions? Contact <a href="mailto:support@naxcal.com" style="color:#1a8a6e;text-decoration:none">support@naxcal.com</a></p>
+<p style="color:#9ca3af;font-size:14px;line-height:1.6;margin:0;text-align:center">Questions? Contact <a href="mailto:support@naxcal.us" style="color:#1a8a6e;text-decoration:none">support@naxcal.us</a></p>
 `),
   };
 }
@@ -210,9 +210,9 @@ ${row("Minimum Withdrawal", "$100")}
 ${row("Processing Time", "Within 24 hours")}
 </table>
 <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 24px">To make a withdrawal, log in to your dashboard, navigate to <strong>Withdraw</strong>, and enter your wallet address and PIN.</p>
-${btn("Withdraw Now →", "https://naxcal.com/dashboard/withdraw")}
+${btn("Withdraw Now →", "https://naxcal.us/dashboard/withdraw")}
 ${divider}
-<p style="color:#9ca3af;font-size:14px;line-height:1.6;margin:0;text-align:center">Questions? Contact <a href="mailto:support@naxcal.com" style="color:#1a8a6e;text-decoration:none">support@naxcal.com</a></p>
+<p style="color:#9ca3af;font-size:14px;line-height:1.6;margin:0;text-align:center">Questions? Contact <a href="mailto:support@naxcal.us" style="color:#1a8a6e;text-decoration:none">support@naxcal.us</a></p>
 `),
   };
 }
@@ -236,9 +236,9 @@ ${row("Status", "⏳ Processing")}
 ${row("Expected", "Within 24 hours")}
 </table>
 <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:16px 20px;margin:0 0 24px">
-<p style="margin:0;font-size:14px;color:#dc2626;line-height:1.6">🔐 <strong>Security Notice:</strong> If you did not request this withdrawal, contact us immediately at <a href="mailto:security@naxcal.com" style="color:#dc2626">security@naxcal.com</a></p>
+<p style="margin:0;font-size:14px;color:#dc2626;line-height:1.6">🔐 <strong>Security Notice:</strong> If you did not request this withdrawal, contact us immediately at <a href="mailto:security@naxcal.us" style="color:#dc2626">security@naxcal.us</a></p>
 </div>
-${btn("View Dashboard →", "https://naxcal.com/dashboard")}
+${btn("View Dashboard →", "https://naxcal.us/dashboard")}
 `),
   };
 }
@@ -264,7 +264,7 @@ export function investorOutreachEmail(name: string, unsubscribeUrl: string) {
 
   <!-- HEADER -->
   <tr><td style="background:#0d1117;border-radius:16px 16px 0 0;padding:32px 40px;border-bottom:1px solid #1a8a6e;text-align:center">
-    <img src="https://naxcal.com/Naxcal_Primary_Logo.png" alt="Naxcal" height="48" style="height:48px;width:auto;display:inline-block" />
+    <img src="https://naxcal.us/Naxcal_Primary_Logo.png" alt="Naxcal" height="48" style="height:48px;width:auto;display:inline-block" />
     <div style="margin-top:16px">
       <span style="display:inline-block;background:rgba(26,138,110,0.15);border:1px solid rgba(26,138,110,0.4);color:#22a882;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:5px 14px;border-radius:100px">Private Invitation</span>
     </div>
@@ -381,16 +381,16 @@ export function investorOutreachEmail(name: string, unsubscribeUrl: string) {
     <p style="margin:0 0 8px;font-size:13px;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:2px;font-weight:600">Your Invitation</p>
     <h2 style="margin:0 0 12px;font-size:26px;font-weight:800;color:#ffffff">Ready to see it for yourself?</h2>
     <p style="margin:0 0 28px;font-size:14px;color:rgba(255,255,255,0.6);line-height:1.7">Create your account in under 2 minutes. No commitment required.</p>
-    <a href="https://naxcal.com" style="display:inline-block;background:linear-gradient(135deg,#1a8a6e,#22a882);color:#ffffff;text-decoration:none;font-size:16px;font-weight:700;padding:16px 44px;border-radius:12px;letter-spacing:0.3px;box-shadow:0 4px 24px rgba(26,138,110,0.4)">Get Started →</a>
+    <a href="https://naxcal.us" style="display:inline-block;background:linear-gradient(135deg,#1a8a6e,#22a882);color:#ffffff;text-decoration:none;font-size:16px;font-weight:700;padding:16px 44px;border-radius:12px;letter-spacing:0.3px;box-shadow:0 4px 24px rgba(26,138,110,0.4)">Get Started →</a>
     <p style="margin:20px 0 0;font-size:12px;color:rgba(255,255,255,0.35)">Or reply to this email — we're happy to answer any questions first.</p>
   </td></tr>
 
   <!-- FOOTER -->
   <tr><td style="background:#060809;border-radius:0 0 16px 16px;padding:28px 40px;text-align:center;border-top:1px solid rgba(255,255,255,0.05)">
-    <img src="https://naxcal.com/Naxcal_Primary_Logo.png" alt="Naxcal" height="28" style="height:28px;width:auto;display:inline-block;opacity:0.4;margin-bottom:16px" />
+    <img src="https://naxcal.us/Naxcal_Primary_Logo.png" alt="Naxcal" height="28" style="height:28px;width:auto;display:inline-block;opacity:0.4;margin-bottom:16px" />
     <p style="margin:0 0 8px;font-size:11px;color:rgba(255,255,255,0.35);line-height:1.7">Naxcal Capital LLC &nbsp;·&nbsp; All rights reserved.<br>Your capital is at risk. Past performance is not indicative of future results.</p>
     <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.25)">
-      <a href="https://naxcal.com/legal/privacy" style="color:rgba(255,255,255,0.4);text-decoration:none">Privacy Policy</a> &nbsp;·&nbsp;
+      <a href="https://naxcal.us/legal/privacy" style="color:rgba(255,255,255,0.4);text-decoration:none">Privacy Policy</a> &nbsp;·&nbsp;
       <a href="${unsubscribeUrl}" style="color:rgba(255,255,255,0.4);text-decoration:none">Unsubscribe</a>
     </p>
   </td></tr>
@@ -419,7 +419,7 @@ ${row("Location", location)}
 </table>
 <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 8px"><strong>If this was you</strong> — no action is needed.</p>
 <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 24px"><strong>If this wasn't you</strong> — secure your account immediately:</p>
-<div style="text-align:center;margin:28px 0"><a href="https://naxcal.com/dashboard/settings" style="display:inline-block;padding:14px 32px;background:#ef4444;color:#ffffff;text-decoration:none;border-radius:8px;font-size:16px;font-weight:600;font-family:${FONT}">Secure My Account →</a></div>
+<div style="text-align:center;margin:28px 0"><a href="https://naxcal.us/dashboard/settings" style="display:inline-block;padding:14px 32px;background:#ef4444;color:#ffffff;text-decoration:none;border-radius:8px;font-size:16px;font-weight:600;font-family:${FONT}">Secure My Account →</a></div>
 `),
   };
 }

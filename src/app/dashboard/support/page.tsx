@@ -40,7 +40,7 @@ const faqSections = [
     title: "Security",
     items: [
       { q: "How is my account secured?", a: "We use 256-bit SSL encryption, two-factor authentication (2FA), and advanced fraud detection. Your funds are stored in cold wallets with multi-signature protection." },
-      { q: "What should I do if I suspect unauthorized access?", a: "Immediately change your password, enable 2FA if not already active, and contact security@naxcal.com. We can freeze your account to prevent unauthorized transactions." },
+      { q: "What should I do if I suspect unauthorized access?", a: "Immediately change your password, enable 2FA if not already active, and contact security@naxcal.us. We can freeze your account to prevent unauthorized transactions." },
       { q: "How do I enable two-factor authentication?", a: "Go to Settings → Security → Two-Factor Authentication and follow the setup instructions using an authenticator app like Google Authenticator or Authy." },
     ],
   },
@@ -71,7 +71,7 @@ const AI_RESPONSES: { keywords: string[]; response: string }[] = [
   { keywords: ["fee", "charge", "cost", "commission"], response: "Naxcal fees:\n\n• **Deposits**: No fees (network fees apply)\n• **Withdrawals**: No fees (network fees apply)\n• **Crypto swaps**: 0.5% per swap\n• **Stock trades**: No commission\n• **Daily returns**: Performance fee may apply (shown in your dashboard)" },
   { keywords: ["minimum", "min deposit", "min withdrawal"], response: "Minimum amounts:\n\n• **Minimum deposit**: $50 USD\n• **Minimum withdrawal**: $100 USD\n• **Minimum stock investment**: $50 USD" },
   { keywords: ["safe", "secure", "trust", "legit", "scam", "regulated"], response: "Naxcal security measures:\n\n• FCA Authorised & Regulated\n• 256-bit SSL encryption\n• Two-factor authentication (2FA)\n• Cold storage for crypto assets\n• Multi-signature wallet protection\n• Sumsub KYC verification\n\nYour capital is protected under the UK compensation scheme." },
-  { keywords: ["contact", "email", "phone", "support", "help"], response: "You can reach us at:\n\n• **Email**: support@naxcal.com\n• **Live Chat**: Click the chat bubble in the bottom-right corner\n• **Response time**: Within 2 hours\n\nFor security issues, email security@naxcal.com immediately." },
+  { keywords: ["contact", "email", "phone", "support", "help"], response: "You can reach us at:\n\n• **Email**: support@naxcal.us\n• **Live Chat**: Click the chat bubble in the bottom-right corner\n• **Response time**: Within 2 hours\n\nFor security issues, email security@naxcal.us immediately." },
   { keywords: ["statement", "download", "csv", "history", "export"], response: "To download your transaction statement:\n\n1. Go to **Dashboard**\n2. Click **Statement** in Quick Actions\n3. A CSV file will download automatically\n\nYou can also export from the **Transactions** page using the Export button." },
 ];
 
@@ -109,7 +109,7 @@ export default function SupportPage() {
   }, [messages, typing]);
 
   const copyEmail = () => {
-    navigator.clipboard.writeText("support@naxcal.com");
+    navigator.clipboard.writeText("support@naxcal.us");
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -209,7 +209,7 @@ export default function SupportPage() {
               <Mail size={18} className="text-naxcal-teal mb-2" />
               <h4 className="text-sm font-semibold text-[#0f172a] mb-1">Email</h4>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono text-[#374151]">support@naxcal.com</span>
+                <span className="text-xs font-mono text-[#374151]">support@naxcal.us</span>
                 <button onClick={copyEmail} className="p-1 rounded hover:bg-[#f1f5f9] cursor-pointer">
                   {copied ? <CheckCircle2 size={12} className="text-emerald-500" /> : <Copy size={12} className="text-[#9ca3af]" />}
                 </button>

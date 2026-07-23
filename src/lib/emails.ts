@@ -8,8 +8,8 @@ import { unsubscribeUrl } from "./unsubscribe-token";
 import { supabaseAdmin } from "./supabase-admin";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM = "Naxcal <noreply@naxcal.com>";
-const REPLY_TO = "support@naxcal.com";
+const FROM = "Naxcal <noreply@naxcal.us>";
+const REPLY_TO = "support@naxcal.us";
 
 export async function sendWelcomeEmail(email: string, name: string) {
   const { subject, html } = welcomeEmail(name);
@@ -69,7 +69,7 @@ export async function sendInvestorOutreachEmail(email: string, name: string) {
     subject,
     html,
     headers: {
-      "List-Unsubscribe": `<${unsubUrl}>, <mailto:support@naxcal.com?subject=unsubscribe>`,
+      "List-Unsubscribe": `<${unsubUrl}>, <mailto:support@naxcal.us?subject=unsubscribe>`,
       "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
     },
   });

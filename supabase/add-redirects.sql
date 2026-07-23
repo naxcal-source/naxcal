@@ -1,4 +1,4 @@
--- Vanity redirects: naxcal.com/go/{slug} -> destination_url.
+-- Vanity redirects: naxcal.us/go/{slug} -> destination_url.
 CREATE TABLE IF NOT EXISTS redirects (
   slug TEXT PRIMARY KEY,
   destination_url TEXT NOT NULL,

@@ -3,8 +3,8 @@ import { supabaseAdmin } from "./supabase-admin";
 import { unsubscribeUrl } from "./unsubscribe-token";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM = "Naxcal <noreply@naxcal.com>";
-const REPLY_TO = "support@naxcal.com";
+const FROM = "Naxcal <noreply@naxcal.us>";
+const REPLY_TO = "support@naxcal.us";
 
 // Resend's batch endpoint accepts up to 100 emails per request.
 export const CAMPAIGN_BATCH_SIZE = 100;

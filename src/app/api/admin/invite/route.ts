@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://naxcal.com";
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://naxcal.us";
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,8 +14,8 @@ export async function POST(req: NextRequest) {
     const capName = name.split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 
     await resend.emails.send({
-      from: "Naxcal <noreply@naxcal.com>",
-      replyTo: "support@naxcal.com",
+      from: "Naxcal <noreply@naxcal.us>",
+      replyTo: "support@naxcal.us",
       to: email,
       subject: `${capFirst}, your Naxcal portfolio is ready`,
       html: `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
 
 <div style="border-top:1px solid #f3f4f6;margin:24px 0"></div>
 
-<p style="color:#9ca3af;font-size:14px;line-height:1.6;margin:0;text-align:center">Questions? Contact us at <a href="mailto:support@naxcal.com" style="color:#1a8a6e;text-decoration:none">support@naxcal.com</a></p>
+<p style="color:#9ca3af;font-size:14px;line-height:1.6;margin:0;text-align:center">Questions? Contact us at <a href="mailto:support@naxcal.us" style="color:#1a8a6e;text-decoration:none">support@naxcal.us</a></p>
 
 </div>
 <div style="background:#f9fafb;padding:24px 32px;border-radius:0 0 12px 12px;border:1px solid #e5e7eb;border-top:none;text-align:center">

@@ -60,7 +60,7 @@ function UnsubscribeForm() {
         </div>
         <h1 className="text-2xl font-bold mb-3" style={{ color: "#0f172a" }}>Couldn&apos;t unsubscribe</h1>
         <p className="text-sm mb-6" style={{ color: "#6b7280" }}>{errorMsg}</p>
-        <a href="mailto:support@naxcal.com" className="text-naxcal-teal text-sm font-medium hover:underline">Contact support</a>
+        <a href="mailto:support@naxcal.us" className="text-naxcal-teal text-sm font-medium hover:underline">Contact support</a>
       </>
     );
   }

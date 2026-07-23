@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Naxcal — Your Money, Working 24/7",
     description: "Deposit crypto. We trade forex. You earn daily returns. FCA regulated and fully transparent.",
-    url: "https://naxcal.com",
+    url: "https://naxcal.us",
     siteName: "Naxcal",
     type: "website",
     locale: "en_GB",
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     apple: "/apple-touch-icon.png",
   },
   manifest: "/manifest.json",
-  metadataBase: new URL("https://naxcal.com"),
+  metadataBase: new URL("https://naxcal.us"),
 };
 
 export default function RootLayout({

@@ -4,8 +4,8 @@ import { unsubscribeUrl } from "./unsubscribe-token";
 // Requires a Full-access Resend API key (not the send-only one) — audience
 // and broadcast management aren't available to restricted keys.
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM = "Naxcal <noreply@naxcal.com>";
-const REPLY_TO = "support@naxcal.com";
+const FROM = "Naxcal <noreply@naxcal.us>";
+const REPLY_TO = "support@naxcal.us";
 
 export async function listAudiences() {
   const { data, error } = await resend.audiences.list();

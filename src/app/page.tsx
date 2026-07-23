@@ -523,7 +523,7 @@ export default function Home() {
               <div className="rounded-2xl overflow-hidden relative" style={{ transform: "rotateX(4deg)", border: "1px solid rgba(255,255,255,0.12)", boxShadow: "0 50px 100px rgba(0,0,0,0.5), 0 0 200px rgba(26,138,110,0.15)", background: "#0f1a16" }}>
                 <div className="flex items-center gap-2 px-4 py-2.5 border-b border-white/[0.06]" style={{ background: "#111f19" }}>
                   <div className="flex gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-red-500/60" /><div className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" /><div className="w-2.5 h-2.5 rounded-full bg-green-500/60" /></div>
-                  <div className="flex-1 mx-8"><div className="max-w-xs mx-auto px-3 py-1 rounded-md" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}><span className="text-[10px] text-white/40 flex items-center gap-1.5"><Lock size={9} className="text-emerald-400" />app.naxcal.com/dashboard</span></div></div>
+                  <div className="flex-1 mx-8"><div className="max-w-xs mx-auto px-3 py-1 rounded-md" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}><span className="text-[10px] text-white/40 flex items-center gap-1.5"><Lock size={9} className="text-emerald-400" />app.naxcal.us/dashboard</span></div></div>
                 </div>
                 <div className="flex min-h-[420px]">
                   <div className="w-[180px] shrink-0 border-r border-white/[0.06] p-4 hidden sm:block" style={{ background: "#111f19" }}>

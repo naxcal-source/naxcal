@@ -22,7 +22,7 @@ export default function TermsPage() {
       <h2>9. Governing Law</h2>
       <p>These Terms are governed by and construed in accordance with the laws of England and Wales.</p>
       <h2>10. Contact</h2>
-      <p>For questions about these Terms, contact us at <a href="mailto:legal@naxcal.com" style={{ color: "#1a8a6e" }}>legal@naxcal.com</a>.</p>
+      <p>For questions about these Terms, contact us at <a href="mailto:legal@naxcal.us" style={{ color: "#1a8a6e" }}>legal@naxcal.us</a>.</p>
     </article>
   );
 }

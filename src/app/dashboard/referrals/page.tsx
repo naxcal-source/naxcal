@@ -15,7 +15,7 @@ export default function ReferralsPage() {
   const [copied, setCopied] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [code, setCode] = useState(profile?.referral_code || "");
-  const referralUrl = code ? `https://naxcal.com/register?ref=${code}` : "";
+  const referralUrl = code ? `https://naxcal.us/register?ref=${code}` : "";
 
   useEffect(() => {
     if (!profile) return;

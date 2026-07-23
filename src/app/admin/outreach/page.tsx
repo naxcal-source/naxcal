@@ -55,7 +55,7 @@ export default function AdminOutreachPage() {
         <Mail size={22} className="text-naxcal-teal" />
         <h1 className="text-xl font-bold text-white">Investor Outreach</h1>
       </div>
-      <p className="text-xs text-white/30 mb-8">Sends a premium HTML invitation email from noreply@naxcal.com</p>
+      <p className="text-xs text-white/30 mb-8">Sends a premium HTML invitation email from noreply@naxcal.us</p>
 
       {done && (
         <div className={cn("p-4 rounded-xl mb-6 flex items-center gap-3",
@@ -119,7 +119,7 @@ export default function AdminOutreachPage() {
         <AlertTriangle size={16} className="text-naxcal-teal shrink-0 mt-0.5" />
         <div>
           <p className="text-xs font-semibold text-naxcal-teal mb-1">What this sends</p>
-          <p className="text-xs text-white/40 leading-relaxed">A premium dark-theme HTML email with Naxcal branding, daily return rates, tier breakdown, and a register button. Sent from <span className="text-white/60">noreply@naxcal.com</span> with reply-to <span className="text-white/60">support@naxcal.com</span>.</p>
+          <p className="text-xs text-white/40 leading-relaxed">A premium dark-theme HTML email with Naxcal branding, daily return rates, tier breakdown, and a register button. Sent from <span className="text-white/60">noreply@naxcal.us</span> with reply-to <span className="text-white/60">support@naxcal.us</span>.</p>
         </div>
       </div>
 

@@ -69,7 +69,7 @@ export async function GET() {
   <!-- Header -->
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:40px;border-bottom:2px solid #0a0a0a;padding-bottom:24px">
     <div>
-      <img src="https://naxcal.com/Naxcal_Primary_Logo.png" alt="Naxcal" style="height:48px;width:auto;margin-bottom:8px;display:block" />
+      <img src="https://naxcal.us/Naxcal_Primary_Logo.png" alt="Naxcal" style="height:48px;width:auto;margin-bottom:8px;display:block" />
       <p style="margin:0;font-size:11px;color:#9ca3af">Naxcal Capital Ltd · FCA Authorised</p>
     </div>
     <div style="text-align:right">

@@ -62,11 +62,11 @@ export default function AdminRedirectsPage() {
         <h3 className="text-sm font-semibold text-white mb-4">New Redirect</h3>
         <div className="space-y-3">
           <div className="flex items-center rounded-lg overflow-hidden" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <span className="pl-3 text-sm text-white/30 whitespace-nowrap">naxcal.com/go/</span>
+            <span className="pl-3 text-sm text-white/30 whitespace-nowrap">naxcal.us/go/</span>
             <input type="text" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="report"
               className="w-full px-2 py-2.5 text-sm text-white placeholder:text-white/20 outline-none bg-transparent" />
           </div>
-          <input type="url" value={destinationUrl} onChange={(e) => setDestinationUrl(e.target.value)} placeholder="https://naxcal.com/dashboard/report"
+          <input type="url" value={destinationUrl} onChange={(e) => setDestinationUrl(e.target.value)} placeholder="https://naxcal.us/dashboard/report"
             className="w-full px-3 py-2.5 rounded-lg text-sm text-white placeholder:text-white/20 outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)" }} />
           {error && <p className="text-xs text-red-400">{error}</p>}
           <button onClick={handleCreate} disabled={!slug.trim() || !destinationUrl.trim() || saving}

@@ -16,7 +16,7 @@ export function verifyUnsubscribeToken(email: string, token: string): boolean {
 }
 
 export function unsubscribeUrl(email: string): string {
-  const site = process.env.NEXT_PUBLIC_SITE_URL || "https://naxcal.com";
+  const site = process.env.NEXT_PUBLIC_SITE_URL || "https://naxcal.us";
   const token = signUnsubscribeToken(email);
   return `${site}/unsubscribe?email=${encodeURIComponent(email)}&token=${token}`;
 }

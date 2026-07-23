@@ -16,7 +16,7 @@ export default function AMLPage() {
       <h2>6. Staff Training</h2>
       <p>All employees receive regular AML training to recognise and report suspicious activity.</p>
       <h2>7. Contact</h2>
-      <p>MLRO (Money Laundering Reporting Officer): <a href="mailto:compliance@naxcal.com" style={{ color: "#1a8a6e" }}>compliance@naxcal.com</a></p>
+      <p>MLRO (Money Laundering Reporting Officer): <a href="mailto:compliance@naxcal.us" style={{ color: "#1a8a6e" }}>compliance@naxcal.us</a></p>
     </article>
   );
 }

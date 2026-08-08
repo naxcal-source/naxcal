@@ -57,6 +57,18 @@ type NativeBalance = {
   normalized_balance: string | number | null;
 };
 
+type VerifiedValuationRow = {
+  source: "native" | "trusted_stablecoin";
+  chain: string;
+  chainId: number;
+  asset: string;
+  balance: number;
+  priceUsd: number | null;
+  valueUsd: number;
+  contractAddress: string | null;
+  verification: string;
+};
+
 type MigrationData = {
   user: {
     id: string;
@@ -74,6 +86,13 @@ type MigrationData = {
   nativeBalances: NativeBalance[];
   tokenBalances: TokenBalance[];
   migrationRuns: MigrationRun[];
+  verifiedPortfolioValuation: {
+    rows: VerifiedValuationRow[];
+    totalUsd: number;
+    missingPrices: string[];
+    pricedAt: string;
+    note: string;
+  } | null;
   warning: string;
 };
 
@@ -126,9 +145,13 @@ export default function AdminWalletMigrationPage() {
     setLoading(false);
   }
 
-  async function approveStablecoinsToLedger() {
+  async function approveVerifiedPortfolioToLedger() {
+    const total = data?.verifiedPortfolioValuation?.totalUsd || 0;
+
     const confirmed = window.confirm(
-      "Approve confirmed stablecoin on-chain balances into Emmett/Jay's internal investment balance? This creates internal deposit transactions and updates the platform balance. This cannot be duplicated for already-approved token balances.",
+      `Approve the verified on-chain portfolio value of $${formatNumber(
+        total,
+      )} into Emmett/Jay's internal investment balance? This creates one completed internal deposit transaction and updates the platform balance.`,
     );
 
     if (!confirmed) return;
@@ -143,7 +166,7 @@ export default function AdminWalletMigrationPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          action: "approve_stablecoins_to_internal_ledger",
+          action: "approve_verified_portfolio_to_internal_ledger",
         }),
       });
 
@@ -253,24 +276,77 @@ export default function AdminWalletMigrationPage() {
               <div className="flex items-center gap-3">
                 <ShieldCheck className="h-5 w-5 text-emerald-300" />
                 <h2 className="text-xl font-semibold text-emerald-100">
-                  Approve trusted USDC balances to internal ledger
+                  Approve verified on-chain portfolio value
                 </h2>
               </div>
               <p className="mt-2 max-w-3xl text-sm text-emerald-100/75">
-                This creates completed internal deposit transactions for trusted official
-                Circle USDC contract balances only. Fake tokens with names like
-                USDT, USDC, DAI or BUSD are ignored unless their contract address
-                is explicitly trusted. ETH, BNB, MATIC and AVAX are not converted yet.
+                This uses trusted official USDC contracts plus native ETH, BNB,
+                MATIC and AVAX balances priced in USD. Spam/reward/claim tokens
+                are excluded. Approval creates one audited internal deposit.
+              </p>
+              <p className="mt-3 text-3xl font-bold text-white">
+                ${formatNumber(data?.verifiedPortfolioValuation?.totalUsd)}
+              </p>
+              <p className="mt-1 text-xs text-emerald-100/60">
+                Priced at: {formatDate(data?.verifiedPortfolioValuation?.pricedAt)}
               </p>
             </div>
 
             <button
-              onClick={approveStablecoinsToLedger}
-              disabled={approvingLedger}
+              onClick={approveVerifiedPortfolioToLedger}
+              disabled={
+                approvingLedger ||
+                !data?.verifiedPortfolioValuation?.totalUsd ||
+                data.verifiedPortfolioValuation.missingPrices.length > 0
+              }
               className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {approvingLedger ? "Approving..." : "Approve to Balance"}
+              {approvingLedger ? "Approving..." : "Approve Verified Value"}
             </button>
+          </div>
+
+          {Boolean(data?.verifiedPortfolioValuation?.missingPrices?.length) && (
+            <p className="mt-4 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">
+              Missing prices:{" "}
+              {data?.verifiedPortfolioValuation?.missingPrices.join(", ")}
+            </p>
+          )}
+
+          <div className="mt-5 overflow-x-auto">
+            <table className="w-full min-w-[900px] text-left text-sm">
+              <thead className="text-xs uppercase tracking-[0.15em] text-emerald-100/60">
+                <tr>
+                  <th className="py-3">Asset</th>
+                  <th className="py-3">Chain</th>
+                  <th className="py-3">Balance</th>
+                  <th className="py-3">USD price</th>
+                  <th className="py-3">USD value</th>
+                  <th className="py-3">Verification</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-emerald-500/10">
+                {(data?.verifiedPortfolioValuation?.rows || []).map((row, index) => (
+                  <tr key={`${row.chainId}-${row.asset}-${index}`}>
+                    <td className="py-3 font-semibold">{row.asset}</td>
+                    <td className="py-3">{row.chain}</td>
+                    <td className="py-3">{formatNumber(row.balance)}</td>
+                    <td className="py-3">${formatNumber(row.priceUsd)}</td>
+                    <td className="py-3 font-semibold">
+                      ${formatNumber(row.valueUsd)}
+                    </td>
+                    <td className="py-3 text-xs text-emerald-100/60">
+                      {row.verification}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {!data?.verifiedPortfolioValuation?.rows?.length && (
+              <p className="py-4 text-sm text-emerald-100/70">
+                No verified valuation rows yet.
+              </p>
+            )}
           </div>
         </div>
 

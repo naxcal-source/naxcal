@@ -62,6 +62,39 @@ function getTrustedStablecoin(token: {
   return TRUSTED_STABLECOIN_CONTRACTS[`${chainId}:${address}`];
 }
 
+function getTrustedStablecoinFilters() {
+  return Object.keys(TRUSTED_STABLECOIN_CONTRACTS).map((key) => {
+    const [chainId, address] = key.split(":");
+    return {
+      chainId: Number(chainId),
+      address: address.toLowerCase(),
+    };
+  });
+}
+
+async function fetchTrustedStablecoinBalances(walletId: string) {
+  const filters = getTrustedStablecoinFilters();
+  const trustedRows = [];
+
+  for (const filter of filters) {
+    const { data, error } = await supabaseAdmin
+      .from("onchain_token_balances")
+      .select("*")
+      .eq("wallet_id", walletId)
+      .eq("chain_id", filter.chainId)
+      .ilike("token_contract_address", filter.address);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    trustedRows.push(...(data || []));
+  }
+
+  return trustedRows;
+}
+
+
 async function requireAdmin() {
   const user = await getAuthUser();
 
@@ -142,14 +175,7 @@ async function buildVerifiedPortfolioValuation(walletId: string) {
     throw new Error(nativeError.message);
   }
 
-  const { data: tokenBalances, error: tokenError } = await supabaseAdmin
-    .from("onchain_token_balances")
-    .select("*")
-    .eq("wallet_id", walletId);
-
-  if (tokenError) {
-    throw new Error(tokenError.message);
-  }
+  const tokenBalances = await fetchTrustedStablecoinBalances(walletId);
 
   const rows: {
     source: "native" | "trusted_stablecoin";

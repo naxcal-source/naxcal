@@ -11,19 +11,47 @@ import { cn } from "@/lib/utils";
 type StockPos = { symbol: string; name: string; qty: number; avg_entry: number; current_price: number; market_value: number; unrealized_pl: number; unrealized_plpc: number };
 type CryptoPos = { symbol: string; qty: number; avg_price: number; current_price: number; market_value: number; unrealized_pl: number };
 
+type OnchainWalletRow = {
+  source: "native" | "trusted_stablecoin";
+  chain: string;
+  chainId: number;
+  asset: string;
+  balance: number;
+  priceUsd: number | null;
+  valueUsd: number;
+  verification: string;
+};
+
+type OnchainWalletPortfolio = {
+  wallet: {
+    id: string;
+    address: string;
+    ownershipStatus: string;
+  } | null;
+  rows: OnchainWalletRow[];
+  totalUsd: number;
+  pricedAt: string;
+  note: string;
+};
+
 export default function PortfolioPage() {
   const { profile, fmt } = useDashboard();
   const [stocks, setStocks] = useState<StockPos[]>([]);
   const [cryptos, setCryptos] = useState<CryptoPos[]>([]);
+  const [onchainWallet, setOnchainWallet] = useState<OnchainWalletPortfolio | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       fetch("/api/stocks/portfolio").then((r) => r.json()).catch(() => []),
       fetch("/api/crypto/portfolio").then((r) => r.json()).catch(() => []),
-    ]).then(([s, c]) => {
+      fetch("/api/me/wallet-portfolio").then((r) => r.json()).catch(() => null),
+    ]).then(([s, c, walletPortfolio]) => {
       if (Array.isArray(s)) setStocks(s);
       if (Array.isArray(c)) setCryptos(c);
+      if (walletPortfolio && Array.isArray(walletPortfolio.rows)) {
+        setOnchainWallet(walletPortfolio);
+      }
       setLoading(false);
     });
   }, []);
@@ -104,6 +132,70 @@ export default function PortfolioPage() {
           <p className="text-lg font-bold text-[#0f172a]">{fmt(cashBalance)}</p>
         </div>
       </div>
+
+      {/* Migrated On-Chain Wallet Breakdown */}
+      {onchainWallet?.rows?.length ? (
+        <div className="card-light p-5 mb-4">
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div>
+              <h3 className="text-sm font-semibold text-[#0f172a]">Migrated On-Chain Wallet Breakdown</h3>
+              <p className="text-xs text-[#9ca3af] mt-1">
+                Verified wallet assets supporting the approved internal balance. Spam and reward tokens are excluded.
+              </p>
+              {onchainWallet.wallet?.address && (
+                <p className="text-[10px] text-[#9ca3af] mt-2 break-all">
+                  Wallet: {onchainWallet.wallet.address}
+                </p>
+              )}
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-[10px] uppercase tracking-wider text-[#9ca3af]">Verified value</p>
+              <p className="text-lg font-bold text-[#0f172a]">{fmt(onchainWallet.totalUsd)}</p>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px] text-left">
+              <thead>
+                <tr className="text-[10px] uppercase tracking-wider text-[#9ca3af] border-b border-[#e5e7eb]">
+                  <th className="py-2">Asset</th>
+                  <th className="py-2">Chain</th>
+                  <th className="py-2 text-right">Balance</th>
+                  <th className="py-2 text-right">USD Price</th>
+                  <th className="py-2 text-right">USD Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                {onchainWallet.rows.map((row, index) => (
+                  <tr key={`${row.chainId}-${row.asset}-${index}`} className="border-b border-[#f1f5f9] last:border-0">
+                    <td className="py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-naxcal-teal/10 flex items-center justify-center text-[9px] font-bold text-naxcal-teal">
+                          {row.asset.slice(0, 2)}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-[#0f172a]">{row.asset}</p>
+                          <p className="text-[10px] text-[#9ca3af]">
+                            {row.source === "native" ? "Native coin" : "Trusted stablecoin"}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3 text-sm text-[#374151]">{row.chain}</td>
+                    <td className="py-3 text-sm text-[#0f172a] text-right">{row.balance.toLocaleString(undefined, { maximumFractionDigits: 8 })}</td>
+                    <td className="py-3 text-sm text-[#374151] text-right">{row.priceUsd ? fmt(row.priceUsd) : "—"}</td>
+                    <td className="py-3 text-sm font-semibold text-[#0f172a] text-right">{fmt(row.valueUsd)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <p className="text-[10px] text-[#9ca3af] mt-3">
+            {onchainWallet.note}
+          </p>
+        </div>
+      ) : null}
 
       {/* Stock Holdings */}
       {stocks.length > 0 && (

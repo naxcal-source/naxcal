@@ -59,13 +59,13 @@ export default function PortfolioPage() {
   const cashBalance = Number(profile?.balance ?? 0);
   const stocksValue = stocks.reduce((s, p) => s + p.market_value, 0);
   const cryptoValue = cryptos.reduce((s, p) => s + p.market_value, 0);
-  const totalValue = cashBalance + stocksValue + cryptoValue;
+  const totalValue = stocksValue + cryptoValue;
   const stocksPL = stocks.reduce((s, p) => s + p.unrealized_pl, 0);
   const cryptoPL = cryptos.reduce((s, p) => s + p.unrealized_pl, 0);
   const totalPL = stocksPL + cryptoPL;
 
   const allocation = [
-    { label: "Cash", value: cashBalance, color: "#1a8a6e", pct: totalValue > 0 ? (cashBalance / totalValue * 100) : 100 },
+    { label: "Cash Ledger", value: 0, color: "#1a8a6e", pct: 0 },
     { label: "Stocks", value: stocksValue, color: "#3b82f6", pct: totalValue > 0 ? (stocksValue / totalValue * 100) : 0 },
     { label: "Crypto", value: cryptoValue, color: "#8b5cf6", pct: totalValue > 0 ? (cryptoValue / totalValue * 100) : 0 },
   ].filter((a) => a.value > 0);

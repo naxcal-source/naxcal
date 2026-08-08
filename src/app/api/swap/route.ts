@@ -4,113 +4,200 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { rateLimit } from "@/lib/rate-limit";
 import { sendDepositConfirmedEmail } from "@/lib/emails";
 
-async function getCryptoPrice(geckoId: string): Promise<number> {
+const GECKO_MAP: Record<string, string> = {
+  BTC: "bitcoin",
+  ETH: "ethereum",
+  BNB: "binancecoin",
+  MATIC: "matic-network",
+  AVAX: "avalanche-2",
+  USDC: "usd-coin",
+  USDT: "tether",
+  SOL: "solana",
+  XRP: "ripple",
+  ADA: "cardano",
+  DOGE: "dogecoin",
+};
+
+async function getCryptoPrice(symbol: string): Promise<number> {
+  if (symbol === "USDC" || symbol === "USDT") return 1;
+
+  const geckoId = GECKO_MAP[symbol];
+  if (!geckoId) return 0;
+
   try {
     const res = await fetch(
       `https://api.coingecko.com/api/v3/simple/price?ids=${geckoId}&vs_currencies=usd`,
-      { next: { revalidate: 30 } }
+      { next: { revalidate: 30 } },
     );
+
     if (!res.ok) return 0;
+
     const data = await res.json();
-    return data[geckoId]?.usd || 0;
-  } catch { return 0; }
+    return Number(data[geckoId]?.usd || 0);
+  } catch {
+    return 0;
+  }
 }
 
-const GECKO_MAP: Record<string, string> = {
-  BTC: "bitcoin", ETH: "ethereum", USDT: "tether", BNB: "binancecoin",
-  SOL: "solana", XRP: "ripple", ADA: "cardano", DOGE: "dogecoin",
-};
+async function getPosition(userId: string, symbol: string) {
+  const { data } = await supabaseAdmin
+    .from("crypto_positions")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("symbol", symbol)
+    .maybeSingle();
+
+  return data;
+}
+
+async function debitPosition(userId: string, symbol: string, amount: number) {
+  const position = await getPosition(userId, symbol);
+
+  if (!position || Number(position.qty) < amount) {
+    throw new Error(`Insufficient ${symbol} balance`);
+  }
+
+  const remaining = Number(position.qty) - amount;
+
+  if (remaining < 0.00000001) {
+    const { error } = await supabaseAdmin
+      .from("crypto_positions")
+      .delete()
+      .eq("id", position.id);
+
+    if (error) throw new Error(error.message);
+  } else {
+    const { error } = await supabaseAdmin
+      .from("crypto_positions")
+      .update({ qty: remaining })
+      .eq("id", position.id);
+
+    if (error) throw new Error(error.message);
+  }
+}
+
+async function creditPosition(
+  userId: string,
+  symbol: string,
+  amount: number,
+  valueUsd: number,
+  marketPrice: number,
+) {
+  const existing = await getPosition(userId, symbol);
+
+  if (existing) {
+    const oldQty = Number(existing.qty);
+    const oldCost = Number(existing.avg_price || 0) * oldQty;
+    const newQty = oldQty + amount;
+    const newAvg = newQty > 0 ? (oldCost + valueUsd) / newQty : marketPrice;
+
+    const { error } = await supabaseAdmin
+      .from("crypto_positions")
+      .update({ qty: newQty, avg_price: newAvg })
+      .eq("id", existing.id);
+
+    if (error) throw new Error(error.message);
+  } else {
+    const { error } = await supabaseAdmin.from("crypto_positions").insert({
+      user_id: userId,
+      symbol,
+      qty: amount,
+      avg_price: marketPrice,
+    });
+
+    if (error) throw new Error(error.message);
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
     const user = await getAuthUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const { allowed } = rateLimit(`swap:${user.id}`, 5, 60000);
-    if (!allowed) return NextResponse.json({ error: "Too many swap requests. Please wait." }, { status: 429 });
 
-    const { from_token, to_token, from_amount } = await req.json();
-    if (!from_token || !to_token || !from_amount || from_amount <= 0) {
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Too many swap requests. Please wait." },
+        { status: 429 },
+      );
+    }
+
+    const body = await req.json();
+    const fromToken = String(body.from_token || "").toUpperCase();
+    const toToken = String(body.to_token || "").toUpperCase();
+    const fromAmount = Number(body.from_amount || 0);
+
+    if (!fromToken || !toToken || !fromAmount || fromAmount <= 0) {
       return NextResponse.json({ error: "Invalid swap parameters" }, { status: 400 });
     }
-    if (from_token === to_token) {
+
+    if (fromToken === toToken) {
       return NextResponse.json({ error: "Cannot swap same token" }, { status: 400 });
     }
 
-    const fromGecko = GECKO_MAP[from_token];
-    const toGecko = GECKO_MAP[to_token];
-    if (!fromGecko || !toGecko) {
+    if (!GECKO_MAP[fromToken] || !GECKO_MAP[toToken]) {
       return NextResponse.json({ error: "Unsupported token" }, { status: 400 });
     }
 
-    const [fromPrice, toPrice] = await Promise.all([getCryptoPrice(fromGecko), getCryptoPrice(toGecko)]);
+    const [fromPrice, toPrice] = await Promise.all([
+      getCryptoPrice(fromToken),
+      getCryptoPrice(toToken),
+    ]);
+
     if (fromPrice <= 0 || toPrice <= 0) {
       return NextResponse.json({ error: "Could not fetch prices" }, { status: 502 });
     }
 
-    const fromValueUsd = from_amount * fromPrice;
-    const fee = fromValueUsd * 0.005; // 0.5% fee
-    const netValueUsd = fromValueUsd - fee;
+    const fromValueUsd = fromAmount * fromPrice;
+    const feeUsd = fromValueUsd * 0.005;
+    const netValueUsd = fromValueUsd - feeUsd;
     const toAmount = netValueUsd / toPrice;
 
-    // Check user has enough of from_token
-    // If from_token is "USDT" we check USD balance, otherwise check crypto_positions
-    if (from_token === "USDT") {
-      const { data: profile } = await supabaseAdmin.from("profiles").select("balance").eq("id", user.id).single();
-      if (!profile || Number(profile.balance) < fromValueUsd) {
-        return NextResponse.json({ error: "Insufficient USDT balance" }, { status: 400 });
-      }
-      // Deduct from USD balance
-      await supabaseAdmin.from("profiles").update({ balance: Number(profile.balance) - fromValueUsd }).eq("id", user.id);
-    } else {
-      const { data: pos } = await supabaseAdmin.from("crypto_positions").select("*").eq("user_id", user.id).eq("symbol", from_token).single();
-      if (!pos || Number(pos.qty) < from_amount) {
-        return NextResponse.json({ error: `Insufficient ${from_token} balance` }, { status: 400 });
-      }
-      const remaining = Number(pos.qty) - from_amount;
-      if (remaining < 0.00000001) {
-        await supabaseAdmin.from("crypto_positions").delete().eq("id", pos.id);
-      } else {
-        await supabaseAdmin.from("crypto_positions").update({ qty: remaining }).eq("id", pos.id);
-      }
-    }
+    await debitPosition(user.id, fromToken, fromAmount);
+    await creditPosition(user.id, toToken, toAmount, netValueUsd, toPrice);
 
-    // Credit to_token
-    if (to_token === "USDT") {
-      const { data: profile } = await supabaseAdmin.from("profiles").select("balance").eq("id", user.id).single();
-      await supabaseAdmin.from("profiles").update({ balance: Number(profile?.balance || 0) + netValueUsd }).eq("id", user.id);
-    } else {
-      const { data: existing } = await supabaseAdmin.from("crypto_positions").select("*").eq("user_id", user.id).eq("symbol", to_token).single();
-      if (existing) {
-        const oldQty = Number(existing.qty);
-        const oldCost = Number(existing.avg_price) * oldQty;
-        const newQty = oldQty + toAmount;
-        const newAvg = (oldCost + netValueUsd) / newQty;
-        await supabaseAdmin.from("crypto_positions").update({ qty: newQty, avg_price: newAvg }).eq("id", existing.id);
-      } else {
-        await supabaseAdmin.from("crypto_positions").insert({ user_id: user.id, symbol: to_token, qty: toAmount, avg_price: toPrice });
-      }
-    }
-
-    // Record transaction
     await supabaseAdmin.from("transactions").insert({
-      user_id: user.id, type: "swap", amount: fromValueUsd, asset: `${from_token}→${to_token}`,
-      status: "completed", description: `Swapped ${from_amount.toFixed(6)} ${from_token} for ${toAmount.toFixed(6)} ${to_token}`,
+      user_id: user.id,
+      type: "swap",
+      amount: fromValueUsd,
+      asset: `${fromToken}→${toToken}`,
+      status: "completed",
+      description: `Swapped ${fromAmount.toFixed(8)} ${fromToken} for ${toAmount.toFixed(8)} ${toToken}`,
     });
 
-    // Send swap confirmation email
-    const { data: userProfile } = await supabaseAdmin.from("profiles").select("email, full_name").eq("id", user.id).single();
+    const { data: userProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("email, full_name")
+      .eq("id", user.id)
+      .single();
+
     if (userProfile?.email) {
-      sendDepositConfirmedEmail(userProfile.email, userProfile.full_name || "Investor", fromValueUsd, `${from_token}→${to_token} Swap`).catch(console.error);
+      sendDepositConfirmedEmail(
+        userProfile.email,
+        userProfile.full_name || "Investor",
+        fromValueUsd,
+        `${fromToken}→${toToken} Swap`,
+      ).catch(console.error);
     }
 
     return NextResponse.json({
-      from_token, to_token, from_amount, to_amount: parseFloat(toAmount.toFixed(8)),
-      from_price: fromPrice, to_price: toPrice, fee: parseFloat(fee.toFixed(2)),
+      from_token: fromToken,
+      to_token: toToken,
+      from_amount: fromAmount,
+      to_amount: Number(toAmount.toFixed(8)),
+      from_price: fromPrice,
+      to_price: toPrice,
+      fee: Number(feeUsd.toFixed(2)),
       rate: fromPrice / toPrice,
     });
   } catch (err) {
+    const message = err instanceof Error ? err.message : "Internal server error";
     console.error("Swap error:", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

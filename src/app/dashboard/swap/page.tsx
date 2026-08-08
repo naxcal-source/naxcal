@@ -8,14 +8,11 @@ import { ArrowLeftRight, ChevronRight, ChevronDown, ArrowDown, Clock, Info, Load
 import { cn } from "@/lib/utils";
 
 const tokens = [
-  { symbol: "USDT", name: "Tether", color: "#26a17b", geckoId: "tether" },
-  { symbol: "BTC", name: "Bitcoin", color: "#f7931a", geckoId: "bitcoin" },
+  { symbol: "USDC", name: "USD Coin", color: "#2775ca", geckoId: "usd-coin" },
   { symbol: "ETH", name: "Ethereum", color: "#627eea", geckoId: "ethereum" },
   { symbol: "BNB", name: "BNB", color: "#f3ba2f", geckoId: "binancecoin" },
-  { symbol: "SOL", name: "Solana", color: "#9945ff", geckoId: "solana" },
-  { symbol: "XRP", name: "XRP", color: "#23292f", geckoId: "ripple" },
-  { symbol: "ADA", name: "Cardano", color: "#0033ad", geckoId: "cardano" },
-  { symbol: "DOGE", name: "Dogecoin", color: "#c2a633", geckoId: "dogecoin" },
+  { symbol: "MATIC", name: "Polygon", color: "#8247e5", geckoId: "matic-network" },
+  { symbol: "AVAX", name: "Avalanche", color: "#e84142", geckoId: "avalanche-2" },
 ];
 
 type CryptoPos = { symbol: string; qty: number; avg_price: number; current_price: number; market_value: number };
@@ -23,8 +20,8 @@ type SwapResult = { from_token: string; to_token: string; from_amount: number; t
 
 export default function SwapPage() {
   const { profile, refreshProfile } = useDashboard();
-  const [fromToken, setFromToken] = useState("USDT");
-  const [toToken, setToToken] = useState("BTC");
+  const [fromToken, setFromToken] = useState("USDC");
+  const [toToken, setToToken] = useState("ETH");
   const [fromAmount, setFromAmount] = useState("");
   const [prices, setPrices] = useState<Record<string, number>>({});
   const [cryptoBalances, setCryptoBalances] = useState<CryptoPos[]>([]);
@@ -37,7 +34,7 @@ export default function SwapPage() {
   const [error, setError] = useState("");
   const fromRef = useRef<HTMLDivElement>(null);
   const toRef = useRef<HTMLDivElement>(null);
-  const supabaseBalance = Number(profile?.balance ?? 0);
+
 
   useEffect(() => {
     fetch("/api/prices").then((r) => r.json()).then((data) => {
@@ -72,9 +69,8 @@ export default function SwapPage() {
   const toAmount = fromAmount && rate > 0 ? ((parseFloat(fromAmount) * fromPrice - feeUsd) / toPrice) : 0;
 
   const getBalance = (sym: string) => {
-    if (sym === "USDT") return supabaseBalance;
     const pos = cryptoBalances.find((p) => p.symbol === sym);
-    return pos ? pos.qty : 0;
+    return pos ? Number(pos.qty || 0) : 0;
   };
 
   const handleSwapTokens = () => {
@@ -135,7 +131,7 @@ export default function SwapPage() {
                     <p className="text-sm font-medium text-[#0f172a]">{t.symbol}</p>
                     <p className="text-[10px] text-[#9ca3af]">{t.name}</p>
                   </div>
-                  <span className="text-[10px] text-[#6b7280]">{bal > 0 ? (t.symbol === "USDT" ? fmt(bal) : bal.toFixed(6)) : "0"}</span>
+                  <span className="text-[10px] text-[#6b7280]">{bal > 0 ? bal.toFixed(t.symbol === "USDC" ? 2 : 6) : "0"}</span>
                 </button>
               );
             })}
@@ -179,7 +175,7 @@ export default function SwapPage() {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-[#9ca3af] uppercase tracking-wider font-medium">From</span>
                 <button onClick={() => setFromAmount(fromBal.toString())} className="text-[10px] text-naxcal-teal cursor-pointer hover:underline">
-                  Balance: {fromToken === "USDT" ? fmt(fromBal) : fromBal.toFixed(6)}
+                  Balance: {fromBal.toFixed(fromToken === "USDC" ? 2 : 6)}
                 </button>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
@@ -206,7 +202,7 @@ export default function SwapPage() {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-[#9ca3af] uppercase tracking-wider font-medium">To</span>
                 <span className="text-[10px] text-[#9ca3af]">
-                  Balance: {toToken === "USDT" ? fmt(getBalance(toToken)) : getBalance(toToken).toFixed(6)}
+                  Balance: {getBalance(toToken).toFixed(toToken === "USDC" ? 2 : 6)}
                 </span>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>

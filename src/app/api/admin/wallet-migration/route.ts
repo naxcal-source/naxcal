@@ -7,6 +7,46 @@ import { runJayJonesWalletMigration } from "@/lib/migrations/jay-jones-wallet-mi
 const JAY_JONES_USER_ID = "f46c9612-c3be-444a-8373-51575e8947aa";
 const JAY_JONES_EVM_WALLET = "0xF6D4E5a7c5215F91f59a95065190CCa24bf64554";
 
+const TRUSTED_STABLECOIN_CONTRACTS: Record<
+  string,
+  { symbol: string; name: string }
+> = {
+  // Official Circle USDC contracts only.
+  "1:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": {
+    symbol: "USDC",
+    name: "Ethereum USDC",
+  },
+  "10:0x0b2c639c533813f4aa9d7837caf62653d097ff85": {
+    symbol: "USDC",
+    name: "Optimism USDC",
+  },
+  "137:0x3c499c542cef5e3811e1192ce70d8cc03d5c3359": {
+    symbol: "USDC",
+    name: "Polygon USDC",
+  },
+  "42161:0xaf88d065e77c8cc2239327c5edb3a432268e5831": {
+    symbol: "USDC",
+    name: "Arbitrum USDC",
+  },
+  "43114:0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e": {
+    symbol: "USDC",
+    name: "Avalanche USDC",
+  },
+  "8453:0x833589fcd6edb6e08f4c7c32d4f71b54bda02913": {
+    symbol: "USDC",
+    name: "Base USDC",
+  },
+};
+
+function getTrustedStablecoin(token: {
+  chain_id: number | string;
+  token_contract_address: string | null;
+}) {
+  const chainId = Number(token.chain_id);
+  const address = String(token.token_contract_address || "").toLowerCase();
+  return TRUSTED_STABLECOIN_CONTRACTS[`${chainId}:${address}`];
+}
+
 async function requireAdmin() {
   const user = await getAuthUser();
 
@@ -63,8 +103,7 @@ async function approveStablecoinBalancesToInternalLedger(adminUserId: string) {
   const { data: tokenBalances, error: tokenError } = await supabaseAdmin
     .from("onchain_token_balances")
     .select("*")
-    .eq("wallet_id", wallet.id)
-    .in("token_symbol", ["USDT", "USDC", "DAI", "BUSD"]);
+    .eq("wallet_id", wallet.id);
 
   if (tokenError) {
     throw new Error(tokenError.message);
@@ -72,7 +111,9 @@ async function approveStablecoinBalancesToInternalLedger(adminUserId: string) {
 
   const eligibleBalances = (tokenBalances || []).filter((token) => {
     const amount = Number(token.normalized_balance || 0);
-    return amount > 0;
+    const trustedStablecoin = getTrustedStablecoin(token);
+
+    return amount > 0 && Boolean(trustedStablecoin);
   });
 
   let currentBalance = Number(profile.balance || 0);
@@ -83,6 +124,14 @@ async function approveStablecoinBalancesToInternalLedger(adminUserId: string) {
 
   for (const token of eligibleBalances) {
     const amount = Number(token.normalized_balance || 0);
+    const trustedStablecoin = getTrustedStablecoin(token);
+
+    if (!trustedStablecoin) {
+      skipped.push(
+        `${token.chain} ${token.token_symbol} skipped because the contract is not trusted`,
+      );
+      continue;
+    }
 
     const migrationTxHash = [
       "onchain_migration",
@@ -110,12 +159,12 @@ async function approveStablecoinBalancesToInternalLedger(adminUserId: string) {
       user_id: JAY_JONES_USER_ID,
       type: "deposit",
       amount,
-      asset: token.token_symbol || "USDT",
+      asset: trustedStablecoin.symbol,
       status: "completed",
-      description: `Approved on-chain migration credit: ${token.chain} ${token.token_symbol}`,
+      description: `Approved on-chain migration credit: ${trustedStablecoin.name}`,
       tx_hash: migrationTxHash,
       wallet_address: JAY_JONES_EVM_WALLET,
-      admin_note: `Approved by admin ${adminUserId}. Source: onchain_token_balances.${token.id}. Internal ledger credit created from confirmed stablecoin balance only.`,
+      admin_note: `Approved by admin ${adminUserId}. Source: onchain_token_balances.${token.id}. Internal ledger credit created from trusted official stablecoin contract only: ${trustedStablecoin.name}.`,
       balance_before: balanceBefore,
       balance_after: balanceAfter,
     });
@@ -152,8 +201,8 @@ async function approveStablecoinBalancesToInternalLedger(adminUserId: string) {
     skipped,
     message:
       transactionsCreated > 0
-        ? `Approved ${approvedAmount.toFixed(8)} stablecoin value into the internal investment ledger.`
-        : "No new eligible stablecoin balances to approve. Existing approvals were not duplicated.",
+        ? `Approved ${approvedAmount.toFixed(8)} trusted USDC value into the internal investment ledger.`
+        : "No new eligible trusted USDC balances to approve. Existing approvals were not duplicated.",
   };
 }
 

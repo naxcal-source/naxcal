@@ -253,14 +253,14 @@ export default function AdminWalletMigrationPage() {
               <div className="flex items-center gap-3">
                 <ShieldCheck className="h-5 w-5 text-emerald-300" />
                 <h2 className="text-xl font-semibold text-emerald-100">
-                  Approve stablecoin balances to internal ledger
+                  Approve trusted USDC balances to internal ledger
                 </h2>
               </div>
               <p className="mt-2 max-w-3xl text-sm text-emerald-100/75">
-                This creates completed internal deposit transactions for confirmed
-                stablecoin balances only: USDT, USDC, DAI and BUSD. ETH, BNB,
-                MATIC and AVAX are not converted yet because no price source has
-                been added. Existing approved balances are skipped to prevent duplicates.
+                This creates completed internal deposit transactions for trusted official
+                Circle USDC contract balances only. Fake tokens with names like
+                USDT, USDC, DAI or BUSD are ignored unless their contract address
+                is explicitly trusted. ETH, BNB, MATIC and AVAX are not converted yet.
               </p>
             </div>
 

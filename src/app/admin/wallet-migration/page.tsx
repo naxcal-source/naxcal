@@ -105,6 +105,7 @@ export default function AdminWalletMigrationPage() {
   const [data, setData] = useState<MigrationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [runningChain, setRunningChain] = useState<string | null>(null);
+  const [approvingLedger, setApprovingLedger] = useState(false);
   const [includeTransactions, setIncludeTransactions] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -123,6 +124,43 @@ export default function AdminWalletMigrationPage() {
     const json = (await response.json()) as MigrationData;
     setData(json);
     setLoading(false);
+  }
+
+  async function approveStablecoinsToLedger() {
+    const confirmed = window.confirm(
+      "Approve confirmed stablecoin on-chain balances into Emmett/Jay's internal investment balance? This creates internal deposit transactions and updates the platform balance. This cannot be duplicated for already-approved token balances.",
+    );
+
+    if (!confirmed) return;
+
+    setApprovingLedger(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch("/api/admin/wallet-migration", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "approve_stablecoins_to_internal_ledger",
+        }),
+      });
+
+      const json = await response.json();
+
+      if (!response.ok) {
+        setMessage(json.message || json.error || "Ledger approval failed.");
+      } else {
+        setMessage(json.message || "Ledger approval completed.");
+      }
+
+      await loadData();
+    } catch {
+      setMessage("Ledger approval request failed.");
+    } finally {
+      setApprovingLedger(false);
+    }
   }
 
   async function runChain(chain: string) {
@@ -206,6 +244,33 @@ export default function AdminWalletMigrationPage() {
                   "On-chain wallet data is separate from the internal investment ledger."}
               </p>
             </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-5">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="flex items-center gap-3">
+                <ShieldCheck className="h-5 w-5 text-emerald-300" />
+                <h2 className="text-xl font-semibold text-emerald-100">
+                  Approve stablecoin balances to internal ledger
+                </h2>
+              </div>
+              <p className="mt-2 max-w-3xl text-sm text-emerald-100/75">
+                This creates completed internal deposit transactions for confirmed
+                stablecoin balances only: USDT, USDC, DAI and BUSD. ETH, BNB,
+                MATIC and AVAX are not converted yet because no price source has
+                been added. Existing approved balances are skipped to prevent duplicates.
+              </p>
+            </div>
+
+            <button
+              onClick={approveStablecoinsToLedger}
+              disabled={approvingLedger}
+              className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {approvingLedger ? "Approving..." : "Approve to Balance"}
+            </button>
           </div>
         </div>
 

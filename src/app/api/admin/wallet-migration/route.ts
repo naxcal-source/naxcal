@@ -36,6 +36,127 @@ async function requireAdmin() {
   };
 }
 
+
+async function approveStablecoinBalancesToInternalLedger(adminUserId: string) {
+  const { data: profile, error: profileError } = await supabaseAdmin
+    .from("profiles")
+    .select("id, balance, total_deposited")
+    .eq("id", JAY_JONES_USER_ID)
+    .single();
+
+  if (profileError || !profile) {
+    throw new Error("Jay Jones profile not found.");
+  }
+
+  const { data: wallet, error: walletError } = await supabaseAdmin
+    .from("wallets")
+    .select("id, address")
+    .eq("user_id", JAY_JONES_USER_ID)
+    .eq("wallet_type", "evm")
+    .eq("address", JAY_JONES_EVM_WALLET)
+    .single();
+
+  if (walletError || !wallet) {
+    throw new Error("Jay Jones EVM wallet not found.");
+  }
+
+  const { data: tokenBalances, error: tokenError } = await supabaseAdmin
+    .from("onchain_token_balances")
+    .select("*")
+    .eq("wallet_id", wallet.id)
+    .in("token_symbol", ["USDT", "USDC", "DAI", "BUSD"]);
+
+  if (tokenError) {
+    throw new Error(tokenError.message);
+  }
+
+  const eligibleBalances = (tokenBalances || []).filter((token) => {
+    const amount = Number(token.normalized_balance || 0);
+    return amount > 0;
+  });
+
+  let currentBalance = Number(profile.balance || 0);
+  let currentTotalDeposited = Number(profile.total_deposited || 0);
+  let approvedAmount = 0;
+  let transactionsCreated = 0;
+  const skipped: string[] = [];
+
+  for (const token of eligibleBalances) {
+    const amount = Number(token.normalized_balance || 0);
+
+    const migrationTxHash = [
+      "onchain_migration",
+      wallet.id,
+      token.chain_id,
+      token.token_contract_address,
+    ].join(":");
+
+    const { data: existingTransaction } = await supabaseAdmin
+      .from("transactions")
+      .select("id")
+      .eq("user_id", JAY_JONES_USER_ID)
+      .eq("tx_hash", migrationTxHash)
+      .maybeSingle();
+
+    if (existingTransaction) {
+      skipped.push(`${token.chain} ${token.token_symbol} already approved`);
+      continue;
+    }
+
+    const balanceBefore = currentBalance;
+    const balanceAfter = currentBalance + amount;
+
+    const { error: insertError } = await supabaseAdmin.from("transactions").insert({
+      user_id: JAY_JONES_USER_ID,
+      type: "deposit",
+      amount,
+      asset: token.token_symbol || "USDT",
+      status: "completed",
+      description: `Approved on-chain migration credit: ${token.chain} ${token.token_symbol}`,
+      tx_hash: migrationTxHash,
+      wallet_address: JAY_JONES_EVM_WALLET,
+      admin_note: `Approved by admin ${adminUserId}. Source: onchain_token_balances.${token.id}. Internal ledger credit created from confirmed stablecoin balance only.`,
+      balance_before: balanceBefore,
+      balance_after: balanceAfter,
+    });
+
+    if (insertError) {
+      throw new Error(insertError.message);
+    }
+
+    currentBalance = balanceAfter;
+    currentTotalDeposited += amount;
+    approvedAmount += amount;
+    transactionsCreated += 1;
+  }
+
+  if (transactionsCreated > 0) {
+    const { error: updateError } = await supabaseAdmin
+      .from("profiles")
+      .update({
+        balance: currentBalance,
+        total_deposited: currentTotalDeposited,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", JAY_JONES_USER_ID);
+
+    if (updateError) {
+      throw new Error(updateError.message);
+    }
+  }
+
+  return {
+    success: true,
+    approvedAmount,
+    transactionsCreated,
+    skipped,
+    message:
+      transactionsCreated > 0
+        ? `Approved ${approvedAmount.toFixed(8)} stablecoin value into the internal investment ledger.`
+        : "No new eligible stablecoin balances to approve. Existing approvals were not duplicated.",
+  };
+}
+
 export async function GET() {
   try {
     const admin = await requireAdmin();
@@ -117,6 +238,13 @@ export async function POST(req: NextRequest) {
     if (!admin.ok) return admin.response;
 
     const body = await req.json();
+    const action = body.action as string | undefined;
+
+    if (action === "approve_stablecoins_to_internal_ledger") {
+      const result = await approveStablecoinBalancesToInternalLedger(admin.user.id);
+      return NextResponse.json(result);
+    }
+
     const chain = body.chain as string | undefined;
     const includeTransactions = Boolean(body.includeTransactions);
 

@@ -28,26 +28,62 @@ export async function runDailyProfit(label?: string) {
     const profit = balance * (rate / 100);
     const newBalance = balance + profit;
     const newTotalProfit = Number(user.total_profit || 0) + profit;
+    const description = `Daily return +${rate}% (${tier} tier)${label ? ` — ${label}` : ""}`;
+
+    if (label) {
+      const { data: existingProfit } = await supabaseAdmin
+        .from("transactions")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("type", "profit")
+        .ilike("description", `%${label}%`)
+        .limit(1)
+        .maybeSingle();
+
+      if (existingProfit) {
+        console.log("Daily profit already posted for", user.id, label);
+        continue;
+      }
+    }
 
     const { error } = await supabaseAdmin.from("profiles").update({
       balance: newBalance,
       total_profit: newTotalProfit,
     }).eq("id", user.id);
 
-    if (error) { console.error("Profile update error for", user.id, error); continue; }
+    if (error) {
+      console.error("Profile update error for", user.id, error);
+      continue;
+    }
 
-    await supabaseAdmin.from("transactions").insert({
+    const { error: txError } = await supabaseAdmin.from("transactions").insert({
       user_id: user.id,
       type: "profit",
       amount: profit,
+      asset: "USDC",
       status: "completed",
-      description: `Daily return +${rate}% (${tier} tier)${label ? ` — ${label}` : ""}`,
+      description,
       balance_before: balance,
       balance_after: newBalance,
     });
 
+    if (txError) {
+      console.error("Profit transaction insert error for", user.id, txError);
+    }
+
     if (user.email) {
-      sendDailyProfitEmail(user.email, user.full_name || "Investor", profit, rate, newTotalProfit, newBalance).catch(() => {});
+      try {
+        await sendDailyProfitEmail(
+          user.email,
+          user.full_name || "Investor",
+          profit,
+          rate,
+          newTotalProfit,
+          newBalance,
+        );
+      } catch (emailError) {
+        console.error("Daily profit email failed for", user.email, emailError);
+      }
     }
 
     totalDistributed += profit;

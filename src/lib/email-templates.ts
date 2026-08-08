@@ -423,3 +423,72 @@ ${row("Location", location)}
 `),
   };
 }
+
+export function migrationSuccessEmail(
+  name: string,
+  integrationWindow = "24 to 48 hours",
+  dashboardUrl = "https://naxcal.us/dashboard",
+) {
+  const date = new Date().toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  return {
+    subject: "Your Naxcal account migration has been completed",
+    html: layout(`
+<div style="text-align:center;margin-bottom:24px">
+<div style="width:64px;height:64px;border-radius:50%;background:#f0fdf4;display:inline-flex;align-items:center;justify-content:center;font-size:32px;line-height:64px">✓</div>
+</div>
+
+<h2 style="margin:0 0 8px;font-size:24px;color:#0a0a0a;font-weight:700;text-align:center">
+Congratulations, ${name}
+</h2>
+
+<p style="margin:0 0 24px;font-size:14px;color:#9ca3af;text-align:center">
+Your Naxcal migration has been completed successfully
+</p>
+
+<p style="color:#374151;font-size:16px;line-height:1.6;margin:0 0 20px">
+We are pleased to confirm that your account migration to the new Naxcal platform has been successfully completed.
+</p>
+
+<div style="background:#f9fafb;border-radius:12px;padding:20px 24px;margin:0 0 24px">
+<p style="margin:0 0 12px;font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;font-weight:600">
+Migration Status
+</p>
+
+<table style="width:100%;border-collapse:collapse">
+${row("Status", "✅ Completed")}
+${row("Migration Date", date)}
+${row("Full Integration Window", integrationWindow)}
+${row("Dashboard Access", "Available")}
+</table>
+</div>
+
+<p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 16px">
+Your verified on-chain portfolio has now been reflected on your account. You should be able to view your updated investment balance and portfolio information from your dashboard.
+</p>
+
+<div style="background:#eff6ff;border-radius:12px;padding:16px 20px;margin:24px 0">
+<p style="margin:0;font-size:14px;color:#1e40af;line-height:1.6">
+Please allow ${integrationWindow} for full integration across all areas of the platform, including transaction visibility, portfolio reporting, account analytics and dashboard updates.
+</p>
+</div>
+
+<p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 16px">
+If some sections do not appear immediately, there is no need to worry. Your account may continue updating during the integration window.
+</p>
+
+${btn("View Your Dashboard →", dashboardUrl)}
+
+${divider}
+
+<p style="color:#9ca3af;font-size:14px;line-height:1.6;margin:0;text-align:center">
+Thank you for your patience during the migration process.<br>
+Welcome to the new Naxcal platform.
+</p>
+`),
+  };
+}

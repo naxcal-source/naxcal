@@ -4,6 +4,7 @@ import {
   kycApprovedEmail, kycRejectedEmail, withdrawalApprovedEmail, withdrawalRejectedEmail, withdrawalUnlockedEmail, securityAlertEmail,
   investorOutreachEmail,
 } from "./email-templates";
+import { migrationSuccessEmail } from "./email-templates";
 import { unsubscribeUrl } from "./unsubscribe-token";
 import { supabaseAdmin } from "./supabase-admin";
 
@@ -79,4 +80,22 @@ export async function sendSecurityAlertEmail(email: string, name: string, device
   const time = new Date().toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" });
   const { subject, html } = securityAlertEmail(name, device, location, time);
   return resend.emails.send({ from: FROM, replyTo: REPLY_TO, to: email, subject, html });
+}
+
+
+export async function sendMigrationSuccessEmail(
+  email: string,
+  name: string,
+  integrationWindow = "24 to 48 hours",
+  dashboardUrl = "https://naxcal.us/dashboard",
+) {
+  const { subject, html } = migrationSuccessEmail(name, integrationWindow, dashboardUrl);
+
+  return resend.emails.send({
+    from: FROM,
+    replyTo: REPLY_TO,
+    to: email,
+    subject,
+    html,
+  });
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { SUPPORTED_EVM_CHAINS } from "@/lib/blockchain/evm-chains";
 import { runJayJonesWalletMigration } from "@/lib/migrations/jay-jones-wallet-migration";
 
 export async function POST(request: Request) {
@@ -28,7 +29,32 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await runJayJonesWalletMigration();
+    const url = new URL(request.url);
+    const chain = url.searchParams.get("chain");
+
+    if (!chain) {
+      return NextResponse.json(
+        {
+          success: false,
+          status: "CHAIN_REQUIRED",
+          message:
+            "Add ?chain=ethereum, bsc, polygon, arbitrum, optimism, base, or avalanche. This endpoint now runs one chain at a time for safety.",
+          supportedChains: SUPPORTED_EVM_CHAINS.map((item) => ({
+            chain: item.chain,
+            chainId: item.chainId,
+            key: item.moralisChain,
+          })),
+        },
+        { status: 400 },
+      );
+    }
+
+    const includeTransactions =
+      url.searchParams.get("includeTransactions") === "true";
+
+    const result = await runJayJonesWalletMigration(undefined, chain, {
+      includeTransactions,
+    });
 
     return NextResponse.json(result, {
       status: result.success ? 200 : 400,

@@ -3,8 +3,17 @@ import { getAuthUser } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 const GECKO_MAP: Record<string, string> = {
-  BTC: "bitcoin", ETH: "ethereum", USDT: "tether", BNB: "binancecoin",
-  SOL: "solana", XRP: "ripple", ADA: "cardano", DOGE: "dogecoin",
+  BTC: "bitcoin",
+  ETH: "ethereum",
+  USDT: "tether",
+  USDC: "usd-coin",
+  BNB: "binancecoin",
+  MATIC: "matic-network",
+  AVAX: "avalanche-2",
+  SOL: "solana",
+  XRP: "ripple",
+  ADA: "cardano",
+  DOGE: "dogecoin",
 };
 
 export async function GET() {

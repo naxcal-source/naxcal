@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth-api";
 import { createClient } from "@/lib/supabase-server";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
 function normaliseAmount(value: unknown) {
   const n = Number(value || 0);
@@ -41,7 +42,7 @@ export async function GET(request: Request) {
   let onchainRows: any[] = [];
 
   if (shouldIncludeOnchain) {
-    const { data: transfers } = await client
+    const { data: transfers } = await supabaseAdmin
       .from("onchain_transfers")
       .select("*")
       .eq("user_id", user.id)
@@ -72,7 +73,7 @@ export async function GET(request: Request) {
       };
     });
 
-    const { data: transactions } = await client
+    const { data: transactions } = await supabaseAdmin
       .from("onchain_transactions")
       .select("*")
       .eq("user_id", user.id)
@@ -81,7 +82,7 @@ export async function GET(request: Request) {
 
     const transactionRows = (transactions || []).map((tx) => {
       const amount = normaliseAmount(tx.native_value);
-      const isOutgoing = String(tx.from_address || "").toLowerCase() === String(tx.wallet_address || "").toLowerCase();
+      const isOutgoing = false;
 
       return {
         id: `onchain-transaction-${tx.id}`,

@@ -69,6 +69,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { profile, refreshProfile, fmt } = useDashboard();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [cryptoPortfolioValue, setCryptoPortfolioValue] = useState(0);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [livePrices, setLivePrices] = useState<Record<string, { price: number; change: number }>>({});
   // Redirect new users to onboarding (only if column exists and is explicitly false)
@@ -110,6 +111,7 @@ export default function DashboardPage() {
   }, []);
 
   const balance = Number(profile?.balance ?? 0);
+  const displayPortfolioValue = cryptoPortfolioValue > 0 ? cryptoPortfolioValue : balance;
   const totalProfit = Number(profile?.total_profit ?? 0);
   const totalDeposited = Number(profile?.total_deposited ?? 0);
   const tierRate = profile?.tier === "gold" ? 2.1 : profile?.tier === "silver" ? 1.8 : 1.5;
@@ -138,7 +140,15 @@ export default function DashboardPage() {
   const sampleChart = Array.from({ length: Math.min(chartPoints, 60) }, (_, i) => {
     const step = chartPoints / Math.min(chartPoints, 60);
     const idx = Math.floor(i * step);
-    return { d: `${idx + 1}`, v: balance > 0 ? balance * 0.7 + seed(idx) * balance * 0.15 + (idx / chartPoints) * balance * 0.3 : 0 };
+    return {
+      d: `${idx + 1}`,
+      v:
+        displayPortfolioValue > 0
+          ? displayPortfolioValue * 0.7 +
+            seed(idx) * displayPortfolioValue * 0.15 +
+            (idx / chartPoints) * displayPortfolioValue * 0.3
+          : 0,
+    };
   });
 
   const [dailyReturns, setDailyReturns] = useState<{ date: string; rate: string; earnings: string; status: string }[]>([]);
@@ -191,7 +201,7 @@ export default function DashboardPage() {
               <Wallet size={20} className="text-naxcal-teal" />
             </div>
           </div>
-          <p className="text-3xl font-bold text-[#0f172a]"><AnimatedNumber value={balance} formatter={fmt} /></p>
+          <p className="text-3xl font-bold text-[#0f172a]"><AnimatedNumber value={displayPortfolioValue} formatter={fmt} /></p>
         </div>
 
         {/* Today's Return */}
@@ -250,7 +260,7 @@ export default function DashboardPage() {
               ))}
             </div>
           </div>
-          {balance === 0 ? (
+          {displayPortfolioValue === 0 ? (
             <div className="h-[220px] relative">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={Array.from({ length: 14 }, (_, i) => ({ d: i, v: 0 }))}>
@@ -286,9 +296,9 @@ export default function DashboardPage() {
                 <Inbox size={24} className="text-[#9ca3af]" />
               </div>
               <p className="text-sm font-medium text-[#374151] mb-1">No transactions yet</p>
-              <p className="text-xs text-[#9ca3af] mb-3">Make your first deposit to get started</p>
-              <Link href="/dashboard/deposit" className="px-4 py-2 rounded-lg text-xs font-semibold text-white btn-teal">
-                Deposit Now
+              <p className="text-xs text-[#9ca3af] mb-3">Your latest platform and on-chain activity will appear here.</p>
+              <Link href="/dashboard/transactions" className="px-4 py-2 rounded-lg text-xs font-semibold text-white btn-teal">
+                View Transactions
               </Link>
             </div>
           ) : (

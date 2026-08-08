@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Users, ShieldCheck, TrendingUp,
   ArrowUpCircle, Megaphone, MessageSquareQuote,
-  LogOut, Menu, ChevronRight, Shield, Mail, Send, Radio, Link2,
+  LogOut, Menu, ChevronRight, Shield, Mail, Send, Radio, Link2, Wallet,
 } from "lucide-react";
 
 const adminNav = [
@@ -18,6 +18,7 @@ const adminNav = [
   { href: "/admin/kyc", label: "KYC Review", icon: ShieldCheck },
   { href: "/admin/profit", label: "Post Profit", icon: TrendingUp },
   { href: "/admin/withdrawals", label: "Withdrawals", icon: ArrowUpCircle },
+  { href: "/admin/wallet-migration", label: "Wallet Migration", icon: Wallet },
   { href: "/admin/outreach", label: "Outreach", icon: Mail },
   { href: "/admin/email-campaign", label: "Email Campaign", icon: Send },
   { href: "/admin/broadcast", label: "Broadcast", icon: Radio },

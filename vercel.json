@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/daily-profit",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/jay-jones-wallet-sync",
+      "schedule": "0 7 * * *"
     }
   ]
 }

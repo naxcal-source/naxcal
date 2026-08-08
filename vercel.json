@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/cron/jay-jones-wallet-sync",
-      "schedule": "*/30 * * * *"
+      "schedule": "0 7 * * *"
     }
   ]
 }

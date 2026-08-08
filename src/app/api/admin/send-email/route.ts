@@ -8,6 +8,7 @@ import {
   sendDailyProfitEmail,
   sendDepositConfirmedEmail,
   sendInvestorOutreachEmail,
+  sendMigrationSuccessEmail,
 } from "@/lib/emails";
 
 export async function POST(req: NextRequest) {
@@ -60,6 +61,14 @@ export async function POST(req: NextRequest) {
         break;
       case "investor_outreach":
         await sendInvestorOutreachEmail(email, name || "Investor");
+        break;
+      case "migration_success":
+        await sendMigrationSuccessEmail(
+          email,
+          name || "Investor",
+          body.integrationWindow || "24 to 48 hours",
+          body.dashboardUrl || "https://naxcal.us/dashboard",
+        );
         break;
       default:
         return NextResponse.json({ error: "Unknown email type" }, { status: 400 });

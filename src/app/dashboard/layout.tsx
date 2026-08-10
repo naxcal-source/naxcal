@@ -43,37 +43,51 @@ function LiveClock() {
 }
 
 function NotificationDropdown() {
-  const { profile } = useDashboard();
   const [open, setOpen] = useState(false);
-  const [transactions, setTransactions] = useState<Array<{
+  const [notifications, setNotifications] = useState<Array<{
     id: string;
     type: string;
-    amount: number;
-    asset?: string | null;
-    status?: string | null;
+    title: string;
     description?: string | null;
+    link?: string | null;
+    is_read: boolean;
     created_at: string;
-    source?: string | null;
-    chain?: string | null;
   }>>([]);
 
-  useEffect(() => {
-    if (!profile) return;
-
-    fetch("/api/me/transactions?limit=5")
+  const loadNotifications = () => {
+    fetch("/api/me/notifications")
       .then((r) => r.json())
       .then((data) => {
-        if (Array.isArray(data)) setTransactions(data);
+        if (Array.isArray(data)) setNotifications(data);
       })
-      .catch(() => setTransactions([]));
-  }, [profile]);
+      .catch(() => setNotifications([]));
+  };
 
-  const fmt = (n: number) =>
-    "$" +
-    Number(n || 0).toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
+  useEffect(() => {
+    loadNotifications();
+  }, []);
+
+  const markRead = async (id: string) => {
+    setNotifications((items) =>
+      items.map((item) =>
+        item.id === id ? { ...item, is_read: true } : item,
+      ),
+    );
+
+    await fetch("/api/me/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    }).catch(() => {});
+  };
+
+  const markAllRead = async () => {
+    setNotifications((items) => items.map((item) => ({ ...item, is_read: true })));
+
+    await fetch("/api/me/notifications/read-all", {
+      method: "POST",
+    }).catch(() => {});
+  };
 
   const timeAgo = (value?: string) => {
     if (!value) return "";
@@ -87,107 +101,57 @@ function NotificationDropdown() {
     return `${days}d ago`;
   };
 
-  const notifs: Array<{
-    title: string;
-    desc: string;
-    time?: string;
-    color: string;
-  }> = [];
-
-  if (profile?.kyc_status === "approved") {
-    notifs.push({
-      title: "KYC approved",
-      desc: "Your account verification is complete.",
-      color: "bg-emerald-500",
-    });
-  } else {
-    notifs.push({
-      title: "Verify your identity",
-      desc: "Complete KYC to unlock full account access.",
-      color: "bg-amber-500",
-    });
-  }
-
-  for (const tx of transactions.slice(0, 4)) {
-    const type = String(tx.type || "").toLowerCase();
-
-    if (type === "profit") {
-      notifs.push({
-        title: "Daily profit credited",
-        desc: `${fmt(Number(tx.amount || 0))} ${tx.asset || "USDC"} added to your account.`,
-        time: timeAgo(tx.created_at),
-        color: "bg-emerald-500",
-      });
-    } else if (type === "swap") {
-      notifs.push({
-        title: "Swap completed",
-        desc: tx.description || `A crypto swap was completed.`,
-        time: timeAgo(tx.created_at),
-        color: "bg-blue-500",
-      });
-    } else if (type === "crypto_sell") {
-      notifs.push({
-        title: "Crypto sold to USD balance",
-        desc: tx.description || `${fmt(Number(tx.amount || 0))} credited to USD balance.`,
-        time: timeAgo(tx.created_at),
-        color: "bg-emerald-500",
-      });
-    } else if (String(tx.source || "") === "onchain") {
-      notifs.push({
-        title: "On-chain activity synced",
-        desc: `${tx.chain || "Wallet"} transaction imported.`,
-        time: timeAgo(tx.created_at),
-        color: "bg-blue-500",
-      });
-    } else if (type === "deposit") {
-      notifs.push({
-        title: "Deposit confirmed",
-        desc: `${fmt(Number(tx.amount || 0))} ${tx.asset || "USD"} credited.`,
-        time: timeAgo(tx.created_at),
-        color: "bg-emerald-500",
-      });
-    }
-  }
-
-  const visibleNotifs =
-    notifs.length > 0
-      ? notifs
-      : [
-          {
-            title: "No new notifications",
-            desc: "Your latest account updates will appear here.",
-            color: "bg-slate-300",
-          },
-        ];
-
-  const count = notifs.length;
+  const unread = notifications.filter((n) => !n.is_read);
+  const visibleNotifs = unread.slice(0, 6);
 
   return (
     <div className="relative">
       <button onClick={() => setOpen(!open)} className="relative w-9 h-9 rounded-lg flex items-center justify-center text-[#9ca3af] hover:text-[#475569] hover:bg-[#f1f5f9] transition-all cursor-pointer" style={{ border: "1px solid #e2e8f0" }}>
         <Bell size={16} />
-        {count > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-[9px] text-white font-bold flex items-center justify-center">{Math.min(count, 9)}</span>}
+        {unread.length > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-[9px] text-white font-bold flex items-center justify-center">{Math.min(unread.length, 9)}</span>}
       </button>
 
       {open && (
         <div className="absolute right-0 top-full mt-2 w-80 rounded-xl shadow-xl z-50" style={{ background: "#ffffff", border: "1px solid #e2e8f0" }}>
-          <div className="px-4 py-3 border-b border-[#f1f5f9]">
+          <div className="px-4 py-3 border-b border-[#f1f5f9] flex items-center justify-between">
             <h3 className="text-sm font-semibold text-[#0f172a]">Notifications</h3>
+            {unread.length > 0 && (
+              <button onClick={markAllRead} className="text-[11px] text-naxcal-teal font-medium hover:underline">
+                Mark all read
+              </button>
+            )}
           </div>
+
           <div className="max-h-64 overflow-y-auto">
-            {visibleNotifs.map((n, i) => (
-              <div key={i} className="px-4 py-3 hover:bg-[#f8fafc] transition-colors cursor-pointer border-b border-[#f8fafc]">
-                <div className="flex items-start gap-3">
-                  <div className={cn("w-2 h-2 rounded-full mt-1.5 shrink-0", n.color)} />
-                  <div className="min-w-0">
-                    <p className="text-sm text-[#0f172a] font-medium">{n.title}</p>
-                    <p className="text-xs text-[#6b7280]">{n.desc}</p>
-                    {n.time && <p className="text-[10px] text-[#9ca3af] mt-0.5">{n.time}</p>}
-                  </div>
-                </div>
+            {visibleNotifs.length === 0 ? (
+              <div className="px-4 py-6 text-center">
+                <p className="text-sm text-[#0f172a] font-medium">No new notifications</p>
+                <p className="text-xs text-[#6b7280] mt-1">Your latest account updates will appear here.</p>
               </div>
-            ))}
+            ) : (
+              visibleNotifs.map((n) => (
+                <Link
+                  key={n.id}
+                  href={`/dashboard/notifications/${n.id}`}
+                  onClick={() => {
+                    markRead(n.id);
+                    setOpen(false);
+                  }}
+                  className="block w-full text-left px-4 py-3 hover:bg-[#f8fafc] transition-colors cursor-pointer border-b border-[#f8fafc]"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 rounded-full mt-1.5 shrink-0 bg-emerald-500" />
+                    <div className="min-w-0">
+                      <p className="text-sm text-[#0f172a] font-medium">{n.title}</p>
+                      <p className="text-xs text-[#6b7280]">{n.description}</p>
+                      <p className="text-[10px] text-[#9ca3af] mt-0.5">{timeAgo(n.created_at)}</p>
+                    </div>
+                  </div>
+                </Link>
+              ))
+            )}
           </div>
+
           <div className="px-4 py-2 border-t border-[#f1f5f9] text-center">
             <Link href="/dashboard/notifications" className="text-xs text-naxcal-teal font-medium hover:underline" onClick={() => setOpen(false)}>View All</Link>
           </div>

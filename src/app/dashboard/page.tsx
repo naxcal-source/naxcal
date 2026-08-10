@@ -57,14 +57,6 @@ const sparklines: Record<string, number[]> = {
   "S&P500": [45, 46, 44, 47, 48, 47, 49, 50, 49, 51],
 };
 
-const allocationData = [
-  { name: "Forex Trading", value: 35, color: "#1a8a6e" },
-  { name: "Global Equities", value: 25, color: "#3b82f6" },
-  { name: "Crypto Assets", value: 20, color: "#8b5cf6" },
-  { name: "Commodities", value: 12, color: "#f0a500" },
-  { name: "Algorithmic", value: 8, color: "#16a34a" },
-];
-
 const getAllocationData = (cash: number, crypto: number, stocks: number) => {
   const total = cash + crypto + stocks;
 

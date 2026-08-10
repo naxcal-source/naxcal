@@ -3,6 +3,7 @@ import { getAuthUser } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { rateLimit } from "@/lib/rate-limit";
 import { sendDepositConfirmedEmail } from "@/lib/emails";
+import { createNotification } from "@/lib/notifications";
 
 const GECKO_MAP: Record<string, string> = {
   BTC: "bitcoin",
@@ -167,6 +168,23 @@ export async function POST(req: NextRequest) {
       asset: `${fromToken}→${toToken}`,
       status: "completed",
       description: `Swapped ${fromAmount.toFixed(8)} ${fromToken} for ${toAmount.toFixed(8)} ${toToken}`,
+    });
+
+    await createNotification({
+      userId: user.id,
+      type: "swap",
+      title: "Swap completed",
+      description: `${fromToken} was swapped to ${toToken}.`,
+      body: `Your swap was completed successfully. You swapped ${fromAmount.toFixed(8)} ${fromToken} for ${toAmount.toFixed(8)} ${toToken}. A 0.5% swap fee was applied.`,
+      link: "/dashboard/transactions",
+      metadata: {
+        from_token: fromToken,
+        to_token: toToken,
+        from_amount: fromAmount,
+        to_amount: Number(toAmount.toFixed(8)),
+        value_usd: Number(fromValueUsd.toFixed(2)),
+        fee_usd: Number(feeUsd.toFixed(2)),
+      },
     });
 
     const { data: userProfile } = await supabaseAdmin

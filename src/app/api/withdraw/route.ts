@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { createNotification } from "@/lib/notifications";
 
 export async function POST(req: NextRequest) {
   try {
@@ -35,6 +36,21 @@ export async function POST(req: NextRequest) {
       description: `Withdrawal to ${asset || "USDT"} wallet`,
       balance_before: oldBalance,
       balance_after: newBalance,
+    });
+
+    await createNotification({
+      userId: user.id,
+      type: "withdrawal",
+      title: "Withdrawal request submitted",
+      description: `Your ${asset || "USDT"} withdrawal is now pending review.`,
+      body: `Your withdrawal request for $${Number(amount).toFixed(2)} has been submitted and is pending review. You can track the status from your transactions page.`,
+      link: "/dashboard/transactions",
+      metadata: {
+        amount,
+        asset: asset || "USDT",
+        wallet_address: wallet,
+        status: "pending",
+      },
     });
 
     return NextResponse.json({ status: "ok", new_balance: newBalance });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { sendDailyProfitEmail } from "@/lib/emails";
+import { createNotification } from "@/lib/notifications";
 
 export const TIER_RATES: Record<string, number> = {
   bronze: 1.5,
@@ -69,6 +70,23 @@ export async function runDailyProfit(label?: string) {
 
     if (txError) {
       console.error("Profit transaction insert error for", user.id, txError);
+    } else {
+      await createNotification({
+        userId: user.id,
+        type: "profit",
+        title: "Daily profit credited",
+        description: `$${profit.toFixed(2)} has been credited to your account.`,
+        body: `Your ${tier} tier daily return has been credited. A ${rate}% daily profit of $${profit.toFixed(2)} was added to your balance. Your new account balance is $${newBalance.toFixed(2)}.`,
+        link: "/dashboard/transactions",
+        metadata: {
+          tier,
+          rate,
+          profit: Number(profit.toFixed(2)),
+          balance_before: Number(balance.toFixed(2)),
+          balance_after: Number(newBalance.toFixed(2)),
+          label: label || null,
+        },
+      });
     }
 
     if (user.email) {

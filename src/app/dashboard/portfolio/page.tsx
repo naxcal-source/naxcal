@@ -63,9 +63,11 @@ export default function PortfolioPage() {
   const cashBalance = Number(profile?.balance ?? 0);
   const stocksValue = stocks.reduce((s, p) => s + p.market_value, 0);
   const cryptoValue = cryptos.reduce((s, p) => s + p.market_value, 0);
-  const totalValue = stocksValue + cryptoValue;
+  const holdingsValue = stocksValue + cryptoValue;
   const stocksPL = stocks.reduce((s, p) => s + p.unrealized_pl, 0);
   const cryptoPL = cryptos.reduce((s, p) => s + p.unrealized_pl, 0);
+  const totalAccountValue = Number(profile?.balance || 0) + holdingsValue;
+  const totalValue = totalAccountValue;
   const totalPL = stocksPL + cryptoPL;
 
   const allocation = [
@@ -139,7 +141,7 @@ export default function PortfolioPage() {
 
       {/* Total Value */}
       <div className="card-light p-6 mb-4">
-        <p className="text-xs text-[#9ca3af] uppercase tracking-wider mb-1">Total Portfolio Value</p>
+        <p className="text-xs text-[#9ca3af] uppercase tracking-wider mb-1">Total Account Value</p>
         <p className="text-3xl font-bold text-[#0f172a] mb-1">{fmt(totalValue)}</p>
         {totalPL !== 0 && (
           <span className={cn("inline-flex items-center gap-1 text-sm font-semibold", totalPL >= 0 ? "text-emerald-600" : "text-red-500")}>

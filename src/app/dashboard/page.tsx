@@ -65,11 +65,24 @@ const allocationData = [
   { name: "Algorithmic", value: 8, color: "#16a34a" },
 ];
 
+const getAllocationData = (cash: number, crypto: number, stocks: number) => {
+  const total = cash + crypto + stocks;
+
+  if (total <= 0) return [];
+
+  return [
+    { name: "Cash Balance", value: Math.round((cash / total) * 100), color: "#1a8a6e" },
+    { name: "Stocks", value: Math.round((stocks / total) * 100), color: "#3b82f6" },
+    { name: "Crypto", value: Math.round((crypto / total) * 100), color: "#8b5cf6" },
+  ].filter((item) => item.value > 0);
+};
+
 export default function DashboardPage() {
   const router = useRouter();
   const { profile, refreshProfile, fmt } = useDashboard();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [cryptoPortfolioValue, setCryptoPortfolioValue] = useState(0);
+  const [stockPortfolioValue, setStockPortfolioValue] = useState(0);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [livePrices, setLivePrices] = useState<Record<string, { price: number; change: number }>>({});
   // Redirect new users to onboarding (only if column exists and is explicitly false)
@@ -111,7 +124,8 @@ export default function DashboardPage() {
   }, []);
 
   const balance = Number(profile?.balance ?? 0);
-  const displayPortfolioValue = cryptoPortfolioValue > 0 ? cryptoPortfolioValue : balance;
+  const displayPortfolioValue = balance + cryptoPortfolioValue + stockPortfolioValue;
+  const allocationData = getAllocationData(balance, cryptoPortfolioValue, stockPortfolioValue);
   const totalProfit = Number(profile?.total_profit ?? 0);
   const totalDeposited = Number(profile?.total_deposited ?? 0);
   const tierRate = profile?.tier === "gold" ? 2.1 : profile?.tier === "silver" ? 1.8 : 1.5;
@@ -266,6 +280,11 @@ export default function DashboardPage() {
               <div className="rounded-2xl bg-white/[0.07] border border-white/10 p-4">
                 <p className="text-[10px] uppercase tracking-wider text-white/40">Crypto Value</p>
                 <p className="mt-2 text-lg font-bold"><AnimatedNumber value={cryptoPortfolioValue} formatter={fmt} /></p>
+              </div>
+
+              <div className="rounded-2xl bg-white/[0.07] border border-white/10 p-4">
+                <p className="text-[10px] uppercase tracking-wider text-white/40">Stock Value</p>
+                <p className="mt-2 text-lg font-bold"><AnimatedNumber value={stockPortfolioValue} formatter={fmt} /></p>
               </div>
 
               <div className="rounded-2xl bg-white/[0.07] border border-white/10 p-4">
@@ -632,7 +651,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {balance === 0 && cryptoPortfolioValue === 0 ? (
+          {displayPortfolioValue === 0 ? (
             <div className="rounded-2xl border border-dashed border-[#cbd5e1] bg-[#f8fafc] p-5 text-center">
               <div className="w-12 h-12 rounded-2xl bg-white border border-[#e2e8f0] flex items-center justify-center mx-auto mb-3">
                 <Wallet size={22} className="text-naxcal-teal" />

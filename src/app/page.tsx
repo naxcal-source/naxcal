@@ -372,7 +372,7 @@ export default function Home() {
                       <span className="text-[12px]" style={{ color: "#22c55e", fontWeight: 700 }}>+$523.80 today (+2.1%)</span>
                     </div>
                     <div className="h-[80px] mt-4 rounded-lg p-2" style={{ background: "rgba(255,255,255,0.05)" }}>
-                      <ResponsiveContainer width="100%" height="100%">
+                      <ResponsiveContainer width="100%" height={220} minWidth={0} minHeight={220}>
                         <AreaChart data={sparklineData}>
                           <defs><linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#1a8a6e" stopOpacity={0.5} /><stop offset="100%" stopColor="#1a8a6e" stopOpacity={0.05} /></linearGradient></defs>
                           <Area type="monotone" dataKey="v" stroke="#1a8a6e" strokeWidth={2} fill="url(#sparkGrad)" fillOpacity={1} />
@@ -545,7 +545,7 @@ export default function Home() {
                       ))}
                     </div>
                     <div className="h-[200px] rounded-lg p-3" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                      <ResponsiveContainer width="100%" height="100%">
+                      <ResponsiveContainer width="100%" height={220} minWidth={0} minHeight={220}>
                         <AreaChart data={dashboardChartData}>
                           <defs><linearGradient id="dashGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#1a8a6e" stopOpacity={0.35} /><stop offset="100%" stopColor="#1a8a6e" stopOpacity={0} /></linearGradient></defs>
                           <XAxis dataKey="d" tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }} axisLine={false} tickLine={false} />
@@ -606,7 +606,7 @@ export default function Home() {
                 <p className="text-[11px] text-white/25 mb-1">$10,000 initial capital &mdash; 12-month comparison</p>
                 <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-naxcal-gold/15 border border-naxcal-gold/25 mb-4"><span className="text-[11px] font-bold text-naxcal-gold">127x better than savings account</span></div>
                 <div className="h-[260px]">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height={220} minWidth={0} minHeight={220}>
                     <AreaChart data={performanceData}>
                       <defs><linearGradient id="perfGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#1a8a6e" stopOpacity={0.3} /><stop offset="100%" stopColor="#1a8a6e" stopOpacity={0} /></linearGradient></defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
@@ -704,7 +704,7 @@ export default function Home() {
               <div className="mt-6 pt-6 border-t border-[#e5e7eb]">
                 <p className="text-[10px] text-[#9ca3af] mb-3">12-month cumulative return projection</p>
                 <div className="h-[140px]">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height={220} minWidth={0} minHeight={220}>
                     <BarChart data={projectionData}>
                       <XAxis dataKey="month" tick={{ fill: "#9ca3af", fontSize: 9 }} axisLine={false} tickLine={false} />
                       <YAxis hide />

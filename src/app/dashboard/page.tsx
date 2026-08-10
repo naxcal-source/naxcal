@@ -461,6 +461,93 @@ export default function DashboardPage() {
         </div>
       </motion.div>
 
+      {displayPortfolioValue === 0 && (
+        <motion.div variants={item} className="card-light rounded-[24px] p-5 overflow-hidden">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-semibold text-emerald-700 mb-3">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                Getting Started
+              </div>
+
+              <h3 className="text-lg font-bold text-[#0f172a]">
+                Set up your account in a few steps
+              </h3>
+
+              <p className="text-sm text-[#64748b] mt-1 max-w-xl">
+                Your dashboard is ready. Add funds to activate portfolio tracking, daily returns and account activity.
+              </p>
+            </div>
+
+            <Link
+              href="/dashboard/deposit"
+              className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-naxcal-teal text-white text-sm font-semibold hover:bg-naxcal-teal-light transition-colors shrink-0"
+            >
+              Start Funding <ArrowRight size={16} />
+            </Link>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-5">
+            {[
+              {
+                title: "Account verified",
+                desc: profile?.kyc_status === "approved" ? "Your identity check is complete." : "Complete KYC to unlock full access.",
+                done: profile?.kyc_status === "approved",
+                href: "/dashboard/verification",
+              },
+              {
+                title: "Add first deposit",
+                desc: "Fund your account to activate portfolio growth.",
+                done: totalDeposited > 0,
+                href: "/dashboard/deposit",
+              },
+              {
+                title: "Choose your tier",
+                desc: "Your tier controls daily return percentage.",
+                done: displayPortfolioValue > 0,
+                href: "/dashboard/deposit",
+              },
+              {
+                title: "Track daily returns",
+                desc: "Profit history appears after your first payout.",
+                done: transactions.some((tx) => tx.type === "profit"),
+                href: "/dashboard/transactions",
+              },
+            ].map((step, index) => (
+              <Link
+                key={step.title}
+                href={step.href}
+                className="group rounded-2xl border border-[#e2e8f0] bg-[#f8fafc] p-4 hover:bg-[#0f172a] hover:border-[#0f172a] transition-all"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div
+                    className={cn(
+                      "w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold shrink-0",
+                      step.done
+                        ? "bg-emerald-500 text-white"
+                        : "bg-white border border-[#e2e8f0] text-[#64748b] group-hover:bg-white/10 group-hover:border-white/10 group-hover:text-white",
+                    )}
+                  >
+                    {step.done ? <CheckCircle2 size={17} /> : index + 1}
+                  </div>
+
+                  {!step.done && (
+                    <ArrowRight size={15} className="text-[#94a3b8] group-hover:text-white/60" />
+                  )}
+                </div>
+
+                <p className="mt-4 text-sm font-bold text-[#0f172a] group-hover:text-white">
+                  {step.title}
+                </p>
+                <p className="text-xs text-[#64748b] group-hover:text-white/55 mt-1 leading-relaxed">
+                  {step.desc}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
       {/* Premium Lower Dashboard */}
       <motion.div variants={item} className="grid lg:grid-cols-3 gap-5">
         <div className="card-light p-5 rounded-[24px] lg:col-span-2">

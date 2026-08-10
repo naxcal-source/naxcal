@@ -44,6 +44,9 @@ export default function PortfolioPage() {
   const [sellAmount, setSellAmount] = useState("");
   const [sellError, setSellError] = useState("");
   const [sellSuccess, setSellSuccess] = useState("");
+  const [stockSellingSymbol, setStockSellingSymbol] = useState<string | null>(null);
+  const [stockSellAmount, setStockSellAmount] = useState("");
+  const [stockSellLoading, setStockSellLoading] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -124,6 +127,54 @@ export default function PortfolioPage() {
       }
     } catch {
       setSellError("Sell failed. Please try again.");
+    }
+  };
+
+  const selectedStock = stockSellingSymbol
+    ? stocks.find((pos) => pos.symbol === stockSellingSymbol)
+    : null;
+
+  const sellStock = async () => {
+    if (!selectedStock) return;
+
+    const qty = Number(stockSellAmount);
+
+    if (!qty || qty <= 0) {
+      setSellError("Enter a valid number of shares to sell.");
+      return;
+    }
+
+    if (qty > selectedStock.qty) {
+      setSellError(`You only have ${selectedStock.qty.toFixed(4)} ${selectedStock.symbol} shares.`);
+      return;
+    }
+
+    setStockSellLoading(true);
+    setSellError("");
+    setSellSuccess("");
+
+    try {
+      const res = await fetch("/api/stocks/sell", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ symbol: selectedStock.symbol, qty }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Unable to sell stock.");
+      }
+
+      setSellSuccess(`Sold ${qty.toFixed(4)} ${selectedStock.symbol} shares successfully.`);
+      setStockSellingSymbol(null);
+      setStockSellAmount("");
+
+      window.location.reload();
+    } catch (error: any) {
+      setSellError(error?.message || "Unable to sell stock.");
+    } finally {
+      setStockSellLoading(false);
     }
   };
 
@@ -276,6 +327,17 @@ export default function PortfolioPage() {
                   <span className={cn("text-[10px] font-semibold", pos.unrealized_pl >= 0 ? "text-emerald-600" : "text-red-500")}>
                     {pos.unrealized_pl >= 0 ? "+" : ""}{fmt(pos.unrealized_pl)} ({pos.unrealized_plpc.toFixed(2)}%)
                   </span>
+                  <button
+                    onClick={() => {
+                      setStockSellingSymbol(pos.symbol);
+                      setStockSellAmount("");
+                      setSellError("");
+                      setSellSuccess("");
+                    }}
+                    className="block ml-auto mt-1 text-[10px] font-semibold text-naxcal-teal hover:underline"
+                  >
+                    Sell shares
+                  </button>
                 </div>
               </div>
             ))}
@@ -331,6 +393,74 @@ export default function PortfolioPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {stockSellingSymbol && selectedStock && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-5 w-full max-w-sm shadow-xl">
+            <h3 className="text-base font-bold text-[#0f172a] mb-1">
+              Sell {stockSellingSymbol} Shares
+            </h3>
+            <p className="text-xs text-[#6b7280] mb-4">
+              Choose how many shares to sell. The proceeds will be credited to your USD balance.
+            </p>
+
+            <div className="rounded-xl bg-[#f8fafc] border border-[#e2e8f0] p-3 mb-4">
+              <div className="flex justify-between text-xs mb-1">
+                <span className="text-[#64748b]">Available shares</span>
+                <span className="font-semibold text-[#0f172a]">{selectedStock.qty.toFixed(4)}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-[#64748b]">Estimated value</span>
+                <span className="font-semibold text-[#0f172a]">
+                  {fmt((Number(stockSellAmount) || 0) * (selectedStock.market_value / selectedStock.qty))}
+                </span>
+              </div>
+            </div>
+
+            <input
+              type="number"
+              min="0"
+              step="0.0001"
+              value={stockSellAmount}
+              onChange={(e) => setStockSellAmount(e.target.value)}
+              placeholder={`Shares of ${stockSellingSymbol}`}
+              className="w-full px-3 py-2.5 rounded-lg text-sm text-[#0f172a] border border-[#e2e8f0] focus:outline-none focus:ring-2 focus:ring-naxcal-teal/20"
+            />
+
+            <div className="grid grid-cols-4 gap-2 mt-3">
+              {[0.25, 0.5, 0.75, 1].map((pct) => (
+                <button
+                  key={pct}
+                  onClick={() => setStockSellAmount((selectedStock.qty * pct).toFixed(4))}
+                  className="py-2 rounded-lg text-[11px] font-semibold border border-[#e2e8f0] text-[#64748b] hover:bg-[#f8fafc]"
+                >
+                  {pct === 1 ? "All" : `${Math.round(pct * 100)}%`}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={() => {
+                  setStockSellingSymbol(null);
+                  setStockSellAmount("");
+                  setSellError("");
+                }}
+                className="flex-1 py-2 rounded-lg text-xs font-semibold border border-[#e2e8f0] text-[#64748b]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={sellStock}
+                disabled={stockSellLoading}
+                className="flex-1 py-2 rounded-lg text-xs font-semibold text-white btn-teal disabled:opacity-60"
+              >
+                {stockSellLoading ? "Selling..." : "Sell"}
+              </button>
+            </div>
           </div>
         </div>
       )}

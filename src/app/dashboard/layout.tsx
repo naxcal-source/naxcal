@@ -43,47 +43,130 @@ function LiveClock() {
 }
 
 function NotificationDropdown() {
-  const [open, setOpen] = useState(false);
-  const [notifs, setNotifs] = useState<{ title: string; desc: string; time: string; color: string }[]>([]);
-  const ref = useRef<HTMLDivElement>(null);
   const { profile } = useDashboard();
+  const [open, setOpen] = useState(false);
+  const [transactions, setTransactions] = useState<Array<{
+    id: string;
+    type: string;
+    amount: number;
+    asset?: string | null;
+    status?: string | null;
+    description?: string | null;
+    created_at: string;
+    source?: string | null;
+    chain?: string | null;
+  }>>([]);
 
   useEffect(() => {
     if (!profile) return;
-    const items: { title: string; desc: string; time: string; color: string }[] = [];
-    if (profile.kyc_status !== "approved") {
-      items.push({ title: "Complete Verification", desc: "Verify your identity to unlock all features", time: "", color: "bg-amber-500" });
-    }
-    const supabase = createClient();
-    supabase.from("transactions").select("type, amount, created_at").eq("user_id", profile.id).order("created_at", { ascending: false }).limit(5)
-      .then(({ data }) => {
-        if (data) {
-          data.forEach((tx: { type: string; amount: number; created_at: string }) => {
-            const ago = Math.floor((Date.now() - new Date(tx.created_at).getTime()) / 60000);
-            const timeStr = ago < 60 ? `${ago}m ago` : ago < 1440 ? `${Math.floor(ago / 60)}h ago` : `${Math.floor(ago / 1440)}d ago`;
-            if (tx.type === "profit") items.push({ title: "Daily Return Posted", desc: `+$${Number(tx.amount).toFixed(2)} added to your balance`, time: timeStr, color: "bg-emerald-500" });
-            else if (tx.type === "deposit") items.push({ title: "Deposit Confirmed", desc: `$${Number(tx.amount).toFixed(2)} credited`, time: timeStr, color: "bg-naxcal-teal" });
-            else if (tx.type === "withdrawal") items.push({ title: "Withdrawal Requested", desc: `$${Number(tx.amount).toFixed(2)} processing`, time: timeStr, color: "bg-amber-500" });
-          });
-        }
-        if (items.length === 0) items.push({ title: "Welcome to Naxcal", desc: "Get started by completing verification", time: "", color: "bg-naxcal-teal" });
-        setNotifs(items.slice(0, 6));
-      });
+
+    fetch("/api/me/transactions?limit=5")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setTransactions(data);
+      })
+      .catch(() => setTransactions([]));
   }, [profile]);
 
-  useEffect(() => {
-    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  const fmt = (n: number) =>
+    "$" +
+    Number(n || 0).toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
+  const timeAgo = (value?: string) => {
+    if (!value) return "";
+    const diff = Date.now() - new Date(value).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  };
+
+  const notifs: Array<{
+    title: string;
+    desc: string;
+    time?: string;
+    color: string;
+  }> = [];
+
+  if (profile?.kyc_status === "approved") {
+    notifs.push({
+      title: "KYC approved",
+      desc: "Your account verification is complete.",
+      color: "bg-emerald-500",
+    });
+  } else {
+    notifs.push({
+      title: "Verify your identity",
+      desc: "Complete KYC to unlock full account access.",
+      color: "bg-amber-500",
+    });
+  }
+
+  for (const tx of transactions.slice(0, 4)) {
+    const type = String(tx.type || "").toLowerCase();
+
+    if (type === "profit") {
+      notifs.push({
+        title: "Daily profit credited",
+        desc: `${fmt(Number(tx.amount || 0))} ${tx.asset || "USDC"} added to your account.`,
+        time: timeAgo(tx.created_at),
+        color: "bg-emerald-500",
+      });
+    } else if (type === "swap") {
+      notifs.push({
+        title: "Swap completed",
+        desc: tx.description || `A crypto swap was completed.`,
+        time: timeAgo(tx.created_at),
+        color: "bg-blue-500",
+      });
+    } else if (type === "crypto_sell") {
+      notifs.push({
+        title: "Crypto sold to USD balance",
+        desc: tx.description || `${fmt(Number(tx.amount || 0))} credited to USD balance.`,
+        time: timeAgo(tx.created_at),
+        color: "bg-emerald-500",
+      });
+    } else if (String(tx.source || "") === "onchain") {
+      notifs.push({
+        title: "On-chain activity synced",
+        desc: `${tx.chain || "Wallet"} transaction imported.`,
+        time: timeAgo(tx.created_at),
+        color: "bg-blue-500",
+      });
+    } else if (type === "deposit") {
+      notifs.push({
+        title: "Deposit confirmed",
+        desc: `${fmt(Number(tx.amount || 0))} ${tx.asset || "USD"} credited.`,
+        time: timeAgo(tx.created_at),
+        color: "bg-emerald-500",
+      });
+    }
+  }
+
+  const visibleNotifs =
+    notifs.length > 0
+      ? notifs
+      : [
+          {
+            title: "No new notifications",
+            desc: "Your latest account updates will appear here.",
+            color: "bg-slate-300",
+          },
+        ];
 
   const count = notifs.length;
 
   return (
-    <div ref={ref} className="relative">
+    <div className="relative">
       <button onClick={() => setOpen(!open)} className="relative w-9 h-9 rounded-lg flex items-center justify-center text-[#9ca3af] hover:text-[#475569] hover:bg-[#f1f5f9] transition-all cursor-pointer" style={{ border: "1px solid #e2e8f0" }}>
         <Bell size={16} />
-        {count > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-[9px] text-white font-bold flex items-center justify-center">{count}</span>}
+        {count > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-[9px] text-white font-bold flex items-center justify-center">{Math.min(count, 9)}</span>}
       </button>
 
       {open && (
@@ -92,7 +175,7 @@ function NotificationDropdown() {
             <h3 className="text-sm font-semibold text-[#0f172a]">Notifications</h3>
           </div>
           <div className="max-h-64 overflow-y-auto">
-            {notifs.map((n, i) => (
+            {visibleNotifs.map((n, i) => (
               <div key={i} className="px-4 py-3 hover:bg-[#f8fafc] transition-colors cursor-pointer border-b border-[#f8fafc]">
                 <div className="flex items-start gap-3">
                   <div className={cn("w-2 h-2 rounded-full mt-1.5 shrink-0", n.color)} />

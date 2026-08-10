@@ -442,139 +442,206 @@ export default function DashboardPage() {
         </div>
       </motion.div>
 
-      {/* Market Overview */}
-      <motion.div variants={item} className="card-light p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-[#0f172a]">Market Overview</h3>
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-semibold text-emerald-700">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse-live" /> Live
-            </span>
-          </div>
-          <Link href="/dashboard/markets" className="text-xs text-naxcal-teal hover:underline font-medium">View All</Link>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          {marketData.map((asset) => {
-            const live = livePrices[asset.symbol];
-            const price = live?.price ?? asset.price;
-            const change = live?.change ?? asset.change;
-            return (
-              <div key={asset.symbol} className="p-3 rounded-xl hover:shadow-md transition-all cursor-pointer" style={{ border: "1px solid #e2e8f0" }}>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0" style={{ background: asset.color }}>
-                    {asset.symbol.slice(0, 2)}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold text-[#0f172a] truncate">{asset.symbol}</p>
-                    <p className="text-[9px] text-[#9ca3af] truncate">{asset.name}</p>
-                  </div>
-                </div>
-                <div className="h-8 mb-1.5">
-                  <svg viewBox="0 0 100 30" className="w-full h-full">
-                    <polyline fill="none" stroke={change >= 0 ? "#16a34a" : "#ef4444"} strokeWidth="1.5"
-                      points={sparklines[asset.symbol]?.map((v, i) => `${i * 11},${30 - v * 0.5}`).join(" ") || "0,15 100,15"} />
-                  </svg>
-                </div>
-                <p className="text-xs font-bold text-[#0f172a]">${price < 1 ? price.toFixed(4) : price.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
-                <span className={cn("text-[10px] font-semibold", change >= 0 ? "text-emerald-600" : "text-red-500")}>
-                  {change >= 0 ? "+" : ""}{change.toFixed(2)}%
+      {/* Premium Lower Dashboard */}
+      <motion.div variants={item} className="grid lg:grid-cols-3 gap-5">
+        <div className="card-light p-5 rounded-[24px] lg:col-span-2">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-[#0f172a]">Market Overview</h3>
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-semibold text-emerald-700">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse-live" /> Live
                 </span>
               </div>
-            );
-          })}
-        </div>
-      </motion.div>
+              <p className="text-xs text-[#94a3b8] mt-1">Track major crypto assets and market movement.</p>
+            </div>
 
-      {/* Portfolio Allocation */}
-      <motion.div variants={item} className="card-light p-5">
-        <h3 className="text-sm font-semibold text-[#0f172a] mb-4">Portfolio Allocation</h3>
-        {balance === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-sm text-[#9ca3af]">Your portfolio allocation will appear after your first deposit</p>
+            <Link href="/dashboard/markets" className="text-xs font-semibold text-naxcal-teal hover:underline">
+              View all
+            </Link>
           </div>
-        ) : (
-          <div className="flex flex-col sm:flex-row items-center gap-6">
-            <div className="w-48 h-48">
-              <PieChart width={192} height={192}>
-                <Pie data={allocationData} cx="50%" cy="50%" innerRadius={55} outerRadius={80} dataKey="value" stroke="none">
+
+          <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
+            {marketData.slice(0, 6).map((asset) => {
+              const live = livePrices[asset.symbol];
+              const price = live?.price ?? asset.price;
+              const change = live?.change ?? asset.change;
+
+              return (
+                <Link
+                  key={asset.symbol}
+                  href="/dashboard/markets"
+                  className="group p-4 rounded-2xl border border-[#e2e8f0] bg-[#f8fafc] hover:bg-[#0f172a] hover:border-[#0f172a] hover:shadow-xl transition-all"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className="w-10 h-10 rounded-2xl flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm"
+                        style={{ background: asset.color }}
+                      >
+                        {asset.symbol.slice(0, 2)}
+                      </div>
+
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-[#0f172a] group-hover:text-white truncate">{asset.symbol}</p>
+                        <p className="text-xs text-[#94a3b8] group-hover:text-white/50 truncate">{asset.name}</p>
+                      </div>
+                    </div>
+
+                    <span className={cn(
+                      "text-xs font-bold shrink-0",
+                      change >= 0 ? "text-emerald-600 group-hover:text-emerald-300" : "text-red-500 group-hover:text-red-300",
+                    )}>
+                      {change >= 0 ? "+" : ""}{change.toFixed(2)}%
+                    </span>
+                  </div>
+
+                  <div className="h-10 my-3">
+                    <svg viewBox="0 0 100 30" className="w-full h-full">
+                      <polyline
+                        fill="none"
+                        stroke={change >= 0 ? "#16a34a" : "#ef4444"}
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        points={sparklines[asset.symbol]?.map((v, i) => `${i * 11},${30 - v * 0.5}`).join(" ") || "0,15 100,15"}
+                      />
+                    </svg>
+                  </div>
+
+                  <p className="text-base font-bold text-[#0f172a] group-hover:text-white">
+                    ${price < 1 ? price.toFixed(4) : price.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                  </p>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="card-light p-5 rounded-[24px]">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h3 className="text-base font-bold text-[#0f172a]">Portfolio Allocation</h3>
+              <p className="text-xs text-[#94a3b8] mt-1">Balance split by asset class.</p>
+            </div>
+          </div>
+
+          {balance === 0 && cryptoPortfolioValue === 0 ? (
+            <div className="rounded-2xl border border-dashed border-[#cbd5e1] bg-[#f8fafc] p-5 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-white border border-[#e2e8f0] flex items-center justify-center mx-auto mb-3">
+                <Wallet size={22} className="text-naxcal-teal" />
+              </div>
+              <p className="text-sm font-semibold text-[#0f172a]">No allocation yet</p>
+              <p className="text-xs text-[#64748b] mt-2">Your assets will appear here once your account is funded.</p>
+              <Link href="/dashboard/deposit" className="inline-flex mt-4 px-4 py-2 rounded-xl bg-naxcal-teal text-white text-xs font-semibold hover:bg-naxcal-teal-light transition-colors">
+                Add Funds
+              </Link>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center">
+              <PieChart width={210} height={210}>
+                <Pie data={allocationData} cx="50%" cy="50%" innerRadius={62} outerRadius={88} dataKey="value" stroke="none">
                   {allocationData.map((entry) => (
                     <Cell key={entry.name} fill={entry.color} />
                   ))}
                 </Pie>
               </PieChart>
+
+              <div className="w-full space-y-2 mt-3">
+                {allocationData.map((a) => (
+                  <div key={a.name} className="flex items-center justify-between p-2 rounded-xl bg-[#f8fafc] border border-[#eef2f7]">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ background: a.color }} />
+                      <span className="text-xs font-medium text-[#374151]">{a.name}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xs font-bold text-[#0f172a]">{a.value}%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="flex-1 space-y-2">
-              {allocationData.map((a) => (
-                <div key={a.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ background: a.color }} />
-                    <span className="text-xs text-[#374151]">{a.name}</span>
+          )}
+        </div>
+      </motion.div>
+
+      <motion.div variants={item} className="grid lg:grid-cols-2 gap-5">
+        <div className="card-light p-5 rounded-[24px]">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h3 className="text-base font-bold text-[#0f172a]">Recent Returns</h3>
+              <p className="text-xs text-[#94a3b8] mt-1">Daily profit history and payout status.</p>
+            </div>
+            <span className="px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-semibold text-emerald-700">
+              {profile?.tier || "Bronze"} rate
+            </span>
+          </div>
+
+          {dailyReturns.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-[#cbd5e1] bg-[#f8fafc] p-6 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-white border border-[#e2e8f0] flex items-center justify-center mx-auto mb-3">
+                <TrendingUp size={22} className="text-naxcal-teal" />
+              </div>
+              <p className="text-sm font-semibold text-[#0f172a]">No returns posted yet</p>
+              <p className="text-xs text-[#64748b] mt-2">Your daily return history will appear once your first profit is credited.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {dailyReturns.slice(0, 5).map((day, i) => (
+                <div key={i} className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-[#f8fafc] border border-[#eef2f7]">
+                  <div>
+                    <p className="text-sm font-semibold text-[#0f172a]">{day.date}</p>
+                    <p className="text-xs text-[#94a3b8]">Daily return +{day.rate}%</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-xs font-semibold text-[#0f172a]">{a.value}%</span>
-                    <span className="text-[10px] text-[#9ca3af] ml-2">{fmt(balance * a.value / 100)}</span>
+                    <p className="text-sm font-bold text-emerald-600">{fmt(Number(day.earnings))}</p>
+                    <span className="text-[10px] font-semibold text-emerald-700">{day.status}</span>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
-        )}
-      </motion.div>
+          )}
+        </div>
 
-      {/* Daily Returns History */}
-      <motion.div variants={item} className="card-light p-5">
-        <h3 className="text-sm font-semibold text-[#0f172a] mb-4">Recent Returns</h3>
-        {dailyReturns.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-sm text-[#9ca3af]">Daily returns will appear here after your first profit posting</p>
+        <div className="card-light p-5 rounded-[24px]">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h3 className="text-base font-bold text-[#0f172a]">Platform Updates</h3>
+              <p className="text-xs text-[#94a3b8] mt-1">Important account and platform messages.</p>
+            </div>
+            <Megaphone size={18} className="text-naxcal-teal" />
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[#e2e8f0]">
-                  <th className="text-left text-[10px] text-[#9ca3af] uppercase tracking-wider py-2 font-medium">Date</th>
-                  <th className="text-left text-[10px] text-[#9ca3af] uppercase tracking-wider py-2 font-medium">Return %</th>
-                  <th className="text-left text-[10px] text-[#9ca3af] uppercase tracking-wider py-2 font-medium">Your Earnings</th>
-                  <th className="text-left text-[10px] text-[#9ca3af] uppercase tracking-wider py-2 font-medium">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dailyReturns.map((day, i) => (
-                  <tr key={i} className="border-b border-[#f1f5f9] hover:bg-[#f8fafc] transition-colors">
-                    <td className="py-2.5 text-xs text-[#374151]">{day.date}</td>
-                    <td className="py-2.5 text-xs font-semibold text-emerald-600">+{day.rate}%</td>
-                    <td className="py-2.5 text-xs font-semibold text-[#0f172a]">{fmt(Number(day.earnings))}</td>
-                    <td className="py-2.5">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">{day.status}</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </motion.div>
 
-      {/* Announcements */}
-      {announcements.length > 0 && (
-        <motion.div variants={item} className="space-y-3">
-          <h3 className="text-sm font-semibold text-[#0f172a] flex items-center gap-2"><Megaphone size={16} className="text-naxcal-teal" /> Announcements</h3>
-          {announcements.map((a) => {
-            const style = announcementStyles[a.type] || announcementStyles.info;
-            return (
-              <div key={a.id} className="flex items-start gap-3 p-4 rounded-xl" style={{ background: style.bg, border: `1px solid ${style.border}` }}>
-                {style.icon}
-                <div>
-                  <p className="text-sm text-[#0f172a] font-medium">{a.title}</p>
-                  <p className="text-xs text-[#6b7280] mt-0.5">{a.content}</p>
-                  <p className="text-[10px] text-[#9ca3af] mt-2">{new Date(a.created_at).toLocaleDateString()}</p>
-                </div>
+          {announcements.length > 0 ? (
+            <div className="space-y-3">
+              {announcements.slice(0, 4).map((a) => {
+                const style = announcementStyles[a.type] || announcementStyles.info;
+                return (
+                  <div key={a.id} className="p-4 rounded-2xl" style={{ background: style.bg, border: `1px solid ${style.border}` }}>
+                    <div className="flex items-start gap-3">
+                      {style.icon}
+                      <div>
+                        <p className="text-sm text-[#0f172a] font-semibold">{a.title}</p>
+                        <p className="text-xs text-[#64748b] mt-1">{a.content}</p>
+                        <p className="text-[10px] text-[#94a3b8] mt-2">{new Date(a.created_at).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-[#cbd5e1] bg-[#f8fafc] p-6 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-white border border-[#e2e8f0] flex items-center justify-center mx-auto mb-3">
+                <Megaphone size={22} className="text-naxcal-teal" />
               </div>
-            );
-          })}
-        </motion.div>
-      )}
+              <p className="text-sm font-semibold text-[#0f172a]">No platform updates</p>
+              <p className="text-xs text-[#64748b] mt-2">Important announcements will appear here when available.</p>
+            </div>
+          )}
+        </div>
+      </motion.div>
+
     </motion.div>
   );
 }

@@ -262,10 +262,15 @@ export default function InvestPage() {
         {/* RIGHT PANEL: Detail + Invest */}
         <div className={cn("flex-1 min-w-0", !mobileDetail && !selected && "hidden lg:block")}>
           {!selected ? (
-            <div className="card-light h-full flex items-center justify-center">
-              <div className="text-center">
-                <Briefcase size={40} className="text-[#d1d5db] mx-auto mb-3" />
-                <p className="text-sm text-[#9ca3af]">Select a stock to view details</p>
+            <div className="card-light h-full flex items-center justify-center rounded-[24px] p-8">
+              <div className="text-center max-w-sm">
+                <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto mb-4">
+                  <Briefcase size={30} className="text-naxcal-teal" />
+                </div>
+                <h2 className="text-lg font-bold text-[#0f172a]">Choose a stock to invest</h2>
+                <p className="text-sm text-[#64748b] mt-2">
+                  Select a company from the list to view live pricing, recent movement and your estimated shares before investing.
+                </p>
               </div>
             </div>
           ) : (
@@ -277,7 +282,7 @@ export default function InvestPage() {
               </button>
 
               {/* Header */}
-              <div className="card-light p-5">
+              <div className="card-light p-5 rounded-[24px] overflow-hidden">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h2 className="text-xl font-bold text-[#0f172a]">{detail?.name || selected.name}</h2>
@@ -299,20 +304,20 @@ export default function InvestPage() {
                 {loadingDetail ? (
                   <div className="h-20 skeleton mb-4" />
                 ) : (
-                  <div className="h-20 mb-4">
+                  <div className="h-40 mb-4 rounded-2xl bg-[#f8fafc] border border-[#eef2f7] p-3">
                     {(() => {
                       const chartData = detail?.chart || selected.chart || [];
                       if (chartData.length < 2) return <div className="h-full flex items-center justify-center text-xs text-[#9ca3af]">No chart data</div>;
                       const min = Math.min(...chartData);
                       const max = Math.max(...chartData);
                       const range = max - min || 1;
-                      const pts = chartData.map((v: number, i: number) => `${(i / (chartData.length - 1)) * 200},${60 - ((v - min) / range) * 50}`).join(" ");
+                      const pts = chartData.map((v: number, i: number) => `${(i / (chartData.length - 1)) * 200},${130 - ((v - min) / range) * 110}`).join(" ");
                       const color = (detail?.change ?? selected.change) >= 0 ? "#16a34a" : "#ef4444";
                       return (
-                        <svg viewBox="0 0 200 65" className="w-full h-full">
+                        <svg viewBox="0 0 200 140" className="w-full h-full">
                           <polyline fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" points={pts} />
                           {chartData.map((v: number, i: number) => (
-                            <circle key={i} cx={(i / (chartData.length - 1)) * 200} cy={60 - ((v - min) / range) * 50} r="3" fill={color} opacity="0.5" />
+                            <circle key={i} cx={(i / (chartData.length - 1)) * 200} cy={130 - ((v - min) / range) * 110} r="3" fill={color} opacity="0.5" />
                           ))}
                         </svg>
                       );
@@ -340,8 +345,17 @@ export default function InvestPage() {
               </div>
 
               {/* Invest Form */}
-              <div className="card-light p-5">
-                <h3 className="text-sm font-semibold text-[#0f172a] mb-4">Invest in {selected.symbol}</h3>
+              <div className="card-light p-5 rounded-[24px]">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-sm font-bold text-[#0f172a]">Invest in {selected.symbol}</h3>
+                    <p className="text-xs text-[#94a3b8] mt-1">Buy fractional shares using your available balance.</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] uppercase tracking-wider text-[#94a3b8]">Buying Power</p>
+                    <p className="text-sm font-bold text-[#0f172a]">{fmt(Number(profile?.balance ?? 0))}</p>
+                  </div>
+                </div>
 
                 {buyResult?.success ? (
                   <div className="text-center py-6">
@@ -355,14 +369,25 @@ export default function InvestPage() {
                       <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm mb-3">{buyResult.message}</div>
                     )}
                     <div className="mb-3">
-                      <label className="block text-xs text-[#6b7280] mb-1.5 uppercase tracking-wider">Amount (USD)</label>
+                      <label className="block text-xs text-[#6b7280] mb-1.5 uppercase tracking-wider">Investment Amount (USD)</label>
                       <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Min. $50"
-                        className="w-full px-4 py-3 rounded-lg text-sm text-[#0f172a] placeholder:text-[#9ca3af] outline-none focus:ring-2 focus:ring-naxcal-teal/20" style={{ border: "1px solid #e2e8f0" }} />
+                        className="w-full px-4 py-3 rounded-xl text-sm text-[#0f172a] placeholder:text-[#9ca3af] outline-none focus:ring-2 focus:ring-naxcal-teal/20" style={{ border: "1px solid #e2e8f0" }} />
+
                       {amount && parseFloat(amount) > 0 && (detail?.price || selected.price) > 0 && (
-                        <p className="text-xs text-[#9ca3af] mt-1">≈ {(parseFloat(amount) / (detail?.price || selected.price)).toFixed(4)} shares</p>
+                        <div className="mt-3 grid grid-cols-2 gap-3">
+                          <div className="rounded-xl bg-[#f8fafc] border border-[#e2e8f0] p-3">
+                            <p className="text-[10px] uppercase tracking-wider text-[#94a3b8]">Estimated Shares</p>
+                            <p className="text-sm font-bold text-[#0f172a] mt-1">
+                              {(parseFloat(amount) / (detail?.price || selected.price)).toFixed(4)}
+                            </p>
+                          </div>
+                          <div className="rounded-xl bg-[#f8fafc] border border-[#e2e8f0] p-3">
+                            <p className="text-[10px] uppercase tracking-wider text-[#94a3b8]">Current Price</p>
+                            <p className="text-sm font-bold text-[#0f172a] mt-1">{fmt(detail?.price || selected.price)}</p>
+                          </div>
+                        </div>
                       )}
                     </div>
-                    <p className="text-xs text-[#9ca3af] mb-3">Available: {fmt(Number(profile?.balance ?? 0))}</p>
                     <button onClick={handleBuy} disabled={buying || !amount || parseFloat(amount) < 50}
                       className="w-full py-3 rounded-xl text-white font-semibold text-sm cursor-pointer btn-teal disabled:opacity-50 flex items-center justify-center gap-2">
                       {buying ? <><Loader2 size={16} className="animate-spin" /> Processing...</> : "Invest Now"}
@@ -378,9 +403,12 @@ export default function InvestPage() {
 
       {/* My Portfolio */}
       {positions.length > 0 && (
-        <div className="card-light p-5 mt-6">
+        <div className="card-light p-5 mt-6 rounded-[24px]">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-[#0f172a]">My Stock Portfolio</h3>
+            <div>
+              <h3 className="text-base font-bold text-[#0f172a]">My Stock Portfolio</h3>
+              <p className="text-xs text-[#94a3b8] mt-1">Your holdings update using the latest available market price.</p>
+            </div>
             <div className="text-right">
               <p className="text-sm font-bold text-[#0f172a]">{fmt(totalPortfolioValue)}</p>
               <span className={cn("text-[10px] font-semibold", totalPL >= 0 ? "text-emerald-600" : "text-red-500")}>
@@ -400,7 +428,7 @@ export default function InvestPage() {
               </thead>
               <tbody>
                 {positions.map((pos) => (
-                  <tr key={pos.symbol} className="border-b border-[#f1f5f9] hover:bg-[#f8fafc]">
+                  <tr key={pos.symbol} className="border-b border-[#f1f5f9] hover:bg-[#f8fafc] transition-colors">
                     <td className="py-2.5 px-2 font-semibold text-[#0f172a]">{pos.symbol}</td>
                     <td className="py-2.5 px-2 text-[#6b7280]">{pos.qty.toFixed(4)}</td>
                     <td className="py-2.5 px-2 text-[#6b7280]">{fmt(pos.avg_entry)}</td>

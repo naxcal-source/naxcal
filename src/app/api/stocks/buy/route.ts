@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getStockPrice } from "@/lib/yahoo-finance";
-import { sendDepositConfirmedEmail } from "@/lib/emails";
+import { createNotification } from "@/lib/notifications";
 
 export async function POST(req: NextRequest) {
   try {
@@ -52,11 +52,22 @@ export async function POST(req: NextRequest) {
       balance_before: oldBalance, balance_after: newBalance,
     });
 
-    // Send trade confirmation email
-    const { data: userProfile } = await supabaseAdmin.from("profiles").select("email, full_name").eq("id", user.id).single();
-    if (userProfile?.email) {
-      sendDepositConfirmedEmail(userProfile.email, userProfile.full_name || "Investor", amount_usd, `${symbol} Stock Purchase`).catch(console.error);
-    }
+    await createNotification({
+      userId: user.id,
+      type: "stock_buy",
+      title: "Stock purchase completed",
+      description: `${symbol} was added to your portfolio.`,
+      body: `Your stock purchase was completed successfully. You invested $${Number(amount_usd).toFixed(2)} into ${symbol}, receiving ${shares.toFixed(4)} shares at $${quote.price.toFixed(2)} per share. Your holding value will move up or down with the live market price.`,
+      link: "/dashboard/portfolio",
+      metadata: {
+        symbol,
+        amount_usd: Number(amount_usd),
+        shares: Number(shares.toFixed(6)),
+        price: Number(quote.price.toFixed(2)),
+        balance_before: oldBalance,
+        balance_after: newBalance,
+      },
+    });
 
     return NextResponse.json({
       symbol, shares: parseFloat(shares.toFixed(4)), price: quote.price,

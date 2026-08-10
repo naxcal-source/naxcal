@@ -175,6 +175,13 @@ export default function AdminUserDetail() {
               )}>
               {profile.is_active ? "Freeze Account" : "Unfreeze Account"}
             </button>
+            <Link
+              href={`/admin/users/${id}/activity-preview`}
+              className="w-full py-2 rounded-lg text-xs font-semibold text-naxcal-teal border border-naxcal-teal/30 hover:bg-naxcal-teal/10 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              View Activity Preview
+            </Link>
+
             <button onClick={sendDepositEmail} disabled={saving}
               className="w-full py-2 rounded-lg text-xs font-semibold text-blue-400 border border-blue-500/20 hover:bg-blue-500/10 transition-colors cursor-pointer disabled:opacity-30 flex items-center justify-center gap-1.5">
               <Mail size={12} /> Send Deposit Confirmation Email

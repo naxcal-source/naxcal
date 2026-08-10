@@ -46,6 +46,8 @@ export default function InvestPage() {
   const [loadingList, setLoadingList] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [amount, setAmount] = useState("");
+  const [investChartRange, setInvestChartRange] = useState("1W");
+  const [selectedInvestChartIndex, setSelectedInvestChartIndex] = useState<number | null>(null);
   const [buying, setBuying] = useState(false);
   const [buyResult, setBuyResult] = useState<{ success: boolean; message: string } | null>(null);
   const [mobileDetail, setMobileDetail] = useState(false);
@@ -326,19 +328,31 @@ export default function InvestPage() {
                       <div>
                         <p className="text-[10px] uppercase tracking-[0.22em] text-white/35">Live chart</p>
                         <p className="text-sm font-semibold text-white/80 mt-1">{selected.symbol} price movement</p>
+                        <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-white/[0.07] border border-white/[0.08] px-3 py-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ background: (detail?.change ?? selected.change) >= 0 ? "#22c55e" : "#ef4444" }} />
+                          <span className="text-[10px] text-white/40">{selectedLabel}</span>
+                          <span className="text-xs font-bold text-white">{fmt(selectedPoint.value)}</span>
+                        </div>
                       </div>
 
                       <div className="flex gap-1 rounded-full bg-white/[0.06] border border-white/[0.08] p-1">
-                        {["1D", "1W", "1M", "3M", "1Y"].map((rangeLabel, index) => (
-                          <span
+                        {["1D", "1W", "1M", "3M", "1Y"].map((rangeLabel) => (
+                          <button
                             key={rangeLabel}
+                            type="button"
+                            onClick={() => {
+                              setInvestChartRange(rangeLabel);
+                              setSelectedInvestChartIndex(null);
+                            }}
                             className={cn(
-                              "px-2.5 py-1 rounded-full text-[10px] font-semibold",
-                              index === 1 ? "bg-white text-[#071311]" : "text-white/45"
+                              "px-2.5 py-1 rounded-full text-[10px] font-semibold cursor-pointer transition-all",
+                              investChartRange === rangeLabel
+                                ? "bg-white text-[#071311]"
+                                : "text-white/45 hover:text-white/80 hover:bg-white/[0.06]"
                             )}
                           >
                             {rangeLabel}
-                          </span>
+                          </button>
                         ))}
                       </div>
                     </div>
@@ -372,6 +386,14 @@ export default function InvestPage() {
                       const linePoints = points.map((p) => `${p.x},${p.y}`).join(" ");
                       const areaPoints = `0,230 ${linePoints} 320,230`;
                       const latest = points[points.length - 1];
+                      const selectedPoint =
+                        selectedInvestChartIndex !== null && points[selectedInvestChartIndex]
+                          ? points[selectedInvestChartIndex]
+                          : latest;
+                      const selectedLabel =
+                        selectedInvestChartIndex !== null
+                          ? `Point ${selectedInvestChartIndex + 1}`
+                          : "Latest";
 
                       return (
                         <>
@@ -401,9 +423,36 @@ export default function InvestPage() {
                               filter="url(#investChartGlow)"
                             />
 
-                            <circle cx={latest.x} cy={latest.y} r="5" fill={color} />
-                            <circle cx={latest.x} cy={latest.y} r="11" fill={color} opacity="0.16" />
-                            <line x1={latest.x} y1="35" x2={latest.x} y2="220" stroke="rgba(255,255,255,0.16)" strokeDasharray="4 6" />
+                            <line
+                              x1={selectedPoint.x}
+                              y1="35"
+                              x2={selectedPoint.x}
+                              y2="220"
+                              stroke="rgba(255,255,255,0.22)"
+                              strokeDasharray="4 6"
+                            />
+
+                            {points.map((point, index) => {
+                              const segmentWidth = 320 / Math.max(points.length - 1, 1);
+                              return (
+                                <rect
+                                  key={`hit-${index}`}
+                                  x={Math.max(point.x - segmentWidth / 2, 0)}
+                                  y="20"
+                                  width={segmentWidth}
+                                  height="205"
+                                  fill="transparent"
+                                  className="cursor-crosshair"
+                                  onMouseEnter={() => setSelectedInvestChartIndex(index)}
+                                  onMouseMove={() => setSelectedInvestChartIndex(index)}
+                                  onClick={() => setSelectedInvestChartIndex(index)}
+                                />
+                              );
+                            })}
+
+                            <circle cx={selectedPoint.x} cy={selectedPoint.y} r="5" fill={color} />
+                            <circle cx={selectedPoint.x} cy={selectedPoint.y} r="13" fill={color} opacity="0.18" />
+                            <circle cx={selectedPoint.x} cy={selectedPoint.y} r="20" fill={color} opacity="0.08" />
                           </svg>
 
                           <div className="absolute left-4 right-4 bottom-4 z-20 grid grid-cols-3 gap-3">
@@ -417,7 +466,7 @@ export default function InvestPage() {
                             </div>
                             <div className="rounded-2xl bg-white/[0.06] border border-white/[0.08] px-3 py-2">
                               <p className="text-[9px] uppercase tracking-wider text-white/35">Latest</p>
-                              <p className="text-xs font-bold text-white/85">{fmt(latest.value)}</p>
+                              <p className="text-xs font-bold text-white/85">{fmt(selectedPoint.value)}</p>
                             </div>
                           </div>
                         </>

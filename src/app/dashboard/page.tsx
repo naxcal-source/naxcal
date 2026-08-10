@@ -40,12 +40,12 @@ function AnimatedNumber({ value, formatter }: { value: number; formatter: (n: nu
 }
 
 const marketData = [
-  { symbol: "BTC", name: "Bitcoin", price: 104250.80, change: 2.34, color: "#f7931a" },
-  { symbol: "ETH", name: "Ethereum", price: 3842.15, change: -1.12, color: "#627eea" },
-  { symbol: "USDT", name: "Tether", price: 1.00, change: 0.01, color: "#26a17b" },
-  { symbol: "EUR/USD", name: "Euro/Dollar", price: 1.0892, change: 0.15, color: "#3b82f6" },
-  { symbol: "GOLD", name: "Gold", price: 2438.50, change: 0.87, color: "#f0a500" },
-  { symbol: "S&P500", name: "S&P 500", price: 5560.22, change: 0.42, color: "#ef4444" },
+  { symbol: "BTC", name: "Bitcoin", price: 64048, change: -1.73, color: "#f7931a" },
+  { symbol: "ETH", name: "Ethereum", price: 1873.1, change: -2.55, color: "#627eea" },
+  { symbol: "USDC", name: "USD Coin", price: 1.0, change: 0.01, color: "#2775ca" },
+  { symbol: "BNB", name: "BNB", price: 572.44, change: 1.12, color: "#f3ba2f" },
+  { symbol: "SOL", name: "Solana", price: 144.26, change: 2.34, color: "#14f195" },
+  { symbol: "XRP", name: "XRP", price: 0.61, change: 0.82, color: "#23292f" },
 ];
 
 const sparklines: Record<string, number[]> = {
@@ -276,6 +276,25 @@ export default function DashboardPage() {
               <div className="rounded-2xl bg-white/[0.07] border border-white/10 p-4">
                 <p className="text-[10px] uppercase tracking-wider text-white/40">Total Deposited</p>
                 <p className="mt-2 text-lg font-bold"><AnimatedNumber value={totalDeposited} formatter={fmt} /></p>
+              </div>
+            </div>
+
+            <div className="mt-5 pt-4 border-t border-white/10 grid sm:grid-cols-3 gap-3 text-xs">
+              <div>
+                <p className="text-white/35 uppercase tracking-wider text-[10px]">Last updated</p>
+                <p className="mt-1 font-semibold text-white/80">Just now</p>
+              </div>
+
+              <div>
+                <p className="text-white/35 uppercase tracking-wider text-[10px]">Next profit cycle</p>
+                <p className="mt-1 font-semibold text-white/80">Daily payout</p>
+              </div>
+
+              <div>
+                <p className="text-white/35 uppercase tracking-wider text-[10px]">Funding status</p>
+                <p className="mt-1 font-semibold text-white/80">
+                  {displayPortfolioValue > 0 ? "Funded account" : "Not funded yet"}
+                </p>
               </div>
             </div>
           </div>

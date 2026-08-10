@@ -138,7 +138,7 @@ export default function DashboardPage() {
   const startingBalance =
     visibleEvents.length > 0
       ? Number((visibleEvents[0] as any).balance_before ?? 0)
-      : Math.max(displayPortfolioValue - totalProfit, 0);
+      : 0;
 
   let runningValue = Number.isFinite(startingBalance) ? startingBalance : 0;
 

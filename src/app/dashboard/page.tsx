@@ -12,7 +12,7 @@ import {
   Megaphone, Info, AlertCircle, CheckCircle2, Star, BarChart2, MessageCircle,
   Inbox,
 } from "lucide-react";
-import { AreaChart, Area, PieChart, Pie, Cell } from "recharts";
+import { AreaChart, Area, PieChart, Pie, Cell, Tooltip } from "recharts";
 import { cn } from "@/lib/utils";
 
 type Transaction = { id: string; type: string; amount: number; status: string; created_at: string; description: string | null };
@@ -120,6 +120,7 @@ export default function DashboardPage() {
   const allocationData = getAllocationData(balance, cryptoPortfolioValue, stockPortfolioValue);
 
   const [chartRange, setChartRange] = useState("1M");
+  const [selectedPerformanceIndex, setSelectedPerformanceIndex] = useState<number | null>(null);
 
   const accountEvents = transactions
     .filter((tx) => (tx as any).source !== "onchain")
@@ -172,6 +173,14 @@ export default function DashboardPage() {
   const performanceCurrent = displayPortfolioValue;
   const performanceChange = performanceCurrent - performanceStart;
   const performanceEvents = visibleEvents.length;
+  const activePerformancePoint =
+    selectedPerformanceIndex !== null
+      ? performanceChart[selectedPerformanceIndex]
+      : performanceChart[performanceChart.length - 1];
+
+  const activePerformanceValue = Number(activePerformancePoint?.v ?? performanceCurrent);
+  const activePerformanceLabel = activePerformancePoint?.name || "Now";
+
   const totalProfit = Number(profile?.total_profit ?? 0);
   const totalDeposited = Number(profile?.total_deposited ?? 0);
   const tierRate = profile?.tier === "gold" ? 2.1 : profile?.tier === "silver" ? 1.8 : 1.5;
@@ -444,6 +453,15 @@ export default function DashboardPage() {
               <p className="text-xs text-[#94a3b8] mt-1">
                 {balance > 0 ? "Balance movement across your selected range." : "Your growth chart will activate when the account is funded."}
               </p>
+
+              {performanceChart.length > 1 && (
+                <div className="mt-3 inline-flex items-center gap-2 rounded-2xl bg-emerald-50 border border-emerald-100 px-3 py-2">
+                  <span className="w-2 h-2 rounded-full bg-naxcal-teal" />
+                  <span className="text-[11px] text-[#64748b]">Selected</span>
+                  <span className="text-sm font-bold text-[#0f172a]">{fmt(activePerformanceValue)}</span>
+                  <span className="text-[11px] text-[#94a3b8]">{activePerformanceLabel}</span>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-1 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] p-1">
@@ -467,14 +485,54 @@ export default function DashboardPage() {
 
             {performanceChart.length > 1 ? (
               <div className="absolute inset-0">
-                <AreaChart width={900} height={280} data={performanceChart} margin={{ top: 30, right: 20, left: 0, bottom: 10 }}>
+                <AreaChart
+                  width={900}
+                  height={280}
+                  data={performanceChart}
+                  margin={{ top: 30, right: 20, left: 0, bottom: 10 }}
+                  onMouseMove={(state: any) => {
+                    if (state?.activeTooltipIndex !== undefined) {
+                      setSelectedPerformanceIndex(state.activeTooltipIndex);
+                    }
+                  }}
+                  onMouseLeave={() => setSelectedPerformanceIndex(null)}
+                  onClick={(state: any) => {
+                    if (state?.activeTooltipIndex !== undefined) {
+                      setSelectedPerformanceIndex(state.activeTooltipIndex);
+                    }
+                  }}
+                >
                   <defs>
                     <linearGradient id="premiumBalanceGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#1a8a6e" stopOpacity={0.28} />
-                      <stop offset="95%" stopColor="#1a8a6e" stopOpacity={0.02} />
+                      <stop offset="5%" stopColor="#1a8a6e" stopOpacity={0.34} />
+                      <stop offset="95%" stopColor="#1a8a6e" stopOpacity={0.03} />
                     </linearGradient>
                   </defs>
-                  <Area type="monotone" dataKey="v" stroke="#1a8a6e" strokeWidth={3} fill="url(#premiumBalanceGradient)" dot={false} activeDot={{ r: 5, fill: "#1a8a6e" }} />
+
+                  <Tooltip
+                    cursor={{ stroke: "#1a8a6e", strokeWidth: 1, strokeDasharray: "4 6" }}
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null;
+                      const value = Number(payload[0]?.value || 0);
+
+                      return (
+                        <div className="rounded-2xl bg-[#071311] border border-white/10 px-4 py-3 shadow-2xl">
+                          <p className="text-[10px] uppercase tracking-wider text-white/35">{label}</p>
+                          <p className="text-sm font-bold text-white mt-1">{fmt(value)}</p>
+                        </div>
+                      );
+                    }}
+                  />
+
+                  <Area
+                    type="monotone"
+                    dataKey="v"
+                    stroke="#1a8a6e"
+                    strokeWidth={3}
+                    fill="url(#premiumBalanceGradient)"
+                    dot={false}
+                    activeDot={{ r: 6, fill: "#1a8a6e", stroke: "#ffffff", strokeWidth: 3 }}
+                  />
                 </AreaChart>
               </div>
             ) : (

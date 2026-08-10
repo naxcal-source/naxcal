@@ -118,6 +118,58 @@ export default function DashboardPage() {
   const balance = Number(profile?.balance ?? 0);
   const displayPortfolioValue = balance + cryptoPortfolioValue + stockPortfolioValue;
   const allocationData = getAllocationData(balance, cryptoPortfolioValue, stockPortfolioValue);
+
+  const accountEvents = transactions
+    .filter((tx) => (tx as any).source !== "onchain")
+    .filter((tx) => (tx as any).balance_before !== null || (tx as any).balance_after !== null)
+    .slice()
+    .reverse();
+
+  const rangeLimit =
+    chartRange === "1W" ? 7 :
+    chartRange === "1M" ? 12 :
+    chartRange === "3M" ? 18 :
+    40;
+
+  const visibleEvents = chartRange === "ALL" ? accountEvents : accountEvents.slice(-rangeLimit);
+
+  const startingBalance =
+    visibleEvents.length > 0
+      ? Number((visibleEvents[0] as any).balance_before ?? 0)
+      : Math.max(displayPortfolioValue - totalProfit, 0);
+
+  let runningValue = Number.isFinite(startingBalance) ? startingBalance : 0;
+
+  const performanceChart = displayPortfolioValue > 0
+    ? [
+        { name: "Start", v: Math.max(runningValue, 0) },
+        ...visibleEvents.map((tx, index) => {
+          const type = String((tx as any).type || "").toLowerCase();
+          const amount = Number((tx as any).amount || 0);
+          const balanceAfter = Number((tx as any).balance_after);
+
+          if (type === "stock_buy" || type === "swap") {
+            // These move value between cash/holdings, so total account value should not drop.
+            runningValue = runningValue;
+          } else if (Number.isFinite(balanceAfter) && balanceAfter >= 0) {
+            runningValue = balanceAfter;
+          } else if (Number.isFinite(amount)) {
+            runningValue += amount;
+          }
+
+          return {
+            name: `${index + 1}`,
+            v: Math.max(runningValue, 0),
+          };
+        }),
+        { name: "Now", v: Math.max(displayPortfolioValue, 0) },
+      ]
+    : [];
+
+  const performanceStart = performanceChart[0]?.v || 0;
+  const performanceCurrent = displayPortfolioValue;
+  const performanceChange = performanceCurrent - performanceStart;
+  const performanceEvents = visibleEvents.length;
   const totalProfit = Number(profile?.total_profit ?? 0);
   const totalDeposited = Number(profile?.total_deposited ?? 0);
   const tierRate = profile?.tier === "gold" ? 2.1 : profile?.tier === "silver" ? 1.8 : 1.5;
@@ -412,16 +464,16 @@ export default function DashboardPage() {
           <div className="relative h-[280px] rounded-2xl overflow-hidden border border-[#eef2f7]" style={{ background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)" }}>
             <div className="absolute inset-0 opacity-60" style={{ backgroundImage: "linear-gradient(#eef2f7 1px, transparent 1px), linear-gradient(90deg, #eef2f7 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
 
-            {balance > 0 ? (
+            {performanceChart.length > 1 ? (
               <div className="absolute inset-0">
-                <AreaChart width={900} height={280} data={sampleChart} margin={{ top: 30, right: 20, left: 0, bottom: 10 }}>
+                <AreaChart width={900} height={280} data={performanceChart} margin={{ top: 30, right: 20, left: 0, bottom: 10 }}>
                   <defs>
                     <linearGradient id="premiumBalanceGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#1a8a6e" stopOpacity={0.28} />
                       <stop offset="95%" stopColor="#1a8a6e" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
-                  <Area type="monotone" dataKey="v" stroke="#1a8a6e" strokeWidth={3} fill="url(#premiumBalanceGradient)" />
+                  <Area type="monotone" dataKey="v" stroke="#1a8a6e" strokeWidth={3} fill="url(#premiumBalanceGradient)" dot={false} activeDot={{ r: 5, fill: "#1a8a6e" }} />
                 </AreaChart>
               </div>
             ) : (
@@ -441,6 +493,32 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
+
+          {performanceChart.length > 1 && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+              <div className="rounded-2xl bg-[#f8fafc] border border-[#e2e8f0] p-3">
+                <p className="text-[10px] uppercase tracking-wider text-[#94a3b8]">Start Value</p>
+                <p className="text-sm font-bold text-[#0f172a] mt-1">{fmt(performanceStart)}</p>
+              </div>
+
+              <div className="rounded-2xl bg-[#f8fafc] border border-[#e2e8f0] p-3">
+                <p className="text-[10px] uppercase tracking-wider text-[#94a3b8]">Current Value</p>
+                <p className="text-sm font-bold text-[#0f172a] mt-1">{fmt(performanceCurrent)}</p>
+              </div>
+
+              <div className="rounded-2xl bg-[#f8fafc] border border-[#e2e8f0] p-3">
+                <p className="text-[10px] uppercase tracking-wider text-[#94a3b8]">Change</p>
+                <p className={cn("text-sm font-bold mt-1", performanceChange >= 0 ? "text-emerald-600" : "text-red-500")}>
+                  {performanceChange >= 0 ? "+" : "-"}{fmt(Math.abs(performanceChange))}
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-[#f8fafc] border border-[#e2e8f0] p-3">
+                <p className="text-[10px] uppercase tracking-wider text-[#94a3b8]">Activity</p>
+                <p className="text-sm font-bold text-[#0f172a] mt-1">{performanceEvents} events</p>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="card-light p-5 rounded-[24px]">

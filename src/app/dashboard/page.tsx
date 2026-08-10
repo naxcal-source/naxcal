@@ -57,6 +57,20 @@ const sparklines: Record<string, number[]> = {
   "S&P500": [45, 46, 44, 47, 48, 47, 49, 50, 49, 51],
 };
 
+const formatChartDateTime = (value?: string | null) => {
+  if (!value) return "Now";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Now";
+
+  return date.toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
 const getAllocationData = (cash: number, crypto: number, stocks: number) => {
   const total = cash + crypto + stocks;
 
@@ -161,11 +175,11 @@ export default function DashboardPage() {
           }
 
           return {
-            name: `${index + 1}`,
+            name: formatChartDateTime((tx as any).created_at),
             v: Math.max(runningValue, 0),
           };
         }),
-        { name: "Now", v: Math.max(displayPortfolioValue, 0) },
+        { name: formatChartDateTime(new Date().toISOString()), v: Math.max(displayPortfolioValue, 0) },
       ]
     : [];
 
@@ -766,17 +780,69 @@ export default function DashboardPage() {
                     </span>
                   </div>
 
-                  <div className="h-10 my-3">
-                    <svg viewBox="0 0 100 30" className="w-full h-full">
-                      <polyline
-                        fill="none"
-                        stroke={change >= 0 ? "#16a34a" : "#ef4444"}
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        points={sparklines[asset.symbol]?.map((v, i) => `${i * 11},${30 - v * 0.5}`).join(" ") || "0,15 100,15"}
-                      />
-                    </svg>
+                  <div className="relative h-24 my-3 rounded-2xl overflow-hidden border border-[#e2e8f0] bg-white group-hover:bg-white/[0.04] group-hover:border-white/10 transition-all">
+                    <div
+                      className="absolute inset-0 opacity-[0.35] group-hover:opacity-[0.18]"
+                      style={{
+                        backgroundImage:
+                          "linear-gradient(rgba(15,23,42,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,0.08) 1px, transparent 1px)",
+                        backgroundSize: "28px 28px",
+                      }}
+                    />
+
+                    {(() => {
+                      const values = sparklines[asset.symbol] || [20, 21, 20, 22, 23, 22, 24, 25, 24, 26];
+                      const min = Math.min(...values);
+                      const max = Math.max(...values);
+                      const range = max - min || 1;
+                      const stroke = change >= 0 ? "#16a34a" : "#ef4444";
+                      const points = values.map((v, i) => {
+                        const x = (i / Math.max(values.length - 1, 1)) * 120;
+                        const y = 64 - ((v - min) / range) * 42;
+                        return `${x},${y}`;
+                      }).join(" ");
+                      const areaPoints = `0,72 ${points} 120,72`;
+                      const lastValue = values[values.length - 1];
+                      const lastX = 120;
+                      const lastY = 64 - ((lastValue - min) / range) * 42;
+
+                      return (
+                        <svg viewBox="0 0 120 76" className="absolute inset-0 w-full h-full">
+                          <defs>
+                            <linearGradient id={`marketFill-${asset.symbol}`} x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor={stroke} stopOpacity="0.28" />
+                              <stop offset="100%" stopColor={stroke} stopOpacity="0.02" />
+                            </linearGradient>
+                            <filter id={`marketGlow-${asset.symbol}`}>
+                              <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+                              <feMerge>
+                                <feMergeNode in="coloredBlur" />
+                                <feMergeNode in="SourceGraphic" />
+                              </feMerge>
+                            </filter>
+                          </defs>
+
+                          <polygon points={areaPoints} fill={`url(#marketFill-${asset.symbol})`} />
+                          <polyline
+                            fill="none"
+                            stroke={stroke}
+                            strokeWidth="2.4"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            points={points}
+                            filter={`url(#marketGlow-${asset.symbol})`}
+                          />
+                          <circle cx={lastX} cy={lastY} r="3.2" fill={stroke} />
+                          <circle cx={lastX} cy={lastY} r="8" fill={stroke} opacity="0.14" />
+                        </svg>
+                      );
+                    })()}
+
+                    <div className="absolute left-3 bottom-2 flex items-center gap-1 text-[10px] font-semibold">
+                      <span className={change >= 0 ? "text-emerald-600 group-hover:text-emerald-300" : "text-red-500 group-hover:text-red-300"}>
+                        {change >= 0 ? "Uptrend" : "Downtrend"}
+                      </span>
+                    </div>
                   </div>
 
                   <p className="text-base font-bold text-[#0f172a] group-hover:text-white">

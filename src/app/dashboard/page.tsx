@@ -12,7 +12,7 @@ import {
   Megaphone, Info, AlertCircle, CheckCircle2, Star, BarChart2, MessageCircle,
   Inbox,
 } from "lucide-react";
-import { AreaChart, Area, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { AreaChart, Area, PieChart, Pie, Cell } from "recharts";
 import { cn } from "@/lib/utils";
 
 type Transaction = { id: string; type: string; amount: number; status: string; created_at: string; description: string | null };
@@ -177,225 +177,268 @@ export default function DashboardPage() {
     <motion.div variants={container} initial="hidden" animate="show" className="max-w-6xl mx-auto space-y-6">
       {/* KYC Banner */}
       {profile?.kyc_status !== "approved" && (
-        <motion.div variants={item} className="flex items-center justify-between p-4 rounded-xl" style={{ background: "#fffbeb", border: "1px solid #fde68a" }}>
+        <motion.div
+          variants={item}
+          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-2xl"
+          style={{
+            background: "linear-gradient(135deg, #fffbeb, #ffffff)",
+            border: "1px solid #fde68a",
+            boxShadow: "0 14px 35px rgba(146,64,14,0.08)",
+          }}
+        >
           <div className="flex items-center gap-3">
-            <AlertTriangle size={20} className="text-amber-600 shrink-0" />
+            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+              <AlertTriangle size={20} className="text-amber-600 shrink-0" />
+            </div>
             <div>
-              <p className="text-sm text-[#0f172a] font-medium">Complete your identity verification</p>
-              <p className="text-xs text-[#6b7280]">Unlock deposits, withdrawals, and full platform access.</p>
+              <p className="text-sm text-[#0f172a] font-semibold">Complete your identity verification</p>
+              <p className="text-xs text-[#64748b]">Unlock deposits, withdrawals and full platform access.</p>
             </div>
           </div>
-          <Link href="/dashboard/kyc" className="flex items-center gap-1 px-4 py-2 rounded-lg text-xs font-semibold text-white cursor-pointer bg-naxcal-teal hover:bg-naxcal-teal-light transition-colors shrink-0">
+
+          <Link
+            href="/dashboard/kyc"
+            className="flex items-center justify-center gap-1 px-4 py-2 rounded-xl text-xs font-semibold text-white cursor-pointer bg-naxcal-teal hover:bg-naxcal-teal-light transition-colors shrink-0"
+          >
             Verify Now <ArrowRight size={14} />
           </Link>
         </motion.div>
       )}
 
-      {/* Stats Cards */}
-      <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Portfolio Value */}
-        <div className="card-light p-5 hover:shadow-lg hover:-translate-y-1 transition-all duration-300" style={{ background: "linear-gradient(135deg, rgba(26,138,110,0.08), rgba(26,138,110,0.02))" }}>
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[11px] text-[#6b7280] uppercase tracking-wider">Portfolio Value</span>
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "rgba(26,138,110,0.12)" }}>
+      {/* Premium Portfolio Hero */}
+      <motion.div variants={item} className="grid lg:grid-cols-[1.55fr_0.9fr] gap-5">
+        <div
+          className="relative overflow-hidden rounded-[28px] p-6 sm:p-7 text-white"
+          style={{
+            background:
+              "radial-gradient(circle at 15% 10%, rgba(31,214,163,0.36), transparent 32%), radial-gradient(circle at 85% 0%, rgba(240,165,0,0.16), transparent 28%), linear-gradient(135deg, #071b1c 0%, #0b2b2d 48%, #071012 100%)",
+            boxShadow: "0 28px 70px rgba(2,44,34,0.28)",
+          }}
+        >
+          <div className="absolute -right-24 -top-24 w-72 h-72 rounded-full bg-white/5 blur-2xl" />
+          <div className="absolute right-8 bottom-8 w-32 h-32 rounded-full bg-emerald-400/10 blur-xl" />
+
+          <div className="relative z-10 min-h-[330px] flex flex-col">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/15 backdrop-blur">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                  <span className="text-[11px] font-semibold text-emerald-50">Live Portfolio</span>
+                </div>
+
+                <p className="mt-5 text-xs uppercase tracking-[0.24em] text-white/45">Total Portfolio Value</p>
+
+                <h1 className="mt-2 text-4xl sm:text-5xl lg:text-6xl font-bold tracking-[-0.04em]">
+                  <AnimatedNumber value={displayPortfolioValue} formatter={fmt} />
+                </h1>
+
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-400/12 text-emerald-100 border border-emerald-300/20 text-xs font-semibold">
+                    <ArrowUpRight size={14} />
+                    {displayPortfolioValue > 0 ? `+${tierRate}% daily rate` : "Ready to fund"}
+                  </span>
+
+                  <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-white/8 text-white/70 border border-white/10 text-xs font-semibold capitalize">
+                    {profile?.tier || "Bronze"} tier
+                  </span>
+
+                  <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-white/8 text-white/70 border border-white/10 text-xs font-semibold">
+                    {profile?.kyc_status === "approved" ? "Verified account" : "Verification pending"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-white/10 border border-white/10 p-4 min-w-[180px] backdrop-blur">
+                <p className="text-[11px] uppercase tracking-wider text-white/45">Today's Return</p>
+                <p className="mt-2 text-2xl font-bold text-emerald-200">
+                  <AnimatedNumber value={todayReturn} formatter={fmt} />
+                </p>
+                <p className="mt-1 text-xs text-white/50">Next profit cycle: daily</p>
+              </div>
+            </div>
+
+            <div className="mt-auto pt-8 grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="rounded-2xl bg-white/[0.07] border border-white/10 p-4">
+                <p className="text-[10px] uppercase tracking-wider text-white/40">Available Balance</p>
+                <p className="mt-2 text-lg font-bold"><AnimatedNumber value={balance} formatter={fmt} /></p>
+              </div>
+
+              <div className="rounded-2xl bg-white/[0.07] border border-white/10 p-4">
+                <p className="text-[10px] uppercase tracking-wider text-white/40">Crypto Value</p>
+                <p className="mt-2 text-lg font-bold"><AnimatedNumber value={cryptoPortfolioValue} formatter={fmt} /></p>
+              </div>
+
+              <div className="rounded-2xl bg-white/[0.07] border border-white/10 p-4">
+                <p className="text-[10px] uppercase tracking-wider text-white/40">Total Earned</p>
+                <p className="mt-2 text-lg font-bold text-amber-200"><AnimatedNumber value={totalProfit} formatter={fmt} /></p>
+              </div>
+
+              <div className="rounded-2xl bg-white/[0.07] border border-white/10 p-4">
+                <p className="text-[10px] uppercase tracking-wider text-white/40">Total Deposited</p>
+                <p className="mt-2 text-lg font-bold"><AnimatedNumber value={totalDeposited} formatter={fmt} /></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Premium Account Overview */}
+        <div className="card-light p-5 rounded-[28px]">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-bold text-[#0f172a]">Account Overview</h2>
+              <p className="text-xs text-[#94a3b8] mt-1">Tier, status and account progress</p>
+            </div>
+            <div className="w-11 h-11 rounded-2xl bg-emerald-50 flex items-center justify-center">
               <Wallet size={20} className="text-naxcal-teal" />
             </div>
           </div>
-          <p className="text-3xl font-bold text-[#0f172a]"><AnimatedNumber value={displayPortfolioValue} formatter={fmt} /></p>
-        </div>
 
-        {/* Today's Return */}
-        <div className="card-light p-5 hover:shadow-lg hover:-translate-y-1 transition-all duration-300" style={{ background: todayReturn > 0 ? "linear-gradient(135deg, rgba(22,163,74,0.08), rgba(22,163,74,0.02))" : undefined }}>
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[11px] text-[#6b7280] uppercase tracking-wider">Today&apos;s Return</span>
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "rgba(22,163,74,0.12)" }}>
-              <TrendingUp size={20} className="text-emerald-600" />
+          <div className="mt-5 rounded-2xl p-4" style={{ background: currentTierColors.bg, border: `1px solid ${currentTierColors.border}` }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[11px] uppercase tracking-wider text-[#64748b]">Investment Tier</p>
+                <p className={cn("mt-1 text-2xl font-bold capitalize", currentTierColors.text)}>{profile?.tier || "Bronze"}</p>
+              </div>
+              <div className={cn("text-sm font-bold", currentTierColors.text)}>+{tierRate}%</div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <p className="text-3xl font-bold text-emerald-600"><AnimatedNumber value={todayReturn} formatter={fmt} /></p>
-            {todayReturn > 0 && <ArrowUpRight size={18} className="text-emerald-500" />}
-          </div>
-          <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            +{tierRate}%
-          </div>
-        </div>
 
-        {/* Total Earned */}
-        <div className="card-light p-5 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[11px] text-[#6b7280] uppercase tracking-wider">Total Earned</span>
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "rgba(240,165,0,0.12)" }}>
-              <CircleDollarSign size={20} className="text-amber-600" />
+            <div className="mt-4 h-2 rounded-full bg-white/70 overflow-hidden">
+              <div className="h-full rounded-full bg-naxcal-teal" style={{ width: `${progress}%` }} />
             </div>
-          </div>
-          <p className="text-3xl font-bold text-amber-600"><AnimatedNumber value={totalProfit} formatter={fmt} /></p>
-        </div>
 
-        {/* Total Deposited */}
-        <div className="card-light p-5 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[11px] text-[#6b7280] uppercase tracking-wider">Total Deposited</span>
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "rgba(59,130,246,0.12)" }}>
-              <ArrowDownCircle size={20} className="text-blue-600" />
-            </div>
+            <p className="mt-3 text-xs text-[#64748b]">
+              {currentTierInfo.next
+                ? `${fmt(Math.max(currentTierInfo.target - balance, 0))} until ${currentTierInfo.next}`
+                : "Highest tier unlocked"}
+            </p>
           </div>
-          <p className="text-3xl font-bold text-blue-600"><AnimatedNumber value={totalDeposited} formatter={fmt} /></p>
+
+          <div className="mt-5 space-y-3">
+            {currentPerks.map((perk) => (
+              <div key={perk} className="flex items-center gap-3 text-sm text-[#334155]">
+                <CheckCircle2 size={16} className="text-emerald-500" />
+                <span>{perk}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 grid grid-cols-2 gap-3">
+            <Link href="/dashboard/deposit" className="rounded-2xl bg-naxcal-teal text-white p-4 hover:bg-naxcal-teal-light transition-colors">
+              <ArrowDownCircle size={18} />
+              <p className="mt-3 text-sm font-semibold">Deposit</p>
+            </Link>
+
+            <Link href="/dashboard/withdraw" className="rounded-2xl bg-[#f8fafc] border border-[#e2e8f0] p-4 hover:bg-white transition-colors">
+              <ArrowUpRight size={18} className="text-[#0f172a]" />
+              <p className="mt-3 text-sm font-semibold text-[#0f172a]">Withdraw</p>
+            </Link>
+          </div>
         </div>
       </motion.div>
 
-      {/* Chart + Recent Activity */}
-      <motion.div variants={item} className="grid lg:grid-cols-[1fr_380px] gap-4">
-        <div className="card-light p-5">
-          <div className="flex items-center justify-between mb-4">
+      {/* Premium Performance + Activity */}
+      <motion.div variants={item} className="grid lg:grid-cols-[1.45fr_0.9fr] gap-5">
+        <div className="card-light p-5 rounded-[24px]">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
             <div>
-              <h3 className="text-sm font-semibold text-[#0f172a]">Portfolio Performance</h3>
-              <p className="text-[10px] text-[#9ca3af] mt-0.5">Last updated: just now</p>
+              <h3 className="text-base font-bold text-[#0f172a]">Portfolio Performance</h3>
+              <p className="text-xs text-[#94a3b8] mt-1">
+                {balance > 0 ? "Balance movement across your selected range." : "Your growth chart will activate when the account is funded."}
+              </p>
             </div>
-            <div className="flex gap-1">
+
+            <div className="flex gap-1 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] p-1">
               {["1W", "1M", "3M", "ALL"].map((r) => (
-                <button key={r} onClick={() => setChartRange(r)} className={cn("px-3 py-1.5 rounded-lg text-[10px] font-semibold cursor-pointer transition-all",
-                  chartRange === r ? "bg-naxcal-teal text-white shadow-sm" : "text-[#9ca3af] hover:text-[#475569] hover:bg-[#f1f5f9]"
-                )}>{r}</button>
+                <button
+                  key={r}
+                  onClick={() => setChartRange(r)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-[10px] font-semibold cursor-pointer transition-all",
+                    chartRange === r ? "bg-[#0f172a] text-white shadow-sm" : "text-[#94a3b8] hover:text-[#475569]",
+                  )}
+                >
+                  {r}
+                </button>
               ))}
             </div>
           </div>
-          {displayPortfolioValue === 0 ? (
-            <div className="h-[220px] relative">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={Array.from({ length: 14 }, (_, i) => ({ d: i, v: 0 }))}>
-                  <defs><linearGradient id="emptyGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#e2e8f0" stopOpacity={0.3} /><stop offset="100%" stopColor="#e2e8f0" stopOpacity={0} /></linearGradient></defs>
-                  <Area type="monotone" dataKey="v" stroke="#cbd5e1" strokeWidth={2} strokeDasharray="6 4" fill="url(#emptyGrad)" />
+
+          <div className="relative h-[280px] rounded-2xl overflow-hidden border border-[#eef2f7]" style={{ background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)" }}>
+            <div className="absolute inset-0 opacity-60" style={{ backgroundImage: "linear-gradient(#eef2f7 1px, transparent 1px), linear-gradient(90deg, #eef2f7 1px, transparent 1px)", backgroundSize: "48px 48px" }} />
+
+            {balance > 0 ? (
+              <div className="absolute inset-0">
+                <AreaChart width={900} height={280} data={sampleChart} margin={{ top: 30, right: 20, left: 0, bottom: 10 }}>
+                  <defs>
+                    <linearGradient id="premiumBalanceGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#1a8a6e" stopOpacity={0.28} />
+                      <stop offset="95%" stopColor="#1a8a6e" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <Area type="monotone" dataKey="v" stroke="#1a8a6e" strokeWidth={3} fill="url(#premiumBalanceGradient)" />
                 </AreaChart>
-              </ResponsiveContainer>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <p className="text-sm text-[#9ca3af] bg-white/80 px-4 py-2 rounded-lg">Your growth will appear here after first deposit</p>
               </div>
-            </div>
-          ) : (
-            <div className="h-[220px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={sampleChart}>
-                  <defs><linearGradient id="balGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#1a8a6e" stopOpacity={0.25} /><stop offset="100%" stopColor="#1a8a6e" stopOpacity={0} /></linearGradient></defs>
-                  <Area type="monotone" dataKey="v" stroke="#1a8a6e" strokeWidth={2} fill="url(#balGrad)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-8">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center mb-4">
+                  <TrendingUp size={24} className="text-naxcal-teal" />
+                </div>
+
+                <p className="text-sm font-semibold text-[#0f172a]">No portfolio history yet</p>
+                <p className="text-xs text-[#64748b] mt-2 max-w-sm">
+                  Once your account is funded, your balance trend, profit history and account growth will appear here.
+                </p>
+
+                <Link href="/dashboard/deposit" className="mt-5 px-4 py-2 rounded-xl bg-naxcal-teal text-white text-xs font-semibold hover:bg-naxcal-teal-light transition-colors">
+                  Fund Account
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Recent Activity */}
-        <div className="card-light p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-[#0f172a]">Recent Activity</h3>
-            <Link href="/dashboard/transactions" className="text-xs text-naxcal-teal hover:underline font-medium">View All</Link>
-          </div>
-          {transactions.length === 0 ? (
-            <div className="h-[220px] flex flex-col items-center justify-center text-center">
-              <div className="w-14 h-14 rounded-full flex items-center justify-center mb-3" style={{ background: "rgba(26,138,110,0.08)" }}>
-                <Inbox size={24} className="text-[#9ca3af]" />
-              </div>
-              <p className="text-sm font-medium text-[#374151] mb-1">No transactions yet</p>
-              <p className="text-xs text-[#9ca3af] mb-3">Your latest platform and on-chain activity will appear here.</p>
-              <Link href="/dashboard/transactions" className="px-4 py-2 rounded-lg text-xs font-semibold text-white btn-teal">
-                View Transactions
-              </Link>
+        <div className="card-light p-5 rounded-[24px]">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h3 className="text-base font-bold text-[#0f172a]">Recent Activity</h3>
+              <p className="text-xs text-[#94a3b8] mt-1">Latest account movements</p>
             </div>
-          ) : (
-            <div className="space-y-1">
-              {transactions.map((tx) => {
-                const isProfit = tx.type === "profit";
-                const isCredit = ["deposit", "profit", "bonus", "referral"].includes(tx.type);
+            <Link href="/dashboard/transactions" className="text-xs font-semibold text-naxcal-teal hover:underline">
+              View all
+            </Link>
+          </div>
+
+          {transactions.length > 0 ? (
+            <div className="space-y-3">
+              {transactions.slice(0, 5).map((tx) => {
+                const isPositive = Number(tx.amount) >= 0;
                 return (
-                  <div key={tx.id} className="flex items-center gap-3 py-2.5 hover:bg-[#f8fafc] rounded-lg px-2 transition-colors">
-                    <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center",
-                      isProfit ? "bg-amber-50" : isCredit ? "bg-emerald-50" : "bg-red-50"
-                    )}>
-                      {isProfit ? <Star size={14} className="text-amber-500" /> : isCredit ? <ArrowDownRight size={14} className="text-emerald-600" /> : <ArrowUpRight size={14} className="text-red-500" />}
+                  <div key={tx.id} className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-[#f8fafc] border border-[#eef2f7]">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", isPositive ? "bg-emerald-50" : "bg-red-50")}>
+                        {isPositive ? <ArrowDownCircle size={18} className="text-emerald-600" /> : <ArrowUpRight size={18} className="text-red-500" />}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-[#0f172a] truncate capitalize">{tx.type?.replaceAll("_", " ") || "Transaction"}</p>
+                        <p className="text-xs text-[#94a3b8] truncate">{new Date(tx.created_at).toLocaleDateString()}</p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-[#374151] capitalize font-medium">{tx.description || tx.type}</p>
-                      <p className="text-[10px] text-[#9ca3af]">{new Date(tx.created_at).toLocaleDateString()}</p>
-                    </div>
-                    <span className={cn("text-sm font-semibold", isCredit ? "text-[#16a34a]" : "text-red-500")}>
-                      {isCredit ? "+" : "-"}{fmt(Number(tx.amount))}
-                    </span>
+                    <p className={cn("text-sm font-bold whitespace-nowrap", isPositive ? "text-emerald-600" : "text-red-500")}>
+                      {isPositive ? "+" : "-"}{fmt(Math.abs(Number(tx.amount || 0)))}
+                    </p>
                   </div>
                 );
               })}
             </div>
-          )}
-        </div>
-      </motion.div>
-
-      {/* Tier + Quick Actions */}
-      <motion.div variants={item} className="grid lg:grid-cols-2 gap-4">
-        {/* Investment Tier */}
-        <div className="card-light p-5 overflow-hidden" style={{ background: currentTierColors.bg, borderColor: currentTierColors.border }}>
-          <h3 className="text-sm font-semibold text-[#0f172a] mb-4">Investment Tier</h3>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{
-              background: profile?.tier === "gold" ? "linear-gradient(135deg, #f0a500, #f5bc30)" : profile?.tier === "silver" ? "linear-gradient(135deg, #94a3b8, #cbd5e1)" : "linear-gradient(135deg, #b45309, #d97706)",
-            }}>
-              <Star size={22} className="text-white" />
+          ) : (
+            <div className="rounded-2xl border border-dashed border-[#cbd5e1] bg-[#f8fafc] p-5 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-white border border-[#e2e8f0] flex items-center justify-center mx-auto mb-3">
+                <CircleDollarSign size={22} className="text-naxcal-teal" />
+              </div>
+              <p className="text-sm font-semibold text-[#0f172a]">No activity yet</p>
+              <p className="text-xs text-[#64748b] mt-2">Deposits, profits, swaps and withdrawals will appear here.</p>
             </div>
-            <div>
-              <span className={cn("text-xl font-bold capitalize", currentTierColors.text)}>{profile?.tier || "Bronze"} Tier</span>
-              <p className="text-xs text-[#6b7280]">{tierRate}% daily returns</p>
-            </div>
-          </div>
-
-          <div className="space-y-2 mb-4">
-            {currentPerks.map((perk, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <CheckCircle2 size={14} className="text-naxcal-teal shrink-0" />
-                <span className="text-xs text-[#374151]">{perk}</span>
-              </div>
-            ))}
-          </div>
-
-          {currentTierInfo.next && (
-            <>
-              <div className="flex items-center justify-between text-xs text-[#6b7280] mb-1.5">
-                <span>Progress to {currentTierInfo.next}</span>
-                <span>{fmt(balance)} / {fmt(currentTierInfo.target)}</span>
-              </div>
-              <div className="h-2.5 rounded-full overflow-hidden bg-[#e2e8f0]">
-                <div className="h-full rounded-full bg-naxcal-teal transition-all" style={{ width: `${progress}%` }} />
-              </div>
-              <Link href="/dashboard/deposit" className="inline-flex items-center gap-1.5 mt-4 px-4 py-2 rounded-lg text-xs font-semibold text-white btn-teal">
-                Deposit to Upgrade <ArrowRight size={12} />
-              </Link>
-            </>
           )}
-        </div>
-
-        {/* Quick Actions */}
-        <div className="card-light p-5">
-          <h3 className="text-sm font-semibold text-[#0f172a] mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {[
-              { href: "/dashboard/deposit", label: "Deposit", icon: ArrowDownCircle, color: "text-naxcal-teal", bg: "rgba(26,138,110,0.08)" },
-              { href: "/dashboard/withdraw", label: "Withdraw", icon: ArrowUpCircle, color: "text-amber-600", bg: "rgba(240,165,0,0.08)" },
-              { href: "/dashboard/referrals", label: "Invite Friends", icon: Users, color: "text-blue-600", bg: "rgba(59,130,246,0.08)" },
-              { href: "/dashboard/markets", label: "Markets", icon: BarChart2, color: "text-purple-600", bg: "rgba(147,51,234,0.08)" },
-              { href: "/dashboard/support", label: "Support", icon: MessageCircle, color: "text-pink-600", bg: "rgba(236,72,153,0.08)" },
-            ].map((action, i) => (
-              <Link key={i} href={action.href} className="flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-[#f8fafc] hover:border-naxcal-teal/20 transition-all group" style={{ border: "1px solid #e2e8f0" }}>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110" style={{ background: action.bg }}>
-                  <action.icon size={20} className={action.color} />
-                </div>
-                <span className="text-xs text-[#374151] font-medium">{action.label}</span>
-              </Link>
-            ))}
-            <button onClick={() => { window.open("/dashboard/statement", "_blank"); }}
-              className="flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-[#f8fafc] hover:border-naxcal-teal/20 transition-all group cursor-pointer" style={{ border: "1px solid #e2e8f0" }}>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110" style={{ background: "rgba(100,116,139,0.08)" }}>
-                <FileText size={20} className="text-slate-600" />
-              </div>
-              <span className="text-xs text-[#374151] font-medium">Statement</span>
-            </button>
-          </div>
         </div>
       </motion.div>
 
@@ -452,15 +495,13 @@ export default function DashboardPage() {
         ) : (
           <div className="flex flex-col sm:flex-row items-center gap-6">
             <div className="w-48 h-48">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={allocationData} cx="50%" cy="50%" innerRadius={55} outerRadius={80} dataKey="value" stroke="none">
-                    {allocationData.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
+              <PieChart width={192} height={192}>
+                <Pie data={allocationData} cx="50%" cy="50%" innerRadius={55} outerRadius={80} dataKey="value" stroke="none">
+                  {allocationData.map((entry) => (
+                    <Cell key={entry.name} fill={entry.color} />
+                  ))}
+                </Pie>
+              </PieChart>
             </div>
             <div className="flex-1 space-y-2">
               {allocationData.map((a) => (

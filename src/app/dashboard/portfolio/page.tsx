@@ -63,10 +63,11 @@ export default function PortfolioPage() {
   const cashBalance = Number(profile?.balance ?? 0);
   const stocksValue = stocks.reduce((s, p) => s + p.market_value, 0);
   const cryptoValue = cryptos.reduce((s, p) => s + p.market_value, 0);
+  const cashValue = Number(profile?.balance || 0);
   const holdingsValue = stocksValue + cryptoValue;
   const stocksPL = stocks.reduce((s, p) => s + p.unrealized_pl, 0);
   const cryptoPL = cryptos.reduce((s, p) => s + p.unrealized_pl, 0);
-  const totalAccountValue = Number(profile?.balance || 0) + holdingsValue;
+  const totalAccountValue = cashValue + holdingsValue;
   const totalValue = totalAccountValue;
   const totalPL = stocksPL + cryptoPL;
 

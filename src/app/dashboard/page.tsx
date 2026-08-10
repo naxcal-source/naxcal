@@ -119,6 +119,8 @@ export default function DashboardPage() {
   const displayPortfolioValue = balance + cryptoPortfolioValue + stockPortfolioValue;
   const allocationData = getAllocationData(balance, cryptoPortfolioValue, stockPortfolioValue);
 
+  const [chartRange, setChartRange] = useState("1M");
+
   const accountEvents = transactions
     .filter((tx) => (tx as any).source !== "onchain")
     .filter((tx) => (tx as any).balance_before !== null || (tx as any).balance_after !== null)
@@ -208,7 +210,6 @@ export default function DashboardPage() {
       .catch(() => setStockPortfolioValue(0));
   }, []);
 
-  const [chartRange, setChartRange] = useState("1M");
   const seed = (i: number) => Math.sin(i * 127.1 + 311.7) * 0.5 + 0.5;
   const chartPoints = chartRange === "1W" ? 7 : chartRange === "1M" ? 30 : chartRange === "3M" ? 90 : 365;
   const sampleChart = Array.from({ length: Math.min(chartPoints, 60) }, (_, i) => {

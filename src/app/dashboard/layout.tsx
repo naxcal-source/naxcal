@@ -191,48 +191,133 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   };
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full relative">
-      <div className="absolute inset-x-0 top-0 h-32 pointer-events-none" style={{ background: "linear-gradient(to bottom, rgba(26,138,110,0.12), transparent)" }} />
+    <div className="flex flex-col h-full relative overflow-hidden">
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(circle at 20% 0%, rgba(26,138,110,0.24), transparent 28%), radial-gradient(circle at 90% 35%, rgba(26,138,110,0.10), transparent 24%), linear-gradient(180deg, #06110e 0%, #07100d 45%, #030807 100%)",
+        }}
+      />
+      <div className="absolute inset-x-4 top-20 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
+      <div className="absolute -left-20 top-10 w-40 h-40 rounded-full bg-naxcal-teal/10 blur-3xl pointer-events-none" />
 
-      <div className="p-6 pb-5 relative z-10">
-        <Image src="/Naxcal_Primary_Logo.png" alt="Naxcal" width={180} height={52} className="h-12 w-auto" style={{ filter: "brightness(1.5) drop-shadow(0 0 20px rgba(26,138,110,0.6))" }} />
+      <div className="px-5 pt-6 pb-5 relative z-10">
+        <Link
+          href="/dashboard"
+          onClick={() => setSidebarOpen(false)}
+          className="flex items-center gap-3 rounded-2xl px-3 py-3 bg-white/[0.035] border border-white/[0.06] shadow-[0_18px_45px_rgba(0,0,0,0.22)]"
+        >
+          <Image
+            src="/Naxcal_Primary_Logo.png"
+            alt="Naxcal"
+            width={150}
+            height={44}
+            className="h-9 w-auto"
+            style={{ filter: "brightness(1.65) drop-shadow(0 0 18px rgba(26,138,110,0.45))" }}
+          />
+        </Link>
+
+        <div className="mt-4 flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-400/[0.06] border border-emerald-300/[0.08]">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_14px_rgba(52,211,153,0.9)]" />
+          <span className="text-[10px] uppercase tracking-[0.2em] text-emerald-100/70 font-semibold">
+            Secure dashboard
+          </span>
+        </div>
       </div>
 
-      <nav className="flex-1 px-3 space-y-0.5 relative z-10 overflow-y-auto">
+      <nav className="flex-1 px-3 space-y-1 relative z-10 overflow-y-auto pb-3">
         {navItems.map((navItem) => {
           const active = pathname === navItem.href;
           return (
-            <Link key={navItem.href} href={navItem.href} onClick={() => setSidebarOpen(false)}
+            <Link
+              key={navItem.href}
+              href={navItem.href}
+              onClick={() => setSidebarOpen(false)}
               className={cn(
-                "flex items-center gap-3 px-4 py-2.5 rounded-lg text-[13px] transition-all duration-200",
-                active ? "text-naxcal-teal font-semibold" : "text-white/40 hover:text-white/70 hover:bg-white/[0.04]"
+                "group relative flex items-center gap-3 px-4 py-3 rounded-2xl text-[13px] transition-all duration-200",
+                active
+                  ? "text-white font-semibold"
+                  : "text-white/42 hover:text-white/80 hover:bg-white/[0.045]"
               )}
-              style={active ? { background: "rgba(26,138,110,0.12)", borderLeft: "3px solid #1a8a6e" } : {}}>
-              <navItem.icon size={17} /><span>{navItem.label}</span>
+              style={
+                active
+                  ? {
+                      background:
+                        "linear-gradient(135deg, rgba(26,138,110,0.28), rgba(26,138,110,0.10))",
+                      boxShadow:
+                        "inset 0 0 0 1px rgba(52,211,153,0.16), 0 14px 35px rgba(26,138,110,0.12)",
+                    }
+                  : {}
+              }
+            >
+              {active && (
+                <>
+                  <span className="absolute left-0 top-3 bottom-3 w-1 rounded-r-full bg-emerald-300 shadow-[0_0_16px_rgba(52,211,153,0.9)]" />
+                  <span className="absolute inset-0 rounded-2xl bg-white/[0.025] pointer-events-none" />
+                </>
+              )}
+
+              <span
+                className={cn(
+                  "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all",
+                  active
+                    ? "bg-emerald-300/15 text-emerald-200"
+                    : "bg-white/[0.035] text-white/38 group-hover:text-white/80 group-hover:bg-white/[0.07]"
+                )}
+              >
+                <navItem.icon size={16} />
+              </span>
+
+              <span className="relative z-10">{navItem.label}</span>
             </Link>
           );
         })}
       </nav>
 
-      <div className="p-4 border-t border-white/[0.06] relative z-10">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-naxcal-teal shrink-0" style={{ background: "rgba(26,138,110,0.15)", border: "2px solid rgba(26,138,110,0.4)" }}>
-            {initials}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <p className="text-sm text-white/80 truncate font-medium">{profile?.full_name || "User"}</p>
-              <span className={cn("text-[9px] px-1.5 py-0.5 rounded-full border font-semibold capitalize", tierColor[profile?.tier || "bronze"] || tierColor.bronze)}>
-                {profile?.tier || "bronze"}
-              </span>
+      <div className="p-4 relative z-10">
+        <div className="rounded-2xl bg-white/[0.045] border border-white/[0.075] p-3 shadow-[0_18px_45px_rgba(0,0,0,0.22)]">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-xs font-bold text-emerald-100 shrink-0"
+              style={{
+                background: "linear-gradient(135deg, rgba(26,138,110,0.45), rgba(26,138,110,0.16))",
+                border: "1px solid rgba(52,211,153,0.28)",
+                boxShadow: "0 0 22px rgba(26,138,110,0.16)",
+              }}
+            >
+              {initials}
             </div>
-            <p className="text-[11px] text-white/30 truncate">{profile?.email}</p>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <p className="text-sm text-white/88 truncate font-semibold">{profile?.full_name || "User"}</p>
+                <span className={cn("text-[9px] px-1.5 py-0.5 rounded-full border font-bold capitalize shrink-0", tierColor[profile?.tier || "bronze"] || tierColor.bronze)}>
+                  {profile?.tier || "bronze"}
+                </span>
+              </div>
+              <p className="text-[11px] text-white/34 truncate mt-0.5">{profile?.email}</p>
+            </div>
+          </div>
+
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <Link
+              href="/dashboard/settings"
+              onClick={() => setSidebarOpen(false)}
+              className="rounded-xl bg-white/[0.04] border border-white/[0.06] px-3 py-2 text-[11px] text-white/50 hover:text-white/85 hover:bg-white/[0.07] transition-colors text-center"
+            >
+              Settings
+            </Link>
+
+            <button
+              onClick={handleLogout}
+              className="rounded-xl bg-white/[0.04] border border-white/[0.06] px-3 py-2 text-[11px] text-white/50 hover:text-red-300 hover:bg-red-500/[0.08] transition-colors cursor-pointer"
+            >
+              Sign out
+            </button>
           </div>
         </div>
-        <button onClick={handleLogout} className="flex items-center gap-2 text-xs text-white/30 hover:text-red-400 transition-colors cursor-pointer w-full">
-          <LogOut size={14} /> Sign Out
-        </button>
-        <p className="text-[9px] text-white/15 mt-3">Naxcal v1.0</p>
+
+        <p className="text-[9px] text-white/18 mt-3 text-center">Naxcal v1.0</p>
       </div>
     </div>
   );

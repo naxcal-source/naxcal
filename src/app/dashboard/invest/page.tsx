@@ -330,8 +330,8 @@ export default function InvestPage() {
                         <p className="text-sm font-semibold text-white/80 mt-1">{selected.symbol} price movement</p>
                         <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-white/[0.07] border border-white/[0.08] px-3 py-1.5">
                           <span className="w-1.5 h-1.5 rounded-full" style={{ background: (detail?.change ?? selected.change) >= 0 ? "#22c55e" : "#ef4444" }} />
-                          <span className="text-[10px] text-white/40">{selectedLabel}</span>
-                          <span className="text-xs font-bold text-white">{fmt(selectedPoint.value)}</span>
+                          <span className="text-[10px] text-white/40">Selected point</span>
+                          <span className="text-xs font-bold text-white">{fmt(detail?.price || selected.price)}</span>
                         </div>
                       </div>
 

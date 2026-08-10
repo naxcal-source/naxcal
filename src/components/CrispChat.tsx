@@ -4,8 +4,8 @@ import { useEffect } from "react";
 
 declare global {
   interface Window {
-    $crisp: unknown[];
-    CRISP_WEBSITE_ID: string;
+    $crisp?: unknown[];
+    CRISP_WEBSITE_ID?: string;
   }
 }
 
@@ -14,18 +14,21 @@ export default function CrispChat() {
     const id = process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID;
     if (!id) return;
 
-    window.$crisp = [];
+    window.$crisp = window.$crisp || [];
     window.CRISP_WEBSITE_ID = id;
 
-    // Hide on mobile via Crisp API
     window.$crisp.push(["config", "hide:on-mobile", true]);
 
-    const script = document.createElement("script");
-    script.src = "https://client.crisp.chat/l.js";
-    script.async = true;
-    document.head.appendChild(script);
+    const existing = document.querySelector('script[src="https://client.crisp.chat/l.js"]');
+    let script: HTMLScriptElement | null = null;
 
-    // Also force-hide with CSS on mobile as fallback
+    if (!existing) {
+      script = document.createElement("script");
+      script.src = "https://client.crisp.chat/l.js";
+      script.async = true;
+      document.head.appendChild(script);
+    }
+
     const style = document.createElement("style");
     style.id = "crisp-mobile-hide";
     style.textContent = `
@@ -43,7 +46,7 @@ export default function CrispChat() {
     document.head.appendChild(style);
 
     return () => {
-      script.remove();
+      script?.remove();
       style.remove();
     };
   }, []);
@@ -52,8 +55,14 @@ export default function CrispChat() {
 }
 
 export function openCrispChat() {
-  if (typeof window !== "undefined" && window.$crisp) {
-    (window.$crisp as unknown[]).push(["do", "chat:show"]);
-    (window.$crisp as unknown[]).push(["do", "chat:open"]);
+  if (typeof window === "undefined") return;
+
+  if (window.$crisp && process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID) {
+    window.$crisp.push(["do", "chat:show"]);
+    window.$crisp.push(["do", "chat:open"]);
+    return;
   }
+
+  window.location.href =
+    "mailto:support@naxcal.us?subject=Naxcal%20Live%20Chat%20Support%20Request";
 }

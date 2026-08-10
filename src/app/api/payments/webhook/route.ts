@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { sendDepositConfirmedEmail } from "@/lib/emails";
+import { createNotification } from "@/lib/notifications";
 
 function verifySignature(payload: string, signature: string): boolean {
   const hmac = crypto.createHmac("sha512", process.env.NOWPAYMENTS_IPN_SECRET!);
@@ -72,6 +73,23 @@ export async function POST(req: NextRequest) {
       description: `Crypto deposit - ${(pay_currency || "").toUpperCase()}`,
       balance_before: oldBalance,
       balance_after: newBalance,
+    });
+
+    await createNotification({
+      userId,
+      type: "deposit",
+      title: "Deposit confirmed",
+      description: `$${usdAmount.toFixed(2)} has been credited to your account.`,
+      body: `Your deposit has been confirmed and credited to your Naxcal balance. Payment currency: ${(pay_currency || "").toUpperCase()}. Transaction reference: ${payment_id}.`,
+      link: "/dashboard/transactions",
+      metadata: {
+        amount_usd: usdAmount,
+        pay_currency: (pay_currency || "").toUpperCase(),
+        payment_id: String(payment_id),
+        actually_paid,
+        balance_before: oldBalance,
+        balance_after: newBalance,
+      },
     });
 
     if (profile.email) {

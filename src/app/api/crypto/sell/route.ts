@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { createNotification } from "@/lib/notifications";
 import { rateLimit } from "@/lib/rate-limit";
 
 const GECKO_MAP: Record<string, string> = {
@@ -142,6 +143,22 @@ export async function POST(req: NextRequest) {
       description: `Sold ${amount.toFixed(8)} ${symbol} to USD balance`,
       balance_before: balanceBefore,
       balance_after: balanceAfter,
+    });
+
+    await createNotification({
+      userId: user.id,
+      type: "crypto_sell",
+      title: "Crypto sold to USD balance",
+      description: `${symbol} was sold and credited to your USD balance.`,
+      body: `You sold ${amount.toFixed(8)} ${symbol}. After fees, $${netUsd.toFixed(2)} was credited to your USD balance.`,
+      link: "/dashboard/transactions",
+      metadata: {
+        symbol,
+        sold_amount: amount,
+        gross_usd: Number(grossUsd.toFixed(2)),
+        fee_usd: Number(feeUsd.toFixed(2)),
+        net_usd: Number(netUsd.toFixed(2)),
+      },
     });
 
     return NextResponse.json({

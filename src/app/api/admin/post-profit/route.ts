@@ -72,6 +72,22 @@ export async function POST(req: NextRequest) {
         sendDailyProfitEmail(u.email, u.full_name || "Investor", netProfit, percentage, newTotalProfit, newBalance).catch(() => {});
       }
 
+      await createNotification({
+        userId: investor.id,
+        type: "profit",
+        title: "Daily profit credited",
+        description: `$${netProfit.toFixed(2)} has been credited to your account.`,
+        body: `A ${percentage}% profit return was posted to your account. After fees, $${netProfit.toFixed(2)} was credited to your balance.`,
+        link: "/dashboard/transactions",
+        metadata: {
+          percentage,
+          fee_percentage: fee,
+          net_profit: Number(netProfit.toFixed(2)),
+          balance_before: oldBalance,
+          balance_after: newBalance,
+        },
+      });
+
       totalDistributed += netProfit;
       usersProcessed++;
     }

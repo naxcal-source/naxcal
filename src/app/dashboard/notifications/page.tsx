@@ -2,37 +2,19 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Bell, CheckCircle2, Repeat2, TrendingUp, Wallet, ShieldCheck, ChevronRight } from "lucide-react";
-import { useDashboard } from "@/contexts/DashboardContext";
+import { Bell, ChevronRight, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Transaction = {
+type Notification = {
   id: string;
   type: string;
-  amount: number;
-  asset?: string | null;
-  status?: string | null;
-  description?: string | null;
-  created_at: string;
-  source?: string | null;
-  chain?: string | null;
-};
-
-type NotificationItem = {
-  id: string;
   title: string;
-  desc: string;
-  time?: string;
-  color: string;
-  icon: "kyc" | "profit" | "swap" | "sell" | "onchain" | "deposit" | "default";
+  description?: string | null;
+  body?: string | null;
+  link?: string | null;
+  is_read: boolean;
+  created_at: string;
 };
-
-function fmt(n: number) {
-  return "$" + Number(n || 0).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
 
 function timeAgo(value?: string) {
   if (!value) return "";
@@ -46,103 +28,29 @@ function timeAgo(value?: string) {
   return `${days}d ago`;
 }
 
-function iconFor(type: NotificationItem["icon"]) {
-  if (type === "kyc") return <ShieldCheck size={18} />;
-  if (type === "profit") return <TrendingUp size={18} />;
-  if (type === "swap") return <Repeat2 size={18} />;
-  if (type === "sell") return <Wallet size={18} />;
-  if (type === "onchain") return <Bell size={18} />;
-  if (type === "deposit") return <CheckCircle2 size={18} />;
-  return <Bell size={18} />;
-}
-
 export default function NotificationsPage() {
-  const { profile } = useDashboard();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!profile) return;
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
 
-    fetch("/api/me/transactions?limit=100")
+  useEffect(() => {
+    fetch("/api/me/notifications")
       .then((r) => r.json())
       .then((data) => {
-        if (Array.isArray(data)) setTransactions(data);
+        if (Array.isArray(data)) setNotifications(data);
       })
-      .catch(() => setTransactions([]))
+      .catch(() => setNotifications([]))
       .finally(() => setLoading(false));
-  }, [profile]);
+  }, []);
 
-  const notifications: NotificationItem[] = [];
+  const markAllRead = async () => {
+    setNotifications((items) => items.map((item) => ({ ...item, is_read: true })));
 
-  if (profile?.kyc_status === "approved") {
-    notifications.push({
-      id: "kyc-approved",
-      title: "KYC approved",
-      desc: "Your account verification is complete.",
-      color: "bg-emerald-500",
-      icon: "kyc",
-    });
-  } else {
-    notifications.push({
-      id: "kyc-pending",
-      title: "Verify your identity",
-      desc: "Complete KYC to unlock full account access.",
-      color: "bg-amber-500",
-      icon: "kyc",
-    });
-  }
-
-  for (const tx of transactions) {
-    const type = String(tx.type || "").toLowerCase();
-
-    if (type === "profit") {
-      notifications.push({
-        id: tx.id,
-        title: "Daily profit credited",
-        desc: `${fmt(Number(tx.amount || 0))} ${tx.asset || "USDC"} added to your account.`,
-        time: timeAgo(tx.created_at),
-        color: "bg-emerald-500",
-        icon: "profit",
-      });
-    } else if (type === "swap") {
-      notifications.push({
-        id: tx.id,
-        title: "Swap completed",
-        desc: tx.description || "A crypto swap was completed.",
-        time: timeAgo(tx.created_at),
-        color: "bg-blue-500",
-        icon: "swap",
-      });
-    } else if (type === "crypto_sell") {
-      notifications.push({
-        id: tx.id,
-        title: "Crypto sold to USD balance",
-        desc: tx.description || `${fmt(Number(tx.amount || 0))} credited to USD balance.`,
-        time: timeAgo(tx.created_at),
-        color: "bg-emerald-500",
-        icon: "sell",
-      });
-    } else if (String(tx.source || "") === "onchain") {
-      notifications.push({
-        id: tx.id,
-        title: "On-chain activity synced",
-        desc: `${tx.chain || "Wallet"} transaction imported.`,
-        time: timeAgo(tx.created_at),
-        color: "bg-blue-500",
-        icon: "onchain",
-      });
-    } else if (type === "deposit") {
-      notifications.push({
-        id: tx.id,
-        title: "Deposit confirmed",
-        desc: `${fmt(Number(tx.amount || 0))} ${tx.asset || "USD"} credited.`,
-        time: timeAgo(tx.created_at),
-        color: "bg-emerald-500",
-        icon: "deposit",
-      });
-    }
-  }
+    await fetch("/api/me/notifications/read-all", {
+      method: "POST",
+    }).catch(() => {});
+  };
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -154,14 +62,25 @@ export default function NotificationsPage() {
         <span className="text-[#374151]">Notifications</span>
       </div>
 
-      <div className="flex items-center gap-3 mb-6">
-        <Bell size={22} className="text-naxcal-teal" />
-        <div>
-          <h1 className="text-xl font-bold text-[#0f172a]">Notification Centre</h1>
-          <p className="text-sm text-[#64748b] mt-1">
-            Account updates, profits, swaps, sells and wallet activity.
-          </p>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Bell size={22} className="text-naxcal-teal" />
+          <div>
+            <h1 className="text-xl font-bold text-[#0f172a]">Notification Centre</h1>
+            <p className="text-sm text-[#64748b] mt-1">
+              Account updates, profits, swaps, sells and wallet activity.
+            </p>
+          </div>
         </div>
+
+        {unreadCount > 0 && (
+          <button
+            onClick={markAllRead}
+            className="px-3 py-2 rounded-lg text-xs font-semibold text-naxcal-teal border border-naxcal-teal/20 hover:bg-naxcal-teal/5"
+          >
+            Mark all as read
+          </button>
+        )}
       </div>
 
       <div className="card-light overflow-hidden">
@@ -176,27 +95,46 @@ export default function NotificationsPage() {
         ) : (
           <div className="divide-y divide-[#f1f5f9]">
             {notifications.map((n) => (
-              <div key={n.id} className="p-4 hover:bg-[#f8fafc] transition-colors">
+              <Link
+                key={n.id}
+                href={`/dashboard/notifications/${n.id}`}
+                className={cn(
+                  "block p-4 hover:bg-[#f8fafc] transition-colors",
+                  !n.is_read && "bg-emerald-50/40",
+                )}
+              >
                 <div className="flex gap-3">
-                  <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0", n.color)}>
-                    {iconFor(n.icon)}
+                  <div
+                    className={cn(
+                      "w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0",
+                      n.is_read ? "bg-slate-300" : "bg-emerald-500",
+                    )}
+                  >
+                    <CheckCircle2 size={18} />
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <h2 className="text-sm font-semibold text-[#0f172a]">{n.title}</h2>
-                        <p className="text-xs text-[#64748b] mt-1">{n.desc}</p>
+                        <h2 className="text-sm font-semibold text-[#0f172a]">
+                          {n.title}
+                        </h2>
+                        <p className="text-xs text-[#64748b] mt-1">
+                          {n.description || "Open to read more."}
+                        </p>
                       </div>
-                      {n.time && (
-                        <span className="text-[11px] text-[#9ca3af] whitespace-nowrap">
-                          {n.time}
-                        </span>
-                      )}
+                      <span className="text-[11px] text-[#9ca3af] whitespace-nowrap">
+                        {timeAgo(n.created_at)}
+                      </span>
                     </div>
+                    {!n.is_read && (
+                      <span className="inline-block mt-2 text-[10px] font-semibold text-emerald-700">
+                        Unread
+                      </span>
+                    )}
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}

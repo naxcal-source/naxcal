@@ -233,19 +233,26 @@ export default function DashboardPage() {
       .catch(() => setStockPortfolioValue(0));
   }, []);
 
-  const seed = (i: number) => Math.sin(i * 127.1 + 311.7) * 0.5 + 0.5;
   const chartPoints = chartRange === "1W" ? 7 : chartRange === "1M" ? 30 : chartRange === "3M" ? 90 : 365;
-  const sampleChart = Array.from({ length: Math.min(chartPoints, 60) }, (_, i) => {
-    const step = chartPoints / Math.min(chartPoints, 60);
-    const idx = Math.floor(i * step);
+  const visibleChartPoints = Math.min(chartPoints, 60);
+
+  const sampleChart = Array.from({ length: visibleChartPoints }, (_, i) => {
+    const progress = i / Math.max(visibleChartPoints - 1, 1);
+    const date = new Date();
+    date.setDate(date.getDate() - Math.round((1 - progress) * chartPoints));
+
+    const wave = Math.sin(i * 1.65) * displayPortfolioValue * 0.018;
+    const startValue = Math.max(displayPortfolioValue * 0.86, 0);
+    const value = startValue + (displayPortfolioValue - startValue) * progress + wave;
+
     return {
-      d: `${idx + 1}`,
-      v:
-        displayPortfolioValue > 0
-          ? displayPortfolioValue * 0.7 +
-            seed(idx) * displayPortfolioValue * 0.15 +
-            (idx / chartPoints) * displayPortfolioValue * 0.3
-          : 0,
+      d: date.toLocaleString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      v: i === visibleChartPoints - 1 ? Math.max(displayPortfolioValue, 0) : Math.max(value, 0),
     };
   });
 
@@ -616,7 +623,15 @@ export default function DashboardPage() {
                         {isPositive ? <ArrowDownCircle size={18} className="text-emerald-600" /> : <ArrowUpRight size={18} className="text-red-500" />}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-[#0f172a] truncate capitalize">{tx.type?.replaceAll("_", " ") || "Transaction"}</p>
+                        <p className="text-sm font-semibold text-[#0f172a] truncate">
+                          {tx.type === "stock_sell"
+                            ? "Stock Sell"
+                            : tx.type === "stock_buy"
+                              ? "Stock Purchase"
+                              : tx.type === "bonus"
+                                ? "Account Credit"
+                                : tx.type?.replaceAll("_", " ") || "Transaction"}
+                        </p>
                         <p className="text-xs text-[#94a3b8] truncate">{new Date(tx.created_at).toLocaleDateString()}</p>
                       </div>
                     </div>

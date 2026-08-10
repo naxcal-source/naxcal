@@ -140,6 +140,22 @@ export default function DashboardPage() {
   };
   const currentPerks = tierPerks[(profile?.tier as string) || "bronze"] || tierPerks.bronze;
 
+  useEffect(() => {
+    fetch("/api/stocks/portfolio")
+      .then((res) => res.json())
+      .then((data) => {
+        const rows = Array.isArray(data) ? data : [];
+
+        const total = rows.reduce((sum, item) => {
+          const value = Number(item.market_value || 0);
+          return sum + (Number.isFinite(value) ? value : 0);
+        }, 0);
+
+        setStockPortfolioValue(total);
+      })
+      .catch(() => setStockPortfolioValue(0));
+  }, []);
+
   const [chartRange, setChartRange] = useState("1M");
   const seed = (i: number) => Math.sin(i * 127.1 + 311.7) * 0.5 + 0.5;
   const chartPoints = chartRange === "1W" ? 7 : chartRange === "1M" ? 30 : chartRange === "3M" ? 90 : 365;

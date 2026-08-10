@@ -110,12 +110,16 @@ export default function TransactionsPage() {
   const isCredit = (tx: Transaction) =>
     isOnchain(tx)
       ? tx.type !== "onchain_send"
-      : ["deposit", "profit", "bonus", "referral", "adjustment_credit"].includes(tx.type);
+      : ["deposit", "profit", "bonus", "referral", "adjustment_credit", "crypto_sell"].includes(tx.type);
+
+  const isNeutral = (tx: Transaction) => ["swap"].includes(tx.type);
 
   const typeIcon = (tx: Transaction) => {
     if (isOnchain(tx)) return <Link2 size={15} className="text-blue-600" />;
     if (tx.type === "profit") return <Star size={15} className="text-amber-500" />;
     if (tx.type === "deposit") return <ArrowDownCircle size={15} className="text-emerald-600" />;
+    if (tx.type === "swap") return <ArrowDownCircle size={15} className="text-blue-600" />;
+    if (tx.type === "crypto_sell") return <ArrowDownCircle size={15} className="text-emerald-600" />;
     if (tx.type === "withdrawal") return <ArrowUpCircle size={15} className="text-red-500" />;
     return isCredit(tx) ? (
       <ArrowUpRight size={15} className="text-emerald-600" />
@@ -305,6 +309,7 @@ export default function TransactionsPage() {
 
             {paged.map((tx) => {
               const credit = isCredit(tx);
+              const neutral = isNeutral(tx);
               const onchain = isOnchain(tx);
               return (
                 <div key={tx.id}>
@@ -315,7 +320,7 @@ export default function TransactionsPage() {
                     <div
                       className={cn(
                         "w-8 h-8 rounded-lg flex items-center justify-center",
-                        onchain ? "bg-blue-50" : credit ? "bg-emerald-50" : "bg-red-50",
+                        onchain || neutral ? "bg-blue-50" : credit ? "bg-emerald-50" : "bg-red-50",
                       )}
                     >
                       {typeIcon(tx)}
@@ -333,10 +338,10 @@ export default function TransactionsPage() {
                     <p
                       className={cn(
                         "text-sm font-semibold text-right",
-                        credit ? "text-[#16a34a]" : "text-red-500",
+                        neutral ? "text-blue-600" : credit ? "text-[#16a34a]" : "text-red-500",
                       )}
                     >
-                      {credit ? "+" : "-"}
+                      {neutral ? "" : credit ? "+" : "-"}
                       {onchain ? formatCryptoAmount(Number(tx.amount || 0), tx.asset) : fmt(Number(tx.amount || 0))}
                     </p>
                     <div className="hidden sm:flex justify-center">

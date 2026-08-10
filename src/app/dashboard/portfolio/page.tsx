@@ -40,6 +40,10 @@ export default function PortfolioPage() {
   const [cryptos, setCryptos] = useState<CryptoPos[]>([]);
   const [onchainWallet, setOnchainWallet] = useState<OnchainWalletPortfolio | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sellingSymbol, setSellingSymbol] = useState<string | null>(null);
+  const [sellAmount, setSellAmount] = useState("");
+  const [sellError, setSellError] = useState("");
+  const [sellSuccess, setSellSuccess] = useState("");
 
   useEffect(() => {
     Promise.all([
@@ -69,6 +73,56 @@ export default function PortfolioPage() {
     { label: "Stocks", value: stocksValue, color: "#3b82f6", pct: totalValue > 0 ? (stocksValue / totalValue * 100) : 0 },
     { label: "Crypto", value: cryptoValue, color: "#8b5cf6", pct: totalValue > 0 ? (cryptoValue / totalValue * 100) : 0 },
   ].filter((a) => a.value > 0);
+
+  const sellCrypto = async () => {
+    if (!sellingSymbol) return;
+
+    setSellError("");
+    setSellSuccess("");
+
+    const amount = Number(sellAmount);
+
+    if (!amount || amount <= 0) {
+      setSellError("Enter a valid amount to sell.");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/crypto/sell", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ symbol: sellingSymbol, amount }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setSellError(result.error || "Sell failed.");
+        return;
+      }
+
+      setSellSuccess(
+        `Sold ${result.sold_amount} ${result.symbol} for ${fmt(result.net_usd)} USD balance.`,
+      );
+      setSellingSymbol(null);
+      setSellAmount("");
+
+      const [cryptoRes, meRes] = await Promise.all([
+        fetch("/api/crypto/portfolio"),
+        fetch("/api/me"),
+      ]);
+
+      const cryptoData = await cryptoRes.json();
+      const meData = await meRes.json();
+
+      if (Array.isArray(cryptoData)) setCryptos(cryptoData);
+      if (meData?.profile) {
+        window.location.reload();
+      }
+    } catch {
+      setSellError("Sell failed. Please try again.");
+    }
+  };
 
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl mx-auto">
@@ -226,6 +280,18 @@ export default function PortfolioPage() {
         </div>
       )}
 
+      {sellError && (
+        <div className="card-light p-4 mb-4 border border-red-100 bg-red-50 text-sm text-red-600">
+          {sellError}
+        </div>
+      )}
+
+      {sellSuccess && (
+        <div className="card-light p-4 mb-4 border border-emerald-100 bg-emerald-50 text-sm text-emerald-700">
+          {sellSuccess}
+        </div>
+      )}
+
       {/* Crypto Holdings */}
       {cryptos.length > 0 && (
         <div className="card-light p-5 mb-4">
@@ -248,9 +314,60 @@ export default function PortfolioPage() {
                   <span className={cn("text-[10px] font-semibold", pos.unrealized_pl >= 0 ? "text-emerald-600" : "text-red-500")}>
                     {pos.unrealized_pl >= 0 ? "+" : ""}{fmt(pos.unrealized_pl)}
                   </span>
+                  <button
+                    onClick={() => {
+                      setSellingSymbol(pos.symbol);
+                      setSellAmount("");
+                      setSellError("");
+                      setSellSuccess("");
+                    }}
+                    className="block ml-auto mt-1 text-[10px] font-semibold text-naxcal-teal hover:underline"
+                  >
+                    Sell to USD
+                  </button>
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {sellingSymbol && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-5 w-full max-w-sm shadow-xl">
+            <h3 className="text-base font-bold text-[#0f172a] mb-1">
+              Sell {sellingSymbol} to USD Balance
+            </h3>
+            <p className="text-xs text-[#6b7280] mb-4">
+              This will deduct your crypto position and credit your platform USD balance.
+            </p>
+
+            <input
+              type="number"
+              value={sellAmount}
+              onChange={(e) => setSellAmount(e.target.value)}
+              placeholder={`Amount of ${sellingSymbol}`}
+              className="w-full px-3 py-2.5 rounded-lg text-sm text-[#0f172a] border border-[#e2e8f0] focus:outline-none focus:ring-2 focus:ring-naxcal-teal/20"
+            />
+
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={() => {
+                  setSellingSymbol(null);
+                  setSellAmount("");
+                  setSellError("");
+                }}
+                className="flex-1 py-2 rounded-lg text-xs font-semibold border border-[#e2e8f0] text-[#64748b]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={sellCrypto}
+                className="flex-1 py-2 rounded-lg text-xs font-semibold text-white btn-teal"
+              >
+                Sell
+              </button>
+            </div>
           </div>
         </div>
       )}

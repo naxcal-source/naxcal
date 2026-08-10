@@ -3,6 +3,7 @@ import { getAuthUserWithClient } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { logAdminAction } from "@/lib/audit-log";
 import { sendDailyProfitEmail } from "@/lib/emails";
+import { createNotification } from "@/lib/notifications";
 
 export async function POST(req: NextRequest) {
   try {
@@ -73,7 +74,7 @@ export async function POST(req: NextRequest) {
       }
 
       await createNotification({
-        userId: investor.id,
+        userId: u.id,
         type: "profit",
         title: "Daily profit credited",
         description: `$${netProfit.toFixed(2)} has been credited to your account.`,
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest) {
           percentage,
           fee_percentage: fee,
           net_profit: Number(netProfit.toFixed(2)),
-          balance_before: oldBalance,
+          balance_before: Number(u.balance),
           balance_after: newBalance,
         },
       });

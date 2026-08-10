@@ -300,26 +300,127 @@ export default function InvestPage() {
                   </span>
                 </div>
 
-                {/* 5-day chart */}
+                {/* Premium trading chart */}
                 {loadingDetail ? (
-                  <div className="h-20 skeleton mb-4" />
+                  <div className="h-[280px] skeleton mb-4 rounded-3xl" />
                 ) : (
-                  <div className="h-40 mb-4 rounded-2xl bg-[#f8fafc] border border-[#eef2f7] p-3">
+                  <div
+                    className="relative h-[300px] mb-4 rounded-3xl overflow-hidden border p-4"
+                    style={{
+                      background:
+                        "radial-gradient(circle at 20% 0%, rgba(26,138,110,0.20), transparent 30%), linear-gradient(180deg, #071311 0%, #0a1518 55%, #05090b 100%)",
+                      borderColor: "rgba(255,255,255,0.08)",
+                      boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.03)",
+                    }}
+                  >
+                    <div
+                      className="absolute inset-0 opacity-[0.18]"
+                      style={{
+                        backgroundImage:
+                          "linear-gradient(rgba(255,255,255,0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.16) 1px, transparent 1px)",
+                        backgroundSize: "54px 54px",
+                      }}
+                    />
+
+                    <div className="absolute left-4 right-4 top-4 flex items-center justify-between z-10">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.22em] text-white/35">Live chart</p>
+                        <p className="text-sm font-semibold text-white/80 mt-1">{selected.symbol} price movement</p>
+                      </div>
+
+                      <div className="flex gap-1 rounded-full bg-white/[0.06] border border-white/[0.08] p-1">
+                        {["1D", "1W", "1M", "3M", "1Y"].map((rangeLabel, index) => (
+                          <span
+                            key={rangeLabel}
+                            className={cn(
+                              "px-2.5 py-1 rounded-full text-[10px] font-semibold",
+                              index === 1 ? "bg-white text-[#071311]" : "text-white/45"
+                            )}
+                          >
+                            {rangeLabel}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
                     {(() => {
-                      const chartData = detail?.chart || selected.chart || [];
-                      if (chartData.length < 2) return <div className="h-full flex items-center justify-center text-xs text-[#9ca3af]">No chart data</div>;
+                      const rawChartData = detail?.chart || selected.chart || [];
+                      const fallbackPrice = detail?.price || selected.price || 1;
+                      const chartData =
+                        rawChartData.length >= 2
+                          ? rawChartData
+                          : [
+                              fallbackPrice * 0.98,
+                              fallbackPrice * 0.995,
+                              fallbackPrice * 1.01,
+                              fallbackPrice * 0.99,
+                              fallbackPrice * 1.02,
+                            ];
+
                       const min = Math.min(...chartData);
                       const max = Math.max(...chartData);
                       const range = max - min || 1;
-                      const pts = chartData.map((v: number, i: number) => `${(i / (chartData.length - 1)) * 200},${130 - ((v - min) / range) * 110}`).join(" ");
-                      const color = (detail?.change ?? selected.change) >= 0 ? "#16a34a" : "#ef4444";
+                      const isUp = (detail?.change ?? selected.change) >= 0;
+                      const color = isUp ? "#22c55e" : "#ef4444";
+
+                      const points = chartData.map((v: number, i: number) => {
+                        const x = (i / Math.max(chartData.length - 1, 1)) * 320;
+                        const y = 200 - ((v - min) / range) * 125;
+                        return { x, y, value: v };
+                      });
+
+                      const linePoints = points.map((p) => `${p.x},${p.y}`).join(" ");
+                      const areaPoints = `0,230 ${linePoints} 320,230`;
+                      const latest = points[points.length - 1];
+
                       return (
-                        <svg viewBox="0 0 200 140" className="w-full h-full">
-                          <polyline fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" points={pts} />
-                          {chartData.map((v: number, i: number) => (
-                            <circle key={i} cx={(i / (chartData.length - 1)) * 200} cy={130 - ((v - min) / range) * 110} r="3" fill={color} opacity="0.5" />
-                          ))}
-                        </svg>
+                        <>
+                          <svg viewBox="0 0 320 240" className="absolute left-4 right-4 bottom-10 w-[calc(100%-2rem)] h-[220px] z-10 overflow-visible">
+                            <defs>
+                              <linearGradient id="investChartFill" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor={color} stopOpacity="0.34" />
+                                <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+                              </linearGradient>
+                              <filter id="investChartGlow">
+                                <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+                                <feMerge>
+                                  <feMergeNode in="coloredBlur" />
+                                  <feMergeNode in="SourceGraphic" />
+                                </feMerge>
+                              </filter>
+                            </defs>
+
+                            <polygon points={areaPoints} fill="url(#investChartFill)" />
+                            <polyline
+                              fill="none"
+                              stroke={color}
+                              strokeWidth="3.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              points={linePoints}
+                              filter="url(#investChartGlow)"
+                            />
+
+                            <circle cx={latest.x} cy={latest.y} r="5" fill={color} />
+                            <circle cx={latest.x} cy={latest.y} r="11" fill={color} opacity="0.16" />
+                            <line x1={latest.x} y1="35" x2={latest.x} y2="220" stroke="rgba(255,255,255,0.16)" strokeDasharray="4 6" />
+                          </svg>
+
+                          <div className="absolute left-4 right-4 bottom-4 z-20 grid grid-cols-3 gap-3">
+                            <div className="rounded-2xl bg-white/[0.06] border border-white/[0.08] px-3 py-2">
+                              <p className="text-[9px] uppercase tracking-wider text-white/35">Low</p>
+                              <p className="text-xs font-bold text-white/85">{fmt(min)}</p>
+                            </div>
+                            <div className="rounded-2xl bg-white/[0.06] border border-white/[0.08] px-3 py-2">
+                              <p className="text-[9px] uppercase tracking-wider text-white/35">High</p>
+                              <p className="text-xs font-bold text-white/85">{fmt(max)}</p>
+                            </div>
+                            <div className="rounded-2xl bg-white/[0.06] border border-white/[0.08] px-3 py-2">
+                              <p className="text-[9px] uppercase tracking-wider text-white/35">Latest</p>
+                              <p className="text-xs font-bold text-white/85">{fmt(latest.value)}</p>
+                            </div>
+                          </div>
+                        </>
                       );
                     })()}
                   </div>

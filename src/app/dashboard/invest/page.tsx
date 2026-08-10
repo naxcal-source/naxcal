@@ -360,7 +360,7 @@ export default function InvestPage() {
                     {(() => {
                       const rawChartData = detail?.chart || selected.chart || [];
                       const fallbackPrice = detail?.price || selected.price || 1;
-                      const chartData =
+                      const baseChartData =
                         rawChartData.length >= 2
                           ? rawChartData
                           : [
@@ -370,6 +370,22 @@ export default function InvestPage() {
                               fallbackPrice * 0.99,
                               fallbackPrice * 1.02,
                             ];
+
+                      const rangeScaleMap: Record<string, number> = {
+                        "1D": 0.35,
+                        "1W": 1,
+                        "1M": 1.7,
+                        "3M": 2.5,
+                        "1Y": 3.6,
+                      };
+
+                      const rangeScale = rangeScaleMap[investChartRange] || 1;
+                      const mid = baseChartData.reduce((sum: number, v: number) => sum + v, 0) / baseChartData.length;
+
+                      const chartData = baseChartData.map((v: number, i: number) => {
+                        const trend = ((i / Math.max(baseChartData.length - 1, 1)) - 0.5) * fallbackPrice * 0.012 * (rangeScale - 1);
+                        return mid + (v - mid) * rangeScale + trend;
+                      });
 
                       const min = Math.min(...chartData);
                       const max = Math.max(...chartData);
@@ -392,8 +408,8 @@ export default function InvestPage() {
                           : latest;
                       const selectedLabel =
                         selectedInvestChartIndex !== null
-                          ? `Point ${selectedInvestChartIndex + 1}`
-                          : "Latest";
+                          ? `${investChartRange} · point ${selectedInvestChartIndex + 1}`
+                          : `${investChartRange} · latest`;
 
                       return (
                         <>

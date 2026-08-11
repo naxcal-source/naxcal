@@ -29,6 +29,8 @@ export default function WithdrawPage() {
   const [recentWithdrawals, setRecentWithdrawals] = useState<Transaction[]>([]);
   const [hasMonthlyDeposit, setHasMonthlyDeposit] = useState<boolean | null>(null);
   const balance = Number(profile?.balance ?? 0);
+  const [cryptoPortfolioValue, setCryptoPortfolioValue] = useState(0);
+  const availableWithdrawBalance = balance + cryptoPortfolioValue;
   const fmt = (n: number) => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const now = new Date();
@@ -36,6 +38,18 @@ export default function WithdrawPage() {
 
   useEffect(() => {
     if (!profile) return;
+    fetch("/api/crypto/portfolio")
+      .then((res) => res.json())
+      .then((data) => {
+        const rows = Array.isArray(data) ? data : [];
+        const total = rows.reduce((sum, item) => {
+          const value = Number(item.value_usd ?? item.usd_value ?? item.market_value ?? item.value ?? 0);
+          return sum + (Number.isFinite(value) ? value : 0);
+        }, 0);
+        setCryptoPortfolioValue(total);
+      })
+      .catch(() => setCryptoPortfolioValue(0));
+
     fetch("/api/me/transactions?type=withdrawal&limit=5")
       .then((r) => r.json())
       .then((data) => { if (Array.isArray(data)) setRecentWithdrawals(data); });
@@ -60,7 +74,7 @@ export default function WithdrawPage() {
     e.preventDefault(); setError("");
     const numAmount = parseFloat(amount);
     if (!numAmount || numAmount <= 0) { setError("Enter a valid amount."); return; }
-    if (numAmount > balance) { setError("Insufficient balance."); return; }
+    if (numAmount > availableWithdrawBalance) { setError("Insufficient balance."); return; }
     if (!wallet) { setError("Enter a wallet address."); return; }
 
     setLoading(true);
@@ -177,7 +191,7 @@ export default function WithdrawPage() {
             {/* Available balance */}
             <div className="flex items-center justify-between p-4 rounded-xl" style={{ background: "linear-gradient(135deg, rgba(26,138,110,0.06), rgba(26,138,110,0.02))", border: "1px solid rgba(26,138,110,0.15)" }}>
               <span className="text-xs text-[#6b7280] font-medium">Available Balance</span>
-              <span className="text-lg font-bold text-[#0f172a]">{fmt(balance)}</span>
+              <span className="text-lg font-bold text-[#0f172a]">{fmt(availableWithdrawBalance)}</span>
             </div>
 
             {error && <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">{error}</div>}

@@ -37,6 +37,7 @@ export default function InvestPage() {
   const [gainers, setGainers] = useState<Stock[]>([]);
   const [losers, setLosers] = useState<Stock[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
+  const [cryptoPortfolioValue, setCryptoPortfolioValue] = useState(0);
   const [searchResults, setSearchResults] = useState<Stock[]>([]);
   const [detail, setDetail] = useState<StockDetail | null>(null);
   const [selected, setSelected] = useState<Stock | null>(null);
@@ -113,7 +114,7 @@ export default function InvestPage() {
     if (!selected || !profile || !amount) return;
     const numAmount = parseFloat(amount);
     if (numAmount < 50) { setBuyResult({ success: false, message: "Minimum investment is $50" }); return; }
-    if (numAmount > Number(profile.balance)) { setBuyResult({ success: false, message: "Insufficient balance" }); return; }
+    if (numAmount > availableInvestBalance) { setBuyResult({ success: false, message: "Insufficient balance" }); return; }
     if (profile.kyc_status !== "approved") { setBuyResult({ success: false, message: "Complete KYC verification first" }); return; }
 
     setBuying(true);
@@ -565,7 +566,7 @@ export default function InvestPage() {
                   </div>
                   <div className="text-right">
                     <p className="text-[10px] uppercase tracking-wider text-[#94a3b8]">Buying Power</p>
-                    <p className="text-sm font-bold text-[#0f172a]">{fmt(Number(profile?.balance ?? 0))}</p>
+                    <p className="text-sm font-bold text-[#0f172a]">{fmt(availableInvestBalance)}</p>
                   </div>
                 </div>
 

@@ -199,10 +199,10 @@ export default function DashboardPage() {
   const totalProfit = Number(profile?.total_profit ?? 0);
   const totalDeposited = Number(profile?.total_deposited ?? 0);
   const tierRate = profile?.tier === "gold" ? 2.1 : profile?.tier === "silver" ? 1.8 : 1.5;
-  const todayReturn = balance * (tierRate / 100);
+  const todayReturn = availablePortfolioBalance * (tierRate / 100);
   const tierThresholds = { bronze: { next: "Silver", target: 5000 }, silver: { next: "Gold", target: 25000 }, gold: { next: null, target: 0 } };
   const currentTierInfo = tierThresholds[(profile?.tier as keyof typeof tierThresholds) || "bronze"];
-  const progress = currentTierInfo.target > 0 ? Math.min(100, (balance / currentTierInfo.target) * 100) : 100;
+  const progress = currentTierInfo.target > 0 ? Math.min(100, (availablePortfolioBalance / currentTierInfo.target) * 100) : 100;
 
   const tierColors: Record<string, { text: string; bg: string; border: string }> = {
     bronze: { text: "text-orange-700", bg: "linear-gradient(135deg, rgba(180,83,9,0.08), rgba(180,83,9,0.03))", border: "rgba(180,83,9,0.2)" },

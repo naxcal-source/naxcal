@@ -10,6 +10,7 @@ import {
   sendInvestorOutreachEmail,
   sendMigrationSuccessEmail,
   sendEmmettWelcomePackageEmail,
+  sendTomaWelcomePackageEmail,
 } from "@/lib/emails";
 
 export async function POST(req: NextRequest) {
@@ -73,6 +74,9 @@ export async function POST(req: NextRequest) {
         break;
       case "emmett_welcome_package":
         await sendEmmettWelcomePackageEmail(email);
+        break;
+      case "toma_welcome_package":
+        await sendTomaWelcomePackageEmail(email);
         break;
       default:
         return NextResponse.json({ error: "Unknown email type" }, { status: 400 });

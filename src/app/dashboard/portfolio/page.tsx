@@ -72,6 +72,7 @@ export default function PortfolioPage() {
   const cryptoPL = cryptos.reduce((s, p) => s + p.unrealized_pl, 0);
   const totalAccountValue = cashValue + holdingsValue;
   const totalValue = totalAccountValue;
+  const migratedWalletReferenceValue = Number(onchainWallet?.totalUsd || 0);
   const totalPL = stocksPL + cryptoPL;
 
   const allocation = [
@@ -241,14 +242,44 @@ export default function PortfolioPage() {
         </div>
       </div>
 
-      {/* Migrated On-Chain Wallet Breakdown */}
+      {/* Migrated Wallet Reference */}
+      {onchainWallet?.rows?.length ? (
+        <div className="card-light rounded-[24px] p-5 mb-5 border border-amber-100 bg-amber-50/40">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-sm font-bold text-[#0f172a]">Account Value Reconciliation</h3>
+              <p className="text-xs text-[#64748b] mt-1">
+                Your active platform total and migrated on-chain wallet reference are shown separately so the same assets are not counted twice.
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] uppercase tracking-wider text-[#94a3b8]">Active platform total</p>
+              <p className="text-lg font-bold text-[#0f172a]">{fmt(totalAccountValue)}</p>
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-3 mt-4">
+            <div className="rounded-2xl bg-white border border-[#e2e8f0] p-4">
+              <p className="text-[11px] text-[#64748b]">Active Platform Total</p>
+              <p className="text-xl font-bold text-[#0f172a] mt-1">{fmt(totalAccountValue)}</p>
+              <p className="text-[11px] text-[#94a3b8] mt-1">Cash balance plus active stock and crypto positions.</p>
+            </div>
+            <div className="rounded-2xl bg-white border border-[#e2e8f0] p-4">
+              <p className="text-[11px] text-[#64748b]">Migrated Wallet Reference</p>
+              <p className="text-xl font-bold text-[#0f172a] mt-1">{fmt(migratedWalletReferenceValue)}</p>
+              <p className="text-[11px] text-[#94a3b8] mt-1">Shown for verification and migration transparency, not double-counted.</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {onchainWallet?.rows?.length ? (
         <div className="card-light p-5 mb-4">
           <div className="flex items-start justify-between gap-4 mb-4">
             <div>
-              <h3 className="text-sm font-semibold text-[#0f172a]">Migrated On-Chain Wallet Breakdown</h3>
+              <h3 className="text-sm font-semibold text-[#0f172a]">Migrated Wallet Reference</h3>
               <p className="text-xs text-[#9ca3af] mt-1">
-                Verified wallet assets supporting the approved internal balance. Spam and reward tokens are excluded.
+                Verified EVM wallet assets linked to this account. This section is shown as a separate migrated wallet reference and is not added again to the active platform total, to avoid double-counting. Spam and reward tokens are excluded.
               </p>
               {onchainWallet.wallet?.address && (
                 <p className="text-[10px] text-[#9ca3af] mt-2 break-all">

@@ -472,7 +472,7 @@ export default function DashboardPage() {
             <div>
               <h3 className="text-base font-bold text-[#0f172a]">Portfolio Performance</h3>
               <p className="text-xs text-[#94a3b8] mt-1">
-                {balance > 0 ? "Balance movement across your selected range." : "Your growth chart will activate when the account is funded."}
+                {balance > 0 ? "Platform account value movement across the selected range. Migrated on-chain wallet records may be shown separately from active platform totals." : "Your growth chart will activate when the account is funded."}
               </p>
 
               {performanceChart.length > 1 && (

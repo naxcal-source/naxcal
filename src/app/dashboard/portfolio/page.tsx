@@ -252,7 +252,7 @@ export default function PortfolioPage() {
               </p>
               {onchainWallet.wallet?.address && (
                 <p className="text-[10px] text-[#9ca3af] mt-2 break-all">
-                  Wallet: {onchainWallet.wallet.address}
+                  EVM-compatible wallet: {onchainWallet.wallet.address}
                 </p>
               )}
             </div>

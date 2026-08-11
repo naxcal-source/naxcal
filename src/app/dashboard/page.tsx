@@ -130,8 +130,9 @@ export default function DashboardPage() {
   }, []);
 
   const balance = Number(profile?.balance ?? 0);
-  const displayPortfolioValue = balance + cryptoPortfolioValue + stockPortfolioValue;
-  const allocationData = getAllocationData(balance, cryptoPortfolioValue, stockPortfolioValue);
+  const availablePortfolioBalance = balance + cryptoPortfolioValue;
+  const displayPortfolioValue = availablePortfolioBalance + stockPortfolioValue;
+  const allocationData = getAllocationData(availablePortfolioBalance, 0, stockPortfolioValue);
 
   const [chartRange, setChartRange] = useState("1M");
   const [selectedPerformanceIndex, setSelectedPerformanceIndex] = useState<number | null>(null);
@@ -393,7 +394,7 @@ export default function DashboardPage() {
             <div className="mt-auto pt-8 grid grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="rounded-2xl bg-white/[0.07] border border-white/10 p-4">
                 <p className="text-[10px] uppercase tracking-wider text-white/40">Available Balance</p>
-                <p className="mt-2 text-lg font-bold"><AnimatedNumber value={balance} formatter={fmt} /></p>
+                <p className="mt-2 text-lg font-bold"><AnimatedNumber value={availablePortfolioBalance} formatter={fmt} /></p>
               </div>
 
               <div className="rounded-2xl bg-white/[0.07] border border-white/10 p-4">

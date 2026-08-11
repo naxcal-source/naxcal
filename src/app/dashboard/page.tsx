@@ -218,19 +218,47 @@ export default function DashboardPage() {
   const currentPerks = tierPerks[(profile?.tier as string) || "bronze"] || tierPerks.bronze;
 
   useEffect(() => {
-    fetch("/api/stocks/portfolio")
-      .then((res) => res.json())
-      .then((data) => {
-        const rows = Array.isArray(data) ? data : [];
+    const loadPortfolioValues = async () => {
+      try {
+        const [stockRes, cryptoRes] = await Promise.all([
+          fetch("/api/stocks/portfolio"),
+          fetch("/api/crypto/portfolio"),
+        ]);
 
-        const total = rows.reduce((sum, item) => {
-          const value = Number(item.market_value || 0);
-          return sum + (Number.isFinite(value) ? value : 0);
-        }, 0);
+        if (stockRes.ok) {
+          const stockData = await stockRes.json();
+          const stockRows = Array.isArray(stockData) ? stockData : [];
 
-        setStockPortfolioValue(total);
-      })
-      .catch(() => setStockPortfolioValue(0));
+          const stockTotal = stockRows.reduce((sum, item) => {
+            const value = Number(item.market_value || 0);
+            return sum + (Number.isFinite(value) ? value : 0);
+          }, 0);
+
+          setStockPortfolioValue(stockTotal);
+        } else {
+          setStockPortfolioValue(0);
+        }
+
+        if (cryptoRes.ok) {
+          const cryptoData = await cryptoRes.json();
+          const cryptoRows = Array.isArray(cryptoData) ? cryptoData : [];
+
+          const cryptoTotal = cryptoRows.reduce((sum, item) => {
+            const value = Number(item.value_usd ?? item.usd_value ?? item.market_value ?? item.value ?? 0);
+            return sum + (Number.isFinite(value) ? value : 0);
+          }, 0);
+
+          setCryptoPortfolioValue(cryptoTotal);
+        } else {
+          setCryptoPortfolioValue(0);
+        }
+      } catch {
+        setStockPortfolioValue(0);
+        setCryptoPortfolioValue(0);
+      }
+    };
+
+    loadPortfolioValues();
   }, []);
 
   const chartPoints = chartRange === "1W" ? 7 : chartRange === "1M" ? 30 : chartRange === "3M" ? 90 : 365;

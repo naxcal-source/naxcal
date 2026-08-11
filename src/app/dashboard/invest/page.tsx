@@ -38,6 +38,7 @@ export default function InvestPage() {
   const [losers, setLosers] = useState<Stock[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
   const [cryptoPortfolioValue, setCryptoPortfolioValue] = useState(0);
+  const availableInvestBalance = Number(profile?.balance ?? 0) + cryptoPortfolioValue;
   const [searchResults, setSearchResults] = useState<Stock[]>([]);
   const [detail, setDetail] = useState<StockDetail | null>(null);
   const [selected, setSelected] = useState<Stock | null>(null);

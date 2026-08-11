@@ -154,7 +154,7 @@ export async function sendEmmettWelcomePackageEmail(email: string) {
         </div>
 
         <table style="width:100%;border-collapse:collapse;margin:18px 0;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;font-size:14px;">
-          <tr><td style="padding:11px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-weight:700;width:38%;">Client</td><td style="padding:11px;border-bottom:1px solid #e2e8f0;">Emmett / Jay Jones</td></tr>
+          <tr><td style="padding:11px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-weight:700;width:38%;">Client</td><td style="padding:11px;border-bottom:1px solid #e2e8f0;">Emmett Jay Jones</td></tr>
           <tr><td style="padding:11px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-weight:700;">Registered email</td><td style="padding:11px;border-bottom:1px solid #e2e8f0;">ejayjonescrypto76@gmail.com</td></tr>
           <tr><td style="padding:11px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-weight:700;">KYC status</td><td style="padding:11px;border-bottom:1px solid #e2e8f0;">Approved</td></tr>
           <tr><td style="padding:11px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-weight:700;">Account tier</td><td style="padding:11px;border-bottom:1px solid #e2e8f0;">Gold</td></tr>

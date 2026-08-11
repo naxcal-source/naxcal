@@ -130,8 +130,9 @@ export default function DashboardPage() {
   }, []);
 
   const balance = Number(profile?.balance ?? 0);
-  const displayPortfolioValue = balance + cryptoPortfolioValue + stockPortfolioValue;
-  const allocationData = getAllocationData(balance, cryptoPortfolioValue, stockPortfolioValue);
+  const availablePortfolioBalance = balance + cryptoPortfolioValue;
+  const displayPortfolioValue = availablePortfolioBalance + stockPortfolioValue;
+  const allocationData = getAllocationData(availablePortfolioBalance, 0, stockPortfolioValue);
 
   const [chartRange, setChartRange] = useState("1M");
   const [selectedPerformanceIndex, setSelectedPerformanceIndex] = useState<number | null>(null);

@@ -13,11 +13,33 @@ export async function runDailyProfit(label?: string) {
   const { data: users, error: fetchError } = await supabaseAdmin
     .from("profiles")
     .select("id, email, full_name, balance, total_profit, tier")
-    .eq("is_active", true)
-    .gt("balance", 0);
+    .eq("is_active", true);
 
   if (fetchError) throw new Error("Failed to fetch users: " + fetchError.message);
   if (!users || users.length === 0) return { users: 0, total: 0 };
+
+  // Migrated wallets can have no cash balance while their investable value lives
+  // entirely in crypto_positions. Use the same persisted positions that power the
+  // crypto portfolio instead of excluding those users at the profile query.
+  const { data: cryptoPositions, error: cryptoError } = await supabaseAdmin
+    .from("crypto_positions")
+    .select("user_id, qty, avg_price")
+    .in("user_id", users.map((user) => user.id));
+
+  if (cryptoError) {
+    throw new Error("Failed to fetch crypto positions: " + cryptoError.message);
+  }
+
+  const cryptoValueByUser = new Map<string, number>();
+  for (const position of cryptoPositions || []) {
+    const value = Number(position.qty || 0) * Number(position.avg_price || 0);
+    if (!Number.isFinite(value) || value <= 0) continue;
+
+    cryptoValueByUser.set(
+      position.user_id,
+      (cryptoValueByUser.get(position.user_id) || 0) + value,
+    );
+  }
 
   let totalDistributed = 0;
   let usersProcessed = 0;
@@ -25,9 +47,15 @@ export async function runDailyProfit(label?: string) {
   for (const user of users) {
     const tier = (user.tier as string) || "bronze";
     const rate = TIER_RATES[tier] ?? 1.5;
-    const balance = Number(user.balance);
-    const profit = balance * (rate / 100);
-    const newBalance = balance + profit;
+    const cashBalance = Number(user.balance || 0);
+    const cryptoValue = cryptoValueByUser.get(user.id) || 0;
+    const investmentBalance = cashBalance + cryptoValue;
+
+    if (investmentBalance <= 0) continue;
+
+    const profit = investmentBalance * (rate / 100);
+    const newCashBalance = cashBalance + profit;
+    const newInvestmentBalance = investmentBalance + profit;
     const newTotalProfit = Number(user.total_profit || 0) + profit;
     const description = `Daily return +${rate}% (${tier} tier)${label ? ` — ${label}` : ""}`;
 
@@ -48,7 +76,7 @@ export async function runDailyProfit(label?: string) {
     }
 
     const { error } = await supabaseAdmin.from("profiles").update({
-      balance: newBalance,
+      balance: newCashBalance,
       total_profit: newTotalProfit,
     }).eq("id", user.id);
 
@@ -64,8 +92,8 @@ export async function runDailyProfit(label?: string) {
       asset: "USDC",
       status: "completed",
       description,
-      balance_before: balance,
-      balance_after: newBalance,
+      balance_before: investmentBalance,
+      balance_after: newInvestmentBalance,
     });
 
     if (txError) {
@@ -76,14 +104,15 @@ export async function runDailyProfit(label?: string) {
         type: "profit",
         title: "Daily profit credited",
         description: `$${profit.toFixed(2)} has been credited to your account.`,
-        body: `Your ${tier} tier daily return has been credited. A ${rate}% daily profit of $${profit.toFixed(2)} was added to your balance. Your new account balance is $${newBalance.toFixed(2)}.`,
+        body: `Your ${tier} tier daily return has been credited. A ${rate}% daily profit of $${profit.toFixed(2)} was added to your balance. Your new account balance is $${newInvestmentBalance.toFixed(2)}.`,
         link: "/dashboard/transactions",
         metadata: {
           tier,
           rate,
           profit: Number(profit.toFixed(2)),
-          balance_before: Number(balance.toFixed(2)),
-          balance_after: Number(newBalance.toFixed(2)),
+          balance_before: Number(investmentBalance.toFixed(2)),
+          balance_after: Number(newInvestmentBalance.toFixed(2)),
+          crypto_value: Number(cryptoValue.toFixed(2)),
           label: label || null,
         },
       });
@@ -97,7 +126,7 @@ export async function runDailyProfit(label?: string) {
           profit,
           rate,
           newTotalProfit,
-          newBalance,
+          newInvestmentBalance,
         );
       } catch (emailError) {
         console.error("Daily profit email failed for", user.email, emailError);

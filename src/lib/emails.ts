@@ -51,7 +51,15 @@ export async function sendWithdrawalApprovedEmail(email: string, name: string, a
 
 export async function sendDailyProfitEmail(email: string, name: string, amount: number, percentage: number, totalEarned?: number, balance?: number) {
   const { subject, html } = dailyProfitEmail(name, amount, percentage, totalEarned || 0, balance || 0);
-  return resend.emails.send({ from: FROM, replyTo: REPLY_TO, to: email, subject, html });
+  const result = await resend.emails.send({ from: FROM, replyTo: REPLY_TO, to: email, subject, html });
+
+  // Resend reports API failures in the returned result, so awaiting the call is
+  // not enough to make the cron's try/catch observe a rejected delivery.
+  if (result.error) {
+    throw new Error(`Resend daily profit email failed: ${result.error.message}`);
+  }
+
+  return result;
 }
 
 export async function sendInvestorOutreachEmail(email: string, name: string) {

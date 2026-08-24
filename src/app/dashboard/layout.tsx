@@ -333,6 +333,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen flex overflow-x-hidden" style={{ background: "#f1f5f9", minHeight: "100dvh" }}>
+      <a href="#main-content" className="skip-link">Skip to main content</a>
       <aside className="hidden lg:block w-[280px] shrink-0 border-r border-white/[0.06]" style={{ background: "#080f0c" }}>
         {/* eslint-disable-next-line react-hooks/static-components */}
         <SidebarContent />
@@ -377,7 +378,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-6 overflow-auto pb-20 lg:pb-6 overflow-x-hidden">
+        <main id="main-content" tabIndex={-1} className="flex-1 p-4 sm:p-6 overflow-auto pb-20 lg:pb-6 overflow-x-hidden">
           {children}
         </main>
       </div>

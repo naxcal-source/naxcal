@@ -8,8 +8,12 @@ export async function POST(req: NextRequest) {
   try {
     const user = await getAuthUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { data: allowed } = await supabaseAdmin.rpc("consume_security_rate_limit", { p_key: `stock-buy:${user.id}`, p_limit: 10, p_window_seconds: 60 });
+    if (!allowed) return NextResponse.json({ error: "Too many orders. Please wait." }, { status: 429 });
 
     const { symbol, amount_usd } = await req.json();
+    const idempotencyKey = req.headers.get("idempotency-key");
+    if (!idempotencyKey || idempotencyKey.length > 100) return NextResponse.json({ error: "Missing request identifier" }, { status: 400 });
     if (!symbol || !amount_usd) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     if (amount_usd < 50) return NextResponse.json({ error: "Minimum investment is $50" }, { status: 400 });
 
@@ -21,38 +25,15 @@ export async function POST(req: NextRequest) {
     const quote = await getStockPrice(symbol);
     if (!quote || quote.price <= 0) return NextResponse.json({ error: "Could not fetch current price" }, { status: 502 });
 
-    const shares = amount_usd / quote.price;
-    const oldBalance = Number(profile.balance);
-    const newBalance = oldBalance - amount_usd;
-
-    // Check if user already has a position in this stock
-    const { data: existing } = await supabaseAdmin
-      .from("stock_positions")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("symbol", symbol)
-      .single();
-
-    if (existing) {
-      const oldQty = Number(existing.qty);
-      const oldCost = Number(existing.avg_price) * oldQty;
-      const newQty = oldQty + shares;
-      const newAvg = (oldCost + amount_usd) / newQty;
-      await supabaseAdmin.from("stock_positions").update({ qty: newQty, avg_price: newAvg }).eq("id", existing.id);
-    } else {
-      await supabaseAdmin.from("stock_positions").insert({
-        user_id: user.id, symbol, qty: shares, avg_price: quote.price,
-      });
-    }
-
-    await supabaseAdmin.from("profiles").update({ balance: newBalance }).eq("id", user.id);
-    await supabaseAdmin.from("transactions").insert({
-      user_id: user.id, type: "stock_buy", amount: amount_usd, asset: symbol, status: "completed",
-      description: `Bought ${shares.toFixed(4)} shares of ${symbol} @ $${quote.price.toFixed(2)}`,
-      balance_before: oldBalance, balance_after: newBalance,
+    const { data: trade, error: tradeError } = await supabaseAdmin.rpc("execute_stock_buy", {
+      p_user_id: user.id, p_symbol: String(symbol).toUpperCase(), p_amount: Number(amount_usd), p_price: quote.price, p_key: idempotencyKey,
     });
+    if (tradeError) return NextResponse.json({ error: tradeError.message }, { status: 400 });
+    const shares = Number(trade.shares || 0);
+    const oldBalance = Number(profile.balance);
+    const newBalance = Number(trade.new_balance ?? oldBalance);
 
-    await createNotification({
+    if (!trade.duplicate) await createNotification({
       userId: user.id,
       type: "stock_buy",
       title: "Stock purchase completed",

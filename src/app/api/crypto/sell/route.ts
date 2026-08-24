@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { createNotification } from "@/lib/notifications";
-import { rateLimit } from "@/lib/rate-limit";
 
 const GECKO_MAP: Record<string, string> = {
   ETH: "ethereum",
@@ -41,7 +40,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { allowed } = rateLimit(`crypto-sell:${user.id}`, 5, 60000);
+    const { data: allowed } = await supabaseAdmin.rpc("consume_security_rate_limit", { p_key: `crypto-sell:${user.id}`, p_limit: 5, p_window_seconds: 60 });
 
     if (!allowed) {
       return NextResponse.json(
@@ -51,6 +50,8 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
+    const idempotencyKey = req.headers.get("idempotency-key");
+    if (!idempotencyKey || idempotencyKey.length > 100) return NextResponse.json({ error: "Missing request identifier" }, { status: 400 });
     const symbol = String(body.symbol || "").toUpperCase();
     const amount = Number(body.amount || 0);
 
@@ -87,65 +88,15 @@ export async function POST(req: NextRequest) {
     const feeUsd = grossUsd * 0.005;
     const netUsd = grossUsd - feeUsd;
 
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from("profiles")
-      .select("balance")
-      .eq("id", user.id)
-      .single();
-
-    if (profileError || !profile) {
-      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-    }
-
     const oldCryptoQty = Number(position.qty);
-    const remainingQty = oldCryptoQty - amount;
-    const balanceBefore = Number(profile.balance || 0);
-    const balanceAfter = balanceBefore + netUsd;
-
-    if (remainingQty < 0.00000001) {
-      const { error: deleteError } = await supabaseAdmin
-        .from("crypto_positions")
-        .delete()
-        .eq("id", position.id);
-
-      if (deleteError) {
-        return NextResponse.json({ error: deleteError.message }, { status: 500 });
-      }
-    } else {
-      const { error: updateCryptoError } = await supabaseAdmin
-        .from("crypto_positions")
-        .update({ qty: remainingQty })
-        .eq("id", position.id);
-
-      if (updateCryptoError) {
-        return NextResponse.json({ error: updateCryptoError.message }, { status: 500 });
-      }
-    }
-
-    const { error: profileUpdateError } = await supabaseAdmin
-      .from("profiles")
-      .update({
-        balance: balanceAfter,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", user.id);
-
-    if (profileUpdateError) {
-      return NextResponse.json({ error: profileUpdateError.message }, { status: 500 });
-    }
-
-    await supabaseAdmin.from("transactions").insert({
-      user_id: user.id,
-      type: "crypto_sell",
-      amount: netUsd,
-      asset: `${symbol}→USD`,
-      status: "completed",
-      description: `Sold ${amount.toFixed(8)} ${symbol} to USD balance`,
-      balance_before: balanceBefore,
-      balance_after: balanceAfter,
+    const { data: trade, error: tradeError } = await supabaseAdmin.rpc("execute_crypto_sell", {
+      p_user_id: user.id, p_symbol: symbol, p_qty: amount, p_price: price, p_fee_rate: 0.005, p_key: idempotencyKey,
     });
+    if (tradeError) return NextResponse.json({ error: tradeError.message }, { status: 400 });
+    const remainingQty = Number(trade.remaining_qty ?? oldCryptoQty - amount);
+    const balanceAfter = Number(trade.new_balance || 0);
 
-    await createNotification({
+    if (!trade.duplicate) await createNotification({
       userId: user.id,
       type: "crypto_sell",
       title: "Crypto sold to USD balance",
@@ -169,7 +120,6 @@ export async function POST(req: NextRequest) {
       gross_usd: Number(grossUsd.toFixed(2)),
       fee_usd: Number(feeUsd.toFixed(2)),
       net_usd: Number(netUsd.toFixed(2)),
-      balance_before: Number(balanceBefore.toFixed(2)),
       balance_after: Number(balanceAfter.toFixed(2)),
       remaining_crypto_qty: Number(remainingQty.toFixed(8)),
     });

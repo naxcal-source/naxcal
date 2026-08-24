@@ -97,7 +97,7 @@ export default function PortfolioPage() {
     try {
       const response = await fetch("/api/crypto/sell", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Idempotency-Key": crypto.randomUUID() },
         body: JSON.stringify({ symbol: sellingSymbol, amount }),
       });
 
@@ -157,7 +157,7 @@ export default function PortfolioPage() {
     try {
       const res = await fetch("/api/stocks/sell", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Idempotency-Key": crypto.randomUUID() },
         body: JSON.stringify({ symbol: selectedStock.symbol, qty }),
       });
 

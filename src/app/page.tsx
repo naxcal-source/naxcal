@@ -7,7 +7,7 @@ import {
   Shield, TrendingUp, ChevronDown, Star, ArrowRight, Menu, X,
   Lock, Eye, CheckCircle2, UserPlus, ScanFace, Wallet, BarChart3,
   CircleDollarSign, Globe, LineChart, Gem, Cpu, Landmark, Flame,
-  Phone, MessageCircle, Link2, Send, Activity, Zap,
+  Send, Activity, Zap,
   LayoutDashboard, PieChart, Settings, CreditCard, ArrowUpRight,
 } from "lucide-react";
 import {
@@ -325,7 +325,7 @@ export default function Home() {
             <FadeUp delay={0.16}>
               <p className="mt-6 text-[15px] sm:text-base text-white/50 leading-[1.7]" style={{ maxWidth: 480 }}>
                 Naxcal deploys your capital across six institutional asset classes &mdash; forex, global equities,
-                commodities, crypto, algorithmic strategies, and fixed income. Professional management. Daily returns. Full transparency.
+                commodities, crypto, algorithmic strategies, and fixed income. Account visibility, transaction history, and eligible-weekday reward tracking.
               </p>
             </FadeUp>
             <FadeUp delay={0.24}>
@@ -359,7 +359,7 @@ export default function Home() {
                 <motion.div className="absolute -top-8 -right-8 z-20 rounded-xl px-4 py-3 w-[230px]" style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.22)", backdropFilter: "blur(20px)" }} animate={{ y: [0, -10, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}>
                   <div className="flex items-center gap-2.5">
                     <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" style={{ boxShadow: "0 0 10px rgba(34,197,94,0.7)" }} />
-                    <span className="text-[12px] text-white font-medium">+$142.50 profit distributed</span>
+                    <span className="text-[12px] text-white font-medium">Illustrative dashboard preview</span>
                   </div>
                 </motion.div>
                 <div className="w-[320px] h-[640px] overflow-hidden relative" style={{ borderRadius: 44, transform: "rotateY(-12deg) rotateX(4deg)", border: "2px solid rgba(255,255,255,0.15)", boxShadow: "0 0 0 1px rgba(255,255,255,0.08), 0 40px 80px rgba(0,0,0,0.8), 0 0 80px rgba(26,138,110,0.3), 0 0 160px rgba(26,138,110,0.15)", background: "#0d1f18" }}>
@@ -412,10 +412,10 @@ export default function Home() {
           <div className="mx-auto max-w-6xl px-6">
             <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-[#e5e7eb]">
               {[
-                { value: 127, prefix: "$", suffix: "M+", label: "Assets Under Management", decimals: 0 },
-                { value: 4200, suffix: "+", label: "Active Investors", decimals: 0 },
-                { value: 8.4, prefix: "$", suffix: "M+", label: "Returns Distributed", decimals: 1 },
-                { value: 99.7, suffix: "%", label: "Platform Uptime", decimals: 1 },
+                { value: 6, prefix: "", suffix: "", label: "Supported Market Categories", decimals: 0 },
+                { value: 5, prefix: "", suffix: "", label: "Eligible Weekdays", decimals: 0 },
+                { value: 24, prefix: "", suffix: "/7", label: "Dashboard Access", decimals: 0 },
+                { value: 0.5, prefix: "", suffix: "%", label: "Published Swap Fee", decimals: 1 },
               ].map((stat, i) => (
                 <div key={i} className="text-center py-10 px-4">
                   <div className="text-3xl sm:text-4xl font-bold text-naxcal-teal">
@@ -438,7 +438,7 @@ export default function Home() {
               Begin in <span className="text-naxcal-teal">Five Simple Steps</span>
             </h2>
             <p className="text-center text-[#475569] mt-4 max-w-2xl mx-auto text-sm">
-              From account creation to daily returns &mdash; your capital is deployed within minutes.
+              From account creation to portfolio tracking, each step remains visible in your account.
             </p>
           </FadeUp>
           <div className="mt-16 relative">
@@ -485,7 +485,7 @@ export default function Home() {
               { icon: LineChart, title: "Global Equities", desc: "S&P 500, NASDAQ, FTSE 100. Long/short positions on world indices with institutional execution." },
               { icon: Gem, title: "Commodities", desc: "Gold, Silver, Oil, Natural Gas. Inflation-hedged real asset exposure for portfolio stability." },
               { icon: Activity, title: "Crypto Assets", desc: "BTC, ETH, SOL and top-cap digital assets. Managed volatility strategies with strict risk parameters." },
-              { icon: Cpu, title: "Algorithmic Trading", desc: "Proprietary ML models executing 200+ trades daily. Quantitative edge, systematic execution." },
+              { icon: Cpu, title: "Algorithmic Strategies", desc: "Rules-based portfolio strategies with transaction history and account-level reporting." },
               { icon: Landmark, title: "Fixed Income", desc: "Global bond markets and treasury instruments. Capital preservation layer for downside protection." },
             ].map((item, i) => (
               <FadeUp key={i} delay={i * 0.07}>
@@ -572,17 +572,17 @@ export default function Home() {
         <div className="mx-auto max-w-6xl">
           <FadeUp>
             <SectionLabelDark>Performance</SectionLabelDark>
-            <h2 className="text-center text-4xl sm:text-5xl font-bold mb-3 text-white">Performance That <span className="text-naxcal-teal text-glow-heading">Speaks for Itself</span></h2>
-            <p className="text-center text-white/40 max-w-2xl mx-auto text-sm">Risk-adjusted returns consistently outperforming traditional markets.</p>
+            <h2 className="text-center text-4xl sm:text-5xl font-bold mb-3 text-white">Explore <span className="text-naxcal-teal text-glow-heading">Illustrative Projections</span></h2>
+            <p className="text-center text-white/40 max-w-2xl mx-auto text-sm">Examples use the published eligible-weekday rates and are not guarantees of future results.</p>
           </FadeUp>
           <div className="mt-16 grid lg:grid-cols-2 gap-10 items-center">
             <FadeUp>
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  { icon: TrendingUp, value: 1.8, suffix: "%", label: "Avg Daily Return", decimals: 1 },
-                  { icon: CircleDollarSign, value: 8.4, prefix: "$", suffix: "M+", label: "Returns Paid Out", decimals: 1 },
-                  { icon: BarChart3, value: 4200, suffix: "+", label: "Active Investors", decimals: 0 },
-                  { icon: Flame, value: 18, suffix: "+", label: "Months Operating", decimals: 0 },
+                  { icon: TrendingUp, value: 2.1, prefix: "", suffix: "%", label: "Highest Eligible-Weekday Rate", decimals: 1 },
+                  { icon: CircleDollarSign, value: 3, prefix: "", suffix: "", label: "Published Account Tiers", decimals: 0 },
+                  { icon: BarChart3, value: 5, prefix: "", suffix: "", label: "Eligible Days Per Week", decimals: 0 },
+                  { icon: Flame, value: 260, prefix: "", suffix: "", label: "Illustrative Weekdays Per Year", decimals: 0 },
                 ].map((stat, i) => (
                   <div key={i} className="rounded-xl p-5" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }}>
                     <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3" style={{ background: "rgba(26,138,110,0.15)", boxShadow: "0 0 16px rgba(26,138,110,0.2)" }}>
@@ -604,7 +604,7 @@ export default function Home() {
                   </div>
                 </div>
                 <p className="text-[11px] text-white/25 mb-1">$10,000 initial capital &mdash; 12-month comparison</p>
-                <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-naxcal-gold/15 border border-naxcal-gold/25 mb-4"><span className="text-[11px] font-bold text-naxcal-gold">127x better than savings account</span></div>
+                <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-naxcal-gold/15 border border-naxcal-gold/25 mb-4"><span className="text-[11px] font-bold text-naxcal-gold">Illustrative comparison — not a guarantee</span></div>
                 <div className="h-[260px]">
                   <ResponsiveContainer width="100%" height={220} minWidth={0} minHeight={220}>
                     <AreaChart data={performanceData}>
@@ -630,22 +630,22 @@ export default function Home() {
           <FadeUp>
             <SectionLabelLight>Tiers</SectionLabelLight>
             <h2 className="text-center text-4xl sm:text-5xl font-bold mb-3 text-[#0f172a]">Select Your <span className="text-naxcal-teal">Investment Tier</span></h2>
-            <p className="text-center text-[#475569] max-w-2xl mx-auto text-sm">Higher tiers unlock superior returns and premium capital management services.</p>
+            <p className="text-center text-[#475569] max-w-2xl mx-auto text-sm">Higher tiers provide different eligible-weekday rates and account services. Returns are not guaranteed.</p>
           </FadeUp>
           <div className="mt-16 grid md:grid-cols-3 gap-6">
             {[
-              { name: "Bronze", rate: "1.5", min: "$500", monthly: "~45%", annual: "~547%", borderColor: "#b45309", badge: null, nameColor: "text-amber-700", btnStyle: "border border-naxcal-teal text-naxcal-teal hover:bg-naxcal-teal hover:text-white",
-                features: ["1.5% daily risk-adjusted returns", "Standard withdrawal processing", "Priority email support", "Real-time portfolio dashboard", "Monthly performance reports"] },
-              { name: "Silver", rate: "1.8", min: "$5,000", monthly: "~54%", annual: "~657%", borderColor: "#64748b", badge: null, nameColor: "text-slate-600", btnStyle: "border border-naxcal-teal text-naxcal-teal hover:bg-naxcal-teal hover:text-white",
-                features: ["1.8% daily risk-adjusted returns", "Expedited withdrawals (< 4 hours)", "Dedicated account strategist", "Advanced analytics & insights", "Weekly strategy briefings"] },
-              { name: "Gold", rate: "2.1", min: "$25,000", monthly: "~63%", annual: "~766%", borderColor: "#f0a500", badge: "MOST POPULAR", nameColor: "text-naxcal-gold", btnStyle: "btn-teal",
-                features: ["2.1% daily risk-adjusted returns", "Instant withdrawals (< 30 min)", "VIP portfolio strategist", "Institutional-grade reporting", "Direct line to trading desk"] },
+              { name: "Bronze", rate: "1.5", min: "$500", monthly: "~32.5%", annual: "~390%", borderColor: "#b45309", badge: null, nameColor: "text-amber-700", btnStyle: "border border-naxcal-teal text-naxcal-teal hover:bg-naxcal-teal hover:text-white",
+                features: ["1.5% eligible-weekday rate", "Standard withdrawal processing", "Priority email support", "Real-time portfolio dashboard", "Monthly performance reports"] },
+              { name: "Silver", rate: "1.8", min: "$5,000", monthly: "~39%", annual: "~468%", borderColor: "#64748b", badge: null, nameColor: "text-slate-600", btnStyle: "border border-naxcal-teal text-naxcal-teal hover:bg-naxcal-teal hover:text-white",
+                features: ["1.8% eligible-weekday rate", "Expedited withdrawal review", "Dedicated account support", "Advanced analytics & insights", "Weekly strategy briefings"] },
+              { name: "Gold", rate: "2.1", min: "$25,000", monthly: "~45.5%", annual: "~546%", borderColor: "#f0a500", badge: "MOST POPULAR", nameColor: "text-naxcal-gold", btnStyle: "btn-teal",
+                features: ["2.1% eligible-weekday rate", "Priority withdrawal review", "VIP account support", "Advanced account reporting", "Priority support access"] },
             ].map((tier, i) => (
               <FadeUp key={i} delay={i * 0.1}>
                 <div className="card-light-lift p-7 relative h-full flex flex-col" style={{ borderLeft: `4px solid ${tier.borderColor}` }}>
                   {tier.badge && <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-naxcal-gold text-black text-[10px] font-bold uppercase tracking-wider z-10 shadow-md">{tier.badge}</div>}
                   <span className={cn("text-xs font-semibold uppercase tracking-wider mb-5", tier.nameColor)}>{tier.name}</span>
-                  <div className="mb-1"><span className="text-6xl font-black text-[#0f172a] leading-none">{tier.rate}%</span><span className="text-sm text-[#6b7280] ml-2">daily</span></div>
+                  <div className="mb-1"><span className="text-6xl font-black text-[#0f172a] leading-none">{tier.rate}%</span><span className="text-sm text-[#6b7280] ml-2">eligible weekday</span></div>
                   <div className="text-xs text-[#9ca3af] mb-1">{tier.monthly} monthly &bull; {tier.annual} annually</div>
                   <div className="h-px bg-[#e5e7eb] my-5" />
                   <ul className="space-y-3 flex-1">
@@ -677,7 +677,7 @@ export default function Home() {
                 <span className={cn("text-[11px] font-semibold px-2.5 py-1 rounded-full",
                   currentTier.name === "Gold" ? "bg-amber-50 text-amber-700 border border-amber-200" :
                   currentTier.name === "Silver" ? "bg-slate-50 text-slate-600 border border-slate-200" : "bg-orange-50 text-orange-700 border border-orange-200"
-                )}>{currentTier.name} Tier &bull; {(currentTier.rate * 100).toFixed(1)}% daily</span>
+                )}>{currentTier.name} Tier &bull; {(currentTier.rate * 100).toFixed(1)}% eligible weekday</span>
               </div>
               <div className="relative mb-4">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6b7280] text-xl font-bold">$</span>

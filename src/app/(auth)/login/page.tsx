@@ -112,7 +112,7 @@ export default function LoginPage() {
               </div>
               <div className="relative">
                 <input type={showPw ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" className="w-full px-4 py-3 pr-11 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-naxcal-teal/20 focus:border-naxcal-teal transition-colors" style={{ backgroundColor: "#ffffff", color: "#0f172a", border: "1px solid #e2e8f0" }} />
-                <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer" style={{ color: "#9ca3af" }}>{showPw ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+                <button type="button" aria-label={showPw ? "Hide password" : "Show password"} onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer" style={{ color: "#9ca3af" }}>{showPw ? <EyeOff size={16} /> : <Eye size={16} />}</button>
               </div>
             </div>
             <button type="submit" disabled={loading} className="w-full py-3.5 rounded-lg text-white font-semibold text-sm cursor-pointer flex items-center justify-center gap-2 transition-all disabled:opacity-50" style={{ background: "linear-gradient(135deg, #1a8a6e, #22a882)", boxShadow: "0 0 20px rgba(26,138,110,0.35)" }}>

@@ -240,6 +240,7 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen overflow-x-hidden">
+      <a href="#home" className="skip-link">Skip to main content</a>
       {/* ═══ SECURITY BANNER ═══ */}
       <div className="fixed top-0 left-0 right-0 z-[60] bg-[#0a0a0a] border-b border-white/[0.04]">
         <div className="mx-auto max-w-7xl px-6 flex items-center justify-center h-8">
@@ -295,7 +296,7 @@ export default function Home() {
       </nav>
 
       {/* ═══ HERO — DARK ═══ */}
-      <section id="home" className="relative min-h-screen flex items-center overflow-hidden grain" style={{ background: "#020408" }}>
+      <section id="home" tabIndex={-1} className="relative min-h-screen flex items-center overflow-hidden grain" style={{ background: "#020408" }}>
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute inset-0 dot-grid" />
           <div className="aurora-teal absolute top-[5%] right-[10%]" />

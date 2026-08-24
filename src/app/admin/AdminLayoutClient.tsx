@@ -79,6 +79,7 @@ export default function AdminLayoutClient({
 
   return (
     <div className="min-h-screen flex" style={{ background: "#111111" }}>
+      <a href="#main-content" className="skip-link">Skip to main content</a>
       <aside className="hidden lg:block w-[250px] shrink-0 border-r border-white/[0.06]" style={{ background: "#0a0a0a" }}>
         {/* Stable in practice; extracted in a future layout refactor. */}
         {/* eslint-disable-next-line react-hooks/static-components */}
@@ -105,7 +106,7 @@ export default function AdminLayoutClient({
             User Dashboard <ChevronRight size={12} />
           </Link>
         </header>
-        <main className="flex-1 p-6 overflow-auto">{children}</main>
+        <main id="main-content" tabIndex={-1} className="flex-1 p-6 overflow-auto">{children}</main>
       </div>
     </div>
   );

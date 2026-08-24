@@ -198,7 +198,7 @@ function RegisterForm() {
                 <label className="flex items-start gap-2.5 cursor-pointer pt-1">
                   <input type="checkbox" checked={form.agreed} onChange={(e) => update("agreed", e.target.checked)} className="mt-0.5 accent-naxcal-teal" />
                   <span className="text-xs leading-relaxed" style={{ color: "#6b7280" }}>
-                    I agree to the <a href="/legal/terms" target="_blank" className="text-naxcal-teal hover:underline">Terms of Service</a> and <a href="/legal/privacy" target="_blank" className="text-naxcal-teal hover:underline">Privacy Policy</a>
+                    I agree to the <a href="/legal/terms" target="_blank" rel="noopener noreferrer" className="text-naxcal-teal hover:underline">Terms of Service</a> and <a href="/legal/privacy" target="_blank" rel="noopener noreferrer" className="text-naxcal-teal hover:underline">Privacy Policy</a>
                   </span>
                 </label>
                 <button type="submit" disabled={loading} className="w-full py-3.5 rounded-lg text-white font-semibold text-sm cursor-pointer flex items-center justify-center gap-2 transition-all disabled:opacity-50" style={{ background: "linear-gradient(135deg, #1a8a6e, #22a882)", boxShadow: "0 0 20px rgba(26,138,110,0.35)" }}>

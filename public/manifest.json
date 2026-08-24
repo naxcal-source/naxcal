@@ -1,9 +1,11 @@
 {
   "name": "Naxcal — Capital Markets",
   "short_name": "Naxcal",
-  "description": "Deposit crypto. Earn daily returns. Invest in stocks.",
+  "description": "Track deposits, portfolio positions, eligible-weekday credits, and account activity.",
   "start_url": "/dashboard",
   "display": "standalone",
+  "scope": "/",
+  "id": "/dashboard",
   "background_color": "#ffffff",
   "theme_color": "#1a8a6e",
   "icons": [

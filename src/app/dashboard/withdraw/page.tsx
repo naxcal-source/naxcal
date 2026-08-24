@@ -155,7 +155,7 @@ export default function WithdrawPage() {
               {daysRemaining} day{daysRemaining !== 1 ? "s" : ""} remaining — unlocks {unlockDate}
             </span>
           </div>
-          <p className="text-xs text-[#9ca3af]">Your balance continues to earn daily returns during this period.</p>
+          <p className="text-xs text-[#9ca3af]">Eligible-weekday credit rules continue to apply during this period.</p>
         </div>
       ) : !kycBlocked && (
         <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg mb-4" style={{ background: "rgba(26,138,110,0.06)", border: "1px solid rgba(26,138,110,0.15)" }}>
@@ -172,7 +172,7 @@ export default function WithdrawPage() {
             </div>
             <h2 className="text-lg font-bold text-[#0f172a] mb-2">Withdrawal Requested</h2>
             <p className="text-sm text-[#6b7280]">Your withdrawal of {fmt(parseFloat(amount))} is being processed.</p>
-            <p className="text-xs text-[#9ca3af] mt-2">Withdrawals are typically processed within 24 hours.</p>
+            <p className="text-xs text-[#9ca3af] mt-2">Review and blockchain-confirmation times vary.</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -241,7 +241,7 @@ export default function WithdrawPage() {
 
             <div className="flex items-center gap-2 justify-center text-[10px] text-[#9ca3af]">
               <Clock size={10} />
-              <span>Withdrawals processed within 24 hours — Minimum: $100</span>
+              <span>Withdrawals require review — Minimum: $100</span>
             </div>
           </form>
         )}

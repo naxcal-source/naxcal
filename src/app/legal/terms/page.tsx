@@ -12,9 +12,9 @@ export default function TermsPage() {
       <h2>4. Investment Services</h2>
       <p>Naxcal provides managed investment services across multiple asset classes. Past performance is not indicative of future results. Your capital is at risk. We do not guarantee any specific level of return.</p>
       <h2>5. Deposits and Withdrawals</h2>
-      <p>Deposits are processed via cryptocurrency transfers. Minimum deposit is $50 USD. Withdrawals are subject to KYC verification and are processed within 24 hours. Minimum withdrawal is $100 USD.</p>
+      <p>Deposits are processed via cryptocurrency transfers. Minimum deposit is $50 USD. Withdrawals are subject to KYC verification and account review; processing and blockchain-confirmation times vary. Minimum withdrawal is $100 USD.</p>
       <h2>6. Fees</h2>
-      <p>A performance fee may be applied to daily returns as disclosed in your account dashboard. No deposit fees are charged by Naxcal; standard blockchain network fees apply.</p>
+      <p>A performance fee may be applied to eligible-weekday credits as disclosed in your account dashboard. Standard blockchain network fees may apply.</p>
       <h2>7. Risk Disclosure</h2>
       <p>Trading and investing involves significant risk. You may lose some or all of your invested capital. See our full Risk Disclosure document for details.</p>
       <h2>8. Limitation of Liability</h2>

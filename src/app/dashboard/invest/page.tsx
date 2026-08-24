@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { useDashboard } from "@/contexts/DashboardContext";
 import {
   TrendingUp, ArrowUpRight, ArrowDownRight, ChevronRight, Loader2,
-  CheckCircle2, X, Search, Star, Zap, BarChart2, Briefcase,
+  CheckCircle2, Search, Star, Briefcase,
 } from "lucide-react";
 import StockLogo from "@/components/StockLogo";
 import { cn } from "@/lib/utils";
@@ -26,19 +26,13 @@ const TABS = [
 
 const SECTORS = ["All", "Technology", "Finance", "Healthcare", "Energy", "Consumer", "Industrial", "ETFs"];
 
-const SECTOR_COLORS: Record<string, string> = {
-  Technology: "#3b82f6", Finance: "#16a34a", Healthcare: "#ef4444", Energy: "#f59e0b",
-  Consumer: "#8b5cf6", Industrial: "#6b7280", ETFs: "#1a8a6e", Other: "#9ca3af",
-};
-
 export default function InvestPage() {
   const { profile, refreshProfile } = useDashboard();
   const [stocks, setStocks] = useState<Stock[]>([]);
   const [gainers, setGainers] = useState<Stock[]>([]);
   const [losers, setLosers] = useState<Stock[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
-  const [cryptoPortfolioValue, setCryptoPortfolioValue] = useState(0);
-  const availableInvestBalance = Number(profile?.balance ?? 0) + cryptoPortfolioValue;
+  const availableInvestBalance = Number(profile?.balance ?? 0);
   const [searchResults, setSearchResults] = useState<Stock[]>([]);
   const [detail, setDetail] = useState<StockDetail | null>(null);
   const [selected, setSelected] = useState<Stock | null>(null);
@@ -454,11 +448,6 @@ export default function InvestPage() {
                         selectedInvestChartIndex !== null && points[selectedInvestChartIndex]
                           ? points[selectedInvestChartIndex]
                           : latest;
-                      const selectedLabel =
-                        selectedInvestChartIndex !== null
-                          ? `${investChartRange} · point ${selectedInvestChartIndex + 1}`
-                          : `${investChartRange} · latest`;
-
                       return (
                         <>
                           <svg viewBox="0 0 320 240" className="absolute left-4 right-4 bottom-10 w-[calc(100%-2rem)] h-[220px] z-10 overflow-visible">

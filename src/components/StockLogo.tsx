@@ -17,6 +17,7 @@ export default function StockLogo({ symbol, size = 36, className = "" }: { symbo
   }
 
   return (
+    // eslint-disable-next-line @next/next/no-img-element -- logo host is selected dynamically by stock symbol
     <img src={url} alt={symbol} width={size} height={size}
       className={`rounded-full object-cover shrink-0 ${className}`}
       style={{ width: size, height: size, background: "#f1f5f9" }}

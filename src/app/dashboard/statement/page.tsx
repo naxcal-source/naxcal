@@ -18,7 +18,6 @@ export default function StatementPage() {
   const name = profile.full_name || "Investor";
   const email = profile.email;
   const balance = Number(profile.balance);
-  const totalDeposited = Number(profile.total_deposited);
   const totalProfit = Number(profile.total_profit);
   const tier = (profile.tier || "bronze").charAt(0).toUpperCase() + (profile.tier || "bronze").slice(1);
   const now = new Date();
@@ -42,8 +41,9 @@ export default function StatementPage() {
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 40, borderBottom: "2px solid #0a0a0a", paddingBottom: 24 }}>
         <div>
+          {/* eslint-disable-next-line @next/next/no-img-element -- printable statement uses native image sizing */}
           <img src="/Naxcal_Primary_Logo.png" alt="Naxcal" style={{ height: 48, width: "auto", marginBottom: 8 }} />
-          <p style={{ margin: 0, fontSize: 11, color: "#9ca3af" }}>Naxcal Capital Ltd · FCA Authorised</p>
+          <p style={{ margin: 0, fontSize: 11, color: "#9ca3af" }}>Naxcal Capital Ltd · Account Statement</p>
         </div>
         <div style={{ textAlign: "right" }}>
           <h1 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 700, color: "#0a0a0a" }}>Account Statement</h1>
@@ -117,7 +117,7 @@ export default function StatementPage() {
 
       {/* Footer */}
       <div style={{ marginTop: 40, paddingTop: 20, borderTop: "1px solid #e5e7eb" }}>
-        <p style={{ margin: "0 0 4px", fontSize: 11, color: "#9ca3af" }}>Naxcal Capital Ltd is authorised and regulated by the Financial Conduct Authority.</p>
+        <p style={{ margin: "0 0 4px", fontSize: 11, color: "#9ca3af" }}>Review the platform Terms and Risk Disclosure before making financial decisions.</p>
         <p style={{ margin: 0, fontSize: 11, color: "#c0c0c0" }}>This statement is generated automatically. Your capital is at risk. Past performance is not indicative of future results.</p>
       </div>
     </div>

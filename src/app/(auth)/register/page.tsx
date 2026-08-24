@@ -18,7 +18,6 @@ export default function RegisterPage() {
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const isInvited = searchParams.get("invited") === "true";
   const [form, setForm] = useState({
     fullName: searchParams.get("name") || "",
     email: searchParams.get("email") || "",
@@ -120,15 +119,15 @@ function RegisterForm() {
         <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 30% 50%, rgba(26,138,110,0.15) 0%, transparent 70%)" }} />
         <div className="relative z-10">
           <Image src="/Naxcal_Primary_Logo.png" alt="Naxcal" width={180} height={48} className="h-11 w-auto mb-6" style={{ filter: "brightness(1.4) drop-shadow(0 0 16px rgba(26,138,110,0.5))" }} />
-          <h2 className="text-2xl font-bold text-white mt-12 mb-3">Deploy Capital. <span className="text-naxcal-teal">Earn Daily.</span></h2>
+          <h2 className="text-2xl font-bold text-white mt-12 mb-3">Build and Track <span className="text-naxcal-teal">Your Portfolio.</span></h2>
           <p className="text-white/40 text-sm leading-relaxed max-w-xs">
-            Join 4,200+ investors accessing institutional-grade strategies across forex, equities, and crypto markets.
+            Access portfolio tracking across supported stock and crypto markets with clear transaction history.
           </p>
           <div className="mt-10 space-y-4">
             {[
-              { icon: Shield, text: "FCA Authorised & Regulated" },
-              { icon: Lock, text: "256-bit SSL Encryption" },
-              { icon: TrendingUp, text: "1.5% – 2.1% Daily Returns" },
+              { icon: Shield, text: "Identity Verification" },
+              { icon: Lock, text: "Encrypted Connections" },
+              { icon: TrendingUp, text: "Eligible-Weekday Tracking" },
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "rgba(26,138,110,0.12)", border: "1px solid rgba(26,138,110,0.25)" }}>

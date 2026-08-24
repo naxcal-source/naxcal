@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useDashboard } from "@/contexts/DashboardContext";
-import { ArrowDownCircle, ChevronRight, AlertTriangle, Loader2, Copy, Check, CheckCircle2, RefreshCw } from "lucide-react";
+import { ArrowDownCircle, ChevronRight, AlertTriangle, Loader2, Copy, Check, CheckCircle2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { cn } from "@/lib/utils";
 

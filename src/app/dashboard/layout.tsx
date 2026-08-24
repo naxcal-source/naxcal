@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -9,9 +9,9 @@ import { createClient } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, History, ArrowDownCircle, ArrowUpCircle,
-  Users, Settings, LogOut, Menu, Bell, AlertTriangle,
+  Users, Settings, Menu, Bell, AlertTriangle,
   Search, BarChart2, ArrowLeftRight, TrendingUp, ShieldCheck,
-  HelpCircle, ChevronRight, Briefcase,
+  HelpCircle, Briefcase,
 } from "lucide-react";
 import { ToastProvider } from "@/components/Toast";
 import CrispChat from "@/components/CrispChat";

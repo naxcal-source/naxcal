@@ -26,7 +26,6 @@ export async function GET() {
     const name = (profile as Record<string, unknown>)?.full_name || "Investor";
     const email = user.email || "";
     const balance = Number((profile as Record<string, unknown>)?.balance || 0);
-    const totalDeposited = Number((profile as Record<string, unknown>)?.total_deposited || 0);
     const totalProfit = Number((profile as Record<string, unknown>)?.total_profit || 0);
     const tier = ((profile as Record<string, unknown>)?.tier as string || "bronze").charAt(0).toUpperCase() + ((profile as Record<string, unknown>)?.tier as string || "bronze").slice(1);
     const now = new Date();
@@ -70,7 +69,7 @@ export async function GET() {
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:40px;border-bottom:2px solid #0a0a0a;padding-bottom:24px">
     <div>
       <img src="https://naxcal.us/Naxcal_Primary_Logo.png" alt="Naxcal" style="height:48px;width:auto;margin-bottom:8px;display:block" />
-      <p style="margin:0;font-size:11px;color:#9ca3af">Naxcal Capital Ltd · FCA Authorised</p>
+      <p style="margin:0;font-size:11px;color:#9ca3af">Naxcal Capital Ltd · Account Statement</p>
     </div>
     <div style="text-align:right">
       <h1 style="margin:0 0 4px;font-size:22px;font-weight:700;color:#0a0a0a">Account Statement</h1>
@@ -137,7 +136,7 @@ export async function GET() {
 
   <!-- Footer -->
   <div style="margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb">
-    <p style="margin:0 0 4px;font-size:11px;color:#9ca3af">Naxcal Capital Ltd is authorised and regulated by the Financial Conduct Authority.</p>
+    <p style="margin:0 0 4px;font-size:11px;color:#9ca3af">Review the platform Terms and Risk Disclosure before making financial decisions.</p>
     <p style="margin:0;font-size:11px;color:#c0c0c0">This statement is generated automatically. Your capital is at risk. Past performance is not indicative of future results.</p>
   </div>
 

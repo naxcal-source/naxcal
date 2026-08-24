@@ -11,7 +11,7 @@ function layout(content: string) {
 ${content}
 </div>
 <div style="background:#f9fafb;padding:24px 32px;border-radius:0 0 12px 12px;border:1px solid #e5e7eb;border-top:none;text-align:center">
-<p style="margin:0 0 8px;font-size:11px;color:#9ca3af;line-height:1.6">Naxcal Capital Ltd is authorised and regulated by the Financial Conduct Authority.<br>Your capital is at risk. Past performance is not indicative of future results.</p>
+<p style="margin:0 0 8px;font-size:11px;color:#9ca3af;line-height:1.6">Review the platform Terms and Risk Disclosure before making financial decisions.<br>Your capital is at risk. Past performance is not indicative of future results.</p>
 <p style="margin:0;font-size:11px;color:#d1d5db">
 <a href="https://naxcal.us/unsubscribe" style="color:#9ca3af;text-decoration:underline">Unsubscribe</a> &middot; <a href="https://naxcal.us/dashboard/support" style="color:#9ca3af;text-decoration:underline">Help Centre</a> &middot; <a href="https://naxcal.us/legal/privacy" style="color:#9ca3af;text-decoration:underline">Privacy</a>
 </p>
@@ -37,13 +37,13 @@ export function welcomeEmail(name: string) {
 </div>
 <h2 style="margin:0 0 8px;font-size:24px;color:#0a0a0a;font-weight:700;text-align:center">Welcome to Naxcal</h2>
 <p style="margin:0 0 24px;font-size:14px;color:#9ca3af;text-align:center">Your account is ready</p>
-<p style="color:#374151;font-size:16px;line-height:1.6;margin:0 0 24px">Hi ${name}, your Naxcal account has been created successfully. You're now part of a community of 4,200+ investors accessing institutional-grade returns.</p>
+<p style="color:#374151;font-size:16px;line-height:1.6;margin:0 0 24px">Hi ${name}, your Naxcal account has been created successfully. You can now complete verification and access portfolio tracking.</p>
 <div style="background:#f9fafb;border-radius:12px;padding:20px 24px;margin:0 0 24px">
 <p style="margin:0 0 12px;font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;font-weight:600">Next Steps</p>
 <div style="display:flex;align-items:center;gap:12px;margin:0 0 12px"><span style="color:#16a34a;font-size:16px">✓</span><span style="color:#374151;font-size:14px">Account Created</span></div>
 <div style="display:flex;align-items:center;gap:12px;margin:0 0 12px"><span style="color:#1a8a6e;font-size:16px">→</span><span style="color:#374151;font-size:14px">Complete Identity Verification</span></div>
 <div style="display:flex;align-items:center;gap:12px;margin:0 0 12px"><span style="color:#1a8a6e;font-size:16px">→</span><span style="color:#374151;font-size:14px">Make Your First Deposit</span></div>
-<div style="display:flex;align-items:center;gap:12px"><span style="color:#1a8a6e;font-size:16px">→</span><span style="color:#374151;font-size:14px">Start Earning Daily Returns</span></div>
+<div style="display:flex;align-items:center;gap:12px"><span style="color:#1a8a6e;font-size:16px">→</span><span style="color:#374151;font-size:14px">Review Eligible-Weekday Tracking</span></div>
 </div>
 ${btn("Complete Verification →", "https://naxcal.us/dashboard/kyc")}
 ${divider}
@@ -276,7 +276,7 @@ export function investorOutreachEmail(name: string, unsubscribeUrl: string) {
       Your capital.<br>Working every single day.
     </h1>
     <p style="margin:0 auto;max-width:420px;font-size:16px;color:rgba(255,255,255,0.75);line-height:1.7">
-      Naxcal is a regulated investment platform generating consistent daily returns for a select group of private investors. We'd like to invite you in.
+      Naxcal provides portfolio tracking, transaction history, and eligible-weekday credit reporting. We'd like to invite you to review the platform.
     </p>
   </td></tr>
 
@@ -286,15 +286,15 @@ export function investorOutreachEmail(name: string, unsubscribeUrl: string) {
       <tr>
         <td width="33%" style="padding:28px 12px 28px 0;border-right:1px solid rgba(255,255,255,0.06);text-align:center">
           <div style="font-size:32px;font-weight:800;color:#22a882;letter-spacing:-1px">2.1%</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Daily Return</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Eligible Weekday</div>
         </td>
         <td width="33%" style="padding:28px 12px;border-right:1px solid rgba(255,255,255,0.06);text-align:center">
-          <div style="font-size:32px;font-weight:800;color:#f0a500;letter-spacing:-1px">4,200+</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Active Investors</div>
+          <div style="font-size:32px;font-weight:800;color:#f0a500;letter-spacing:-1px">24/7</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Dashboard Access</div>
         </td>
         <td width="33%" style="padding:28px 0 28px 12px;text-align:center">
-          <div style="font-size:32px;font-weight:800;color:#ffffff;letter-spacing:-1px">FCA</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Regulated</div>
+          <div style="font-size:32px;font-weight:800;color:#ffffff;letter-spacing:-1px">KYC</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Identity Checks</div>
         </td>
       </tr>
     </table>
@@ -310,7 +310,7 @@ export function investorOutreachEmail(name: string, unsubscribeUrl: string) {
       We don't advertise. Naxcal grows through introductions — and you came highly recommended. We're reaching out directly to offer you early access before we close our current onboarding window.
     </p>
     <p style="margin:0 0 20px;font-size:15px;color:rgba(255,255,255,0.75);line-height:1.8">
-      Our platform deploys capital across a diversified set of proprietary trading strategies — forex, commodities, and digital assets — with daily returns credited directly to your account balance. No lock-in. No hidden fees. Full transparency.
+      The platform provides access to supported markets, transaction history, and eligible-weekday credit tracking. Published rates and projections are not guarantees of future results.
     </p>
     <p style="margin:0;font-size:15px;color:rgba(255,255,255,0.75);line-height:1.8">
       To put it plainly: <strong style="color:#ffffff">a $500,000 position at our Gold tier returns approximately $10,500 per day</strong>. Most of our investors treat it as a self-running income stream while their primary assets continue to grow elsewhere.
@@ -354,8 +354,8 @@ export function investorOutreachEmail(name: string, unsubscribeUrl: string) {
         <td width="33%" style="padding-right:8px">
           <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:16px;text-align:center">
             <div style="font-size:20px;margin-bottom:6px">🏛️</div>
-            <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.85)">FCA Regulated</div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:3px">Fully authorised</div>
+            <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.85)">Identity Verification</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:3px">Account safeguards</div>
           </div>
         </td>
         <td width="33%" style="padding:0 4px">

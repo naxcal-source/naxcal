@@ -34,7 +34,7 @@ const sparklineData = [
 
 const dashboardChartData = [
   { d: "Mon", v: 22400 }, { d: "Tue", v: 23100 }, { d: "Wed", v: 22800 },
-  { d: "Thu", v: 23800 }, { d: "Fri", v: 24200 }, { d: "Sat", v: 24500 }, { d: "Sun", v: 24847 },
+  { d: "Thu", v: 23800 }, { d: "Fri", v: 24200 },
 ];
 
 const testimonials = [
@@ -229,12 +229,12 @@ export default function Home() {
   };
   const currentTier = tierForAmount(deposit);
   const daily = deposit * currentTier.rate;
-  const weekly = daily * 7;
-  const monthly = daily * 30;
-  const annual = daily * 365;
+  const weekly = daily * 5;
+  const monthly = daily * (260 / 12);
+  const annual = daily * 260;
   const projectionData = useMemo(() => {
     const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    return months.map((m, i) => ({ month: m, returns: Math.round(daily * 30 * (i + 1)) }));
+    return months.map((m, i) => ({ month: m, returns: Math.round(daily * (260 / 12) * (i + 1)) }));
   }, [daily]);
   const handleSlider = (val: number) => { setSliderValue(val); setDeposit(val); };
 
@@ -243,7 +243,7 @@ export default function Home() {
       {/* ═══ FCA BANNER ═══ */}
       <div className="fixed top-0 left-0 right-0 z-[60] bg-[#0a0a0a] border-b border-white/[0.04]">
         <div className="mx-auto max-w-7xl px-6 flex items-center justify-center h-8">
-          <p className="text-[10px] text-white/35 tracking-wide"><Lock size={10} className="inline mr-1.5 text-naxcal-teal" />FCA Authorised &amp; Regulated · Naxcal Capital Ltd · Your capital is at risk</p>
+          <p className="text-[10px] text-white/35 tracking-wide"><Lock size={10} className="inline mr-1.5 text-naxcal-teal" />Secure investment platform · Your capital is at risk</p>
         </div>
       </div>
 
@@ -260,7 +260,7 @@ export default function Home() {
               <Image src="/Naxcal_Primary_Logo.png" alt="Naxcal" width={180} height={50} className="w-auto" style={{ height: 48, filter: "brightness(1.4) drop-shadow(0 0 20px rgba(26,138,110,0.6))" }} priority />
               <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/12 border border-emerald-500/25">
                 <LiveDot />
-                <span className="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider">FCA Regulated</span>
+                <span className="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider">Secure Platform</span>
               </div>
             </div>
             <div className="hidden lg:flex items-center gap-8">
@@ -340,7 +340,7 @@ export default function Home() {
             </FadeUp>
             <FadeUp delay={0.35}>
               <div className="mt-10 flex items-center justify-center lg:justify-start">
-                {[{ icon: Lock, text: "256-bit SSL" }, { icon: Shield, text: "FCA Authorised" }, { icon: Wallet, text: "Cold Storage" }, { icon: Eye, text: "24/7 Active" }].map((item, i) => (
+                {[{ icon: Lock, text: "Encrypted" }, { icon: Shield, text: "Identity Verified" }, { icon: Wallet, text: "Wallet Monitoring" }, { icon: Eye, text: "Account Visibility" }].map((item, i) => (
                   <div key={i} className="flex items-center gap-1.5">
                     <item.icon size={12} className="text-naxcal-teal" />
                     <span className="text-[11px] text-white/35 uppercase tracking-wider">{item.text}</span>
@@ -449,7 +449,7 @@ export default function Home() {
                 { icon: ScanFace, title: "Verify Identity", desc: "Streamlined KYC — complete in minutes, not days.", step: "02", time: "~3 MIN" },
                 { icon: Wallet, title: "Deposit Capital", desc: "USDT, BTC, ETH, USDC with instant confirmation.", step: "03", time: "INSTANT" },
                 { icon: BarChart3, title: "Capital Deployed", desc: "Allocated across 6+ asset classes by our algorithms.", step: "04", time: "<1 HR" },
-                { icon: CircleDollarSign, title: "Collect Returns", desc: "Profits distributed to your account every 24 hours.", step: "05", time: "DAILY" },
+                { icon: CircleDollarSign, title: "Track Returns", desc: "Eligible weekday returns appear in your account history.", step: "05", time: "WEEKDAYS" },
               ].map((item, i) => (
                 <FadeUp key={i} delay={i * 0.08}>
                   <div className="card-light-lift p-5 h-full">
@@ -714,7 +714,7 @@ export default function Home() {
                   </ResponsiveContainer>
                 </div>
               </div>
-              <p className="mt-4 text-[9px] text-[#9ca3af] text-center leading-relaxed">Projections based on historical performance. Past performance does not guarantee future results. Capital is at risk.</p>
+              <p className="mt-4 text-[9px] text-[#9ca3af] text-center leading-relaxed">Illustrative projection using approximately 260 eligible weekdays per year. It is not a promise or guarantee. Capital is at risk.</p>
             </div>
           </FadeUp>
         </div>
@@ -725,10 +725,10 @@ export default function Home() {
         <div className="px-6">
           <FadeUp>
             <SectionLabelLight>Investors</SectionLabelLight>
-            <h2 className="text-center text-4xl sm:text-5xl font-bold mb-3 text-[#0f172a]">Trusted by <span className="text-naxcal-teal">Thousands</span></h2>
+            <h2 className="text-center text-4xl sm:text-5xl font-bold mb-3 text-[#0f172a]">Client <span className="text-naxcal-teal">Experiences</span></h2>
             <div className="flex items-center justify-center gap-2 mt-3 mb-14">
               <div className="flex gap-0.5">{Array.from({ length: 5 }).map((_, i) => <Star key={i} size={16} className="fill-[#f59e0b] text-[#f59e0b]" />)}</div>
-              <span className="text-sm text-[#6b7280]">4.9/5 from 2,400+ verified investors</span>
+              <span className="text-sm text-[#6b7280]">Verified client testimonials</span>
             </div>
           </FadeUp>
         </div>
@@ -745,7 +745,7 @@ export default function Home() {
       </section>
 
       {/* ═══ LIVE ACTIVITY — WHITE ═══ */}
-      <section className="py-[100px] px-6" style={{ background: "#ffffff" }}>
+      <section className="hidden py-[100px] px-6" aria-hidden="true" style={{ background: "#ffffff" }}>
         <div className="mx-auto max-w-3xl">
           <FadeUp>
             <SectionLabelLight>Activity</SectionLabelLight>
@@ -791,14 +791,14 @@ export default function Home() {
         ))}
         <div className="relative z-10 text-center mx-auto max-w-3xl">
           <FadeUp><h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight text-white">Deploy Your Capital<br /><span className="text-naxcal-teal text-glow-heading">Today.</span></h2></FadeUp>
-          <FadeUp delay={0.1}><p className="mt-6 text-base text-white/50 max-w-xl mx-auto">Join 4,200+ investors accessing institutional-grade strategies. Start in minutes. Collect daily returns.</p></FadeUp>
+          <FadeUp delay={0.1}><p className="mt-6 text-base text-white/50 max-w-xl mx-auto">Access a clear dashboard for portfolio activity, weekday return records and account support.</p></FadeUp>
           <FadeUp delay={0.2}>
             <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
               <a href="/register" className="group btn-teal px-10 py-4 rounded-xl text-white font-semibold text-lg cursor-pointer inline-flex items-center justify-center gap-2">Start Investing <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" /></a>
               <a href="https://t.me/naxcal" target="_blank" rel="noopener noreferrer" className="px-10 py-4 rounded-xl border border-white/20 text-white/70 font-semibold text-lg hover:border-white/30 transition-all cursor-pointer inline-flex items-center justify-center gap-2"><Send size={18} /> Contact Us on Telegram</a>
             </div>
           </FadeUp>
-          <FadeUp delay={0.3}><p className="mt-8 text-[11px] text-white/30">No lock-in periods &bull; Withdraw anytime &bull; FCA regulated</p></FadeUp>
+          <FadeUp delay={0.3}><p className="mt-8 text-[11px] text-white/30">Eligibility, review periods and account checks may apply &bull; Capital at risk</p></FadeUp>
         </div>
       </section>
 
@@ -824,11 +824,11 @@ export default function Home() {
           </div>
           <div className="mt-14 pt-8 border-t border-white/[0.06]">
             <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mb-6">
-              {["256-bit SSL Encrypted", "FCA Authorised", "Cold Storage Custody", "End-to-End Encrypted"].map((badge) => (
+              {["Encrypted Connections", "Identity Verification", "Wallet Monitoring", "Account Audit Trail"].map((badge) => (
                 <div key={badge} className="flex items-center gap-1.5"><Shield size={10} className="text-naxcal-teal/50" /><span className="text-[9px] text-white/20 uppercase tracking-[0.15em]">{badge}</span></div>
               ))}
             </div>
-            <p className="text-[10px] text-white/20 text-center leading-relaxed max-w-3xl mx-auto">Naxcal Ltd is authorised and regulated by the Financial Conduct Authority (FCA). Capital at risk. Past performance is not indicative of future results.</p>
+            <p className="text-[10px] text-white/20 text-center leading-relaxed max-w-3xl mx-auto">Capital is at risk. Illustrations and past performance are not guarantees of future results. Verify the legal entity, permissions and product terms before investing.</p>
             <p className="text-[9px] text-white/10 text-center mt-3">&copy; {new Date().getFullYear()} Naxcal Capital Ltd. All rights reserved.</p>
           </div>
         </div>

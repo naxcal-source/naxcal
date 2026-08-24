@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
+import { getAuthUser } from "@/lib/auth-api";
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId, email } = await req.json();
-
-    if (!userId) {
-      return NextResponse.json({ error: "Missing userId" }, { status: 400 });
-    }
+    await req.json().catch(() => ({}));
+    const user = await getAuthUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const userId = user.id;
 
     const ts = Math.floor(Date.now() / 1000).toString();
     const method = "POST";

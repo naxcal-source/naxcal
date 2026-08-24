@@ -120,11 +120,7 @@ export default function KYCPage() {
             }}
             onMessage={(type: string) => {
               if (type === "idCheck.applicantSubmitted") {
-                if (profile) {
-                  supabase.from("profiles").update({ kyc_status: "submitted" }).eq("id", profile.id).then(() => {
-                    refreshProfile();
-                  });
-                }
+                fetch("/api/kyc/submit", { method: "POST" }).then(() => refreshProfile());
               }
             }}
             onError={(error: unknown) => console.error("Sumsub error:", error)}

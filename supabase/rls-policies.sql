@@ -41,10 +41,6 @@ END $$;
 CREATE POLICY "Users read own profile" ON profiles
   FOR SELECT USING (auth.uid() = id);
 
-CREATE POLICY "Users update own profile" ON profiles
-  FOR UPDATE USING (auth.uid() = id)
-  WITH CHECK (auth.uid() = id);
-
 CREATE POLICY "Users insert own profile" ON profiles
   FOR INSERT WITH CHECK (auth.uid() = id);
 
@@ -56,9 +52,6 @@ CREATE POLICY "Service role full access profiles" ON profiles
 -- ============================================
 CREATE POLICY "Users read own transactions" ON transactions
   FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users insert own transactions" ON transactions
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Service role full access transactions" ON transactions
   FOR ALL USING (auth.role() = 'service_role');

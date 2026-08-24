@@ -212,9 +212,9 @@ export default function DashboardPage() {
   const currentTierColors = tierColors[(profile?.tier as string) || "bronze"] || tierColors.bronze;
 
   const tierPerks: Record<string, string[]> = {
-    bronze: ["1.5% daily returns", "Standard support", "Basic analytics"],
-    silver: ["1.8% daily returns", "Priority support", "Advanced analytics"],
-    gold: ["2.1% daily returns", "Dedicated manager", "Premium analytics"],
+    bronze: ["1.5% eligible weekday rate", "Standard support", "Basic analytics"],
+    silver: ["1.8% eligible weekday rate", "Priority support", "Advanced analytics"],
+    gold: ["2.1% eligible weekday rate", "Dedicated manager", "Premium analytics"],
   };
   const currentPerks = tierPerks[(profile?.tier as string) || "bronze"] || tierPerks.bronze;
 

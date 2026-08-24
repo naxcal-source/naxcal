@@ -22,7 +22,7 @@ export default function AdminAnnouncementsPage() {
     if (Array.isArray(data)) setAnnouncements(data as Announcement[]);
   };
 
-  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/set-state-in-effect
 
   const handleCreate = async () => {
     if (!title || !content) return;

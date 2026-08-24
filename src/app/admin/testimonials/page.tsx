@@ -27,7 +27,7 @@ export default function AdminTestimonialsPage() {
     if (Array.isArray(data)) setTestimonials(data as Testimonial[]);
   };
 
-  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/set-state-in-effect
 
   const updateForm = (field: string, value: string | number) => setForm((p) => ({ ...p, [field]: value }));
 

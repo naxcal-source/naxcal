@@ -179,6 +179,7 @@ export default function SwapPage() {
                 </button>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                {/* eslint-disable-next-line react-hooks/static-components */}
                 <TokenDropdown selected={fromToken} onSelect={setFromToken} show={showFromList} setShow={setShowFromList} exclude={toToken} containerRef={fromRef} />
                 <input type="number" value={fromAmount} onChange={(e) => { setFromAmount(e.target.value); setError(""); }} placeholder="0.00"
                   className="flex-1 text-right text-xl font-bold text-[#0f172a] placeholder:text-[#d1d5db] bg-transparent outline-none min-w-0" />
@@ -206,6 +207,7 @@ export default function SwapPage() {
                 </span>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                {/* eslint-disable-next-line react-hooks/static-components */}
                 <TokenDropdown selected={toToken} onSelect={setToToken} show={showToList} setShow={setShowToList} exclude={fromToken} containerRef={toRef} />
                 <div className="flex-1 text-right text-xl font-bold text-[#0f172a] min-w-0">
                   {toAmount > 0 ? toAmount.toFixed(toPrice >= 100 ? 6 : toPrice >= 1 ? 4 : 2) : "0.00"}

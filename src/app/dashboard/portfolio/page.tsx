@@ -172,8 +172,8 @@ export default function PortfolioPage() {
       setStockSellAmount("");
 
       window.location.reload();
-    } catch (error: any) {
-      setSellError(error?.message || "Unable to sell stock.");
+    } catch (error: unknown) {
+      setSellError(error instanceof Error ? error.message : "Unable to sell stock.");
     } finally {
       setStockSellLoading(false);
     }

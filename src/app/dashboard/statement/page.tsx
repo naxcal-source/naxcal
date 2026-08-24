@@ -11,7 +11,7 @@ export default function StatementPage() {
   useEffect(() => {
     if (!profile) return;
     fetch("/api/me/transactions").then(r => r.json()).then(data => { if (Array.isArray(data)) setTxs(data as Tx[]); }).catch(() => {});
-  }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [profile]);
 
   if (!profile) return null;
 

@@ -17,7 +17,7 @@ export default function AdminKYCPage() {
     if (Array.isArray(data)) setUsers(data as User[]);
   };
 
-  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/set-state-in-effect
 
   const handleApprove = async (user: User) => {
     setProcessing(user.id);

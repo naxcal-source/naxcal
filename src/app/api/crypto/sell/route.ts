@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { createNotification } from "@/lib/notifications";
+import { isValidIdempotencyKey } from "@/lib/request-security";
 
 const GECKO_MAP: Record<string, string> = {
   ETH: "ethereum",
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const idempotencyKey = req.headers.get("idempotency-key");
-    if (!idempotencyKey || idempotencyKey.length > 100) return NextResponse.json({ error: "Missing request identifier" }, { status: 400 });
+    if (!isValidIdempotencyKey(idempotencyKey)) return NextResponse.json({ error: "Invalid request identifier" }, { status: 400 });
     const symbol = String(body.symbol || "").toUpperCase();
     const amount = Number(body.amount || 0);
 

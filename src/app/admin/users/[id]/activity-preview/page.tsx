@@ -5,6 +5,20 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Activity, Wallet, Repeat2, TrendingUp } from "lucide-react";
 
+type ActivityTransaction = {
+  id: string;
+  type?: string;
+  amount?: number;
+  asset?: string | null;
+  status?: string;
+  description?: string | null;
+  created_at?: string;
+  timestamp?: string;
+  tx_hash?: string | null;
+  chain?: string | null;
+  native_value?: number | null;
+};
+
 type PreviewData = {
   profile: {
     id: string;
@@ -23,10 +37,10 @@ type PreviewData = {
     avg_price: number;
   }>;
   cryptoValue: number;
-  internalTransactions: Array<any>;
-  onchainTransactions: Array<any>;
-  swaps: Array<any>;
-  profits: Array<any>;
+  internalTransactions: ActivityTransaction[];
+  onchainTransactions: ActivityTransaction[];
+  swaps: ActivityTransaction[];
+  profits: ActivityTransaction[];
   counts: {
     internalTransactions: number;
     onchainTransactions: number;
@@ -191,7 +205,7 @@ export default function AdminUserActivityPreviewPage() {
                   <td className="px-4 py-3 text-white">{money(Number(tx.amount || 0))}</td>
                   <td className="px-4 py-3 text-white/50">{tx.asset || "—"}</td>
                   <td className="px-4 py-3 text-white/50">{tx.description || "—"}</td>
-                  <td className="px-4 py-3 text-white/40">{new Date(tx.created_at).toLocaleString()}</td>
+                  <td className="px-4 py-3 text-white/40">{tx.created_at ? new Date(tx.created_at).toLocaleString() : "—"}</td>
                 </tr>
               ))}
             </tbody>
@@ -222,7 +236,7 @@ export default function AdminUserActivityPreviewPage() {
                   <td className="px-4 py-3 text-white">{Number(tx.native_value || 0).toLocaleString()}</td>
                   <td className="px-4 py-3 text-white/50">{shortHash(tx.tx_hash)}</td>
                   <td className="px-4 py-3 text-white/50">{tx.status || "completed"}</td>
-                  <td className="px-4 py-3 text-white/40">{new Date(tx.timestamp || tx.created_at).toLocaleString()}</td>
+                  <td className="px-4 py-3 text-white/40">{tx.timestamp || tx.created_at ? new Date(tx.timestamp || tx.created_at || 0).toLocaleString() : "—"}</td>
                 </tr>
               ))}
             </tbody>

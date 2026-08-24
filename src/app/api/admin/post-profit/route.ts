@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
         type: "profit",
         amount: netProfit,
         status: "completed",
-        description: `Daily return +${percentage}%${fee > 0 ? ` (net after ${fee}% fee)` : ""}`,
+        description: `Eligible-weekday credit +${percentage}%${fee > 0 ? ` (net after ${fee}% fee)` : ""}`,
         balance_before: Number(u.balance),
         balance_after: newBalance,
       });
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
       await createNotification({
         userId: u.id,
         type: "profit",
-        title: "Daily profit credited",
+        title: "Eligible-weekday credit posted",
         description: `$${netProfit.toFixed(2)} has been credited to your account.`,
         body: `A ${percentage}% profit return was posted to your account. After fees, $${netProfit.toFixed(2)} was credited to your balance.`,
         link: "/dashboard/transactions",

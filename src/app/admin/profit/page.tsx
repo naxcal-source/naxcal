@@ -102,7 +102,7 @@ export default function AdminProfitPage() {
     <div className="max-w-3xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
         <TrendingUp size={22} className="text-naxcal-teal" />
-        <h1 className="text-xl font-bold text-white">Post Daily Profit</h1>
+        <h1 className="text-xl font-bold text-white">Post Eligible-Weekday Credit</h1>
       </div>
 
       {missedDays.length > 0 && (

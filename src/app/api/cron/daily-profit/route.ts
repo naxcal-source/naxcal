@@ -47,7 +47,7 @@ export async function runDailyProfit(label?: string) {
     const newCashBalance = cashBalance + profit;
     const newInvestmentBalance = investmentBalance + profit;
     const newTotalProfit = Number(user.total_profit || 0) + profit;
-    const description = `Daily return +${rate}% (${tier} tier)${label ? ` — ${label}` : ""}`;
+    const description = `Eligible-weekday credit +${rate}% (${tier} tier)${label ? ` — ${label}` : ""}`;
 
     if (label) {
       const { data: existingProfit } = await supabaseAdmin
@@ -92,9 +92,9 @@ export async function runDailyProfit(label?: string) {
       await createNotification({
         userId: user.id,
         type: "profit",
-        title: "Daily profit credited",
+        title: "Eligible-weekday credit posted",
         description: `$${profit.toFixed(2)} has been credited to your account.`,
-        body: `Your ${tier} tier daily return has been credited. A ${rate}% daily profit of $${profit.toFixed(2)} was added to your balance. Your new account balance is $${newInvestmentBalance.toFixed(2)}.`,
+        body: `Your ${tier} tier eligible-weekday credit has been posted. A ${rate}% credit of $${profit.toFixed(2)} was added to your balance. Your new account balance is $${newInvestmentBalance.toFixed(2)}.`,
         link: "/dashboard/transactions",
         metadata: {
           tier,

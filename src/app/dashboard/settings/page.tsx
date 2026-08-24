@@ -387,7 +387,7 @@ export default function SettingsPage() {
           <h3 className="text-sm font-semibold text-[#0f172a] mb-5">Email Notifications</h3>
           <div className="space-y-4">
             {[
-              { key: "daily_profit", label: "Daily profit emails", desc: "Receive your daily return summary" },
+              { key: "daily_profit", label: "Weekday credit emails", desc: "Receive a summary when an eligible-weekday credit is posted" },
               { key: "deposit", label: "Deposit confirmations", desc: "When a deposit is confirmed" },
               { key: "withdrawal", label: "Withdrawal updates", desc: "When a withdrawal is processed" },
               { key: "security", label: "Security alerts", desc: "New login and security events" },
@@ -434,7 +434,7 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-[#0f172a]">Auto-Compound</h3>
-                <p className="text-xs text-[#6b7280] mt-0.5">Automatically reinvest daily profits</p>
+                <p className="text-xs text-[#6b7280] mt-0.5">Automatically reinvest eligible-weekday credits</p>
               </div>
               <button onClick={() => setPrefs({ ...prefs, auto_compound: !prefs.auto_compound })}
                 className={cn("w-11 h-6 rounded-full transition-all cursor-pointer relative", prefs.auto_compound ? "bg-naxcal-teal" : "bg-[#d1d5db]")}>

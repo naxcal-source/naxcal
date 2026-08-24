@@ -704,7 +704,7 @@ export default function DashboardPage() {
               },
               {
                 title: "Choose your tier",
-                desc: "Your tier controls daily return percentage.",
+                desc: "Your tier sets the published eligible-weekday rate.",
                 done: displayPortfolioValue > 0,
                 href: "/dashboard/deposit",
               },
@@ -929,7 +929,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-5">
             <div>
               <h3 className="text-base font-bold text-[#0f172a]">Recent Returns</h3>
-              <p className="text-xs text-[#94a3b8] mt-1">Daily profit history and payout status.</p>
+              <p className="text-xs text-[#94a3b8] mt-1">Eligible-weekday credit history and status.</p>
             </div>
             <span className="px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-semibold text-emerald-700">
               {profile?.tier || "Bronze"} rate
@@ -942,7 +942,7 @@ export default function DashboardPage() {
                 <TrendingUp size={22} className="text-naxcal-teal" />
               </div>
               <p className="text-sm font-semibold text-[#0f172a]">No returns posted yet</p>
-              <p className="text-xs text-[#64748b] mt-2">Your daily return history will appear once your first profit is credited.</p>
+              <p className="text-xs text-[#64748b] mt-2">Your eligible-weekday history will appear once your first credit is posted.</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -950,7 +950,7 @@ export default function DashboardPage() {
                 <div key={i} className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-[#f8fafc] border border-[#eef2f7]">
                   <div>
                     <p className="text-sm font-semibold text-[#0f172a]">{day.date}</p>
-                    <p className="text-xs text-[#94a3b8]">Daily return +{day.rate}%</p>
+                    <p className="text-xs text-[#94a3b8]">Eligible-weekday credit +{day.rate}%</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-bold text-emerald-600">{fmt(Number(day.earnings))}</p>

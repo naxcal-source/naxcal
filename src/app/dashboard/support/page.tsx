@@ -68,7 +68,7 @@ const AI_RESPONSES: { keywords: string[]; response: string }[] = [
   { keywords: ["referral", "invite", "refer", "bonus", "friend"], response: "Share your referral code to earn bonuses:\n\n1. Go to **Dashboard → Referrals**\n2. Copy your unique referral link\n3. Share via WhatsApp, Email, or copy the link\n\nYou earn **5% of your referral's first deposit** as a bonus." },
   { keywords: ["currency", "gbp", "eur", "pound", "euro", "dollar"], response: "To change your display currency:\n\n1. Go to **Settings → Preferences**\n2. Select USD ($), GBP (£), or EUR (€)\n\nAll amounts across the dashboard will convert automatically." },
   { keywords: ["password", "reset", "forgot", "change password"], response: "To change your password:\n\n1. Go to **Settings → Security**\n2. Enter your current password\n3. Enter and confirm your new password\n\nIf you forgot your password, use the **Forgot Password** link on the login page." },
-  { keywords: ["fee", "charge", "cost", "commission"], response: "Naxcal fees:\n\n• **Deposits**: No fees (network fees apply)\n• **Withdrawals**: No fees (network fees apply)\n• **Crypto swaps**: 0.5% per swap\n• **Stock trades**: No commission\n• **Daily returns**: Performance fee may apply (shown in your dashboard)" },
+  { keywords: ["fee", "charge", "cost", "commission"], response: "Naxcal fees:\n\n• **Deposits**: No fees (network fees apply)\n• **Withdrawals**: No fees (network fees apply)\n• **Crypto swaps**: 0.5% per swap\n• **Stock trades**: No commission\n• **Eligible-weekday credits**: A performance fee may apply when disclosed in your dashboard" },
   { keywords: ["minimum", "min deposit", "min withdrawal"], response: "Minimum amounts:\n\n• **Minimum deposit**: $50 USD\n• **Minimum withdrawal**: $100 USD\n• **Minimum stock investment**: $50 USD" },
   { keywords: ["safe", "secure", "trust", "legit", "scam", "regulated"], response: "Naxcal account controls include encrypted connections, optional 2FA, withdrawal PINs, rate limiting, and identity verification. Investing and crypto activity involve risk. Review the site's Terms, AML, Privacy, and Risk pages before using the platform." },
   { keywords: ["contact", "email", "phone", "support", "help"], response: "You can reach us at:\n\n• **Email**: support@naxcal.us\n• **Live Chat**: Click the chat bubble in the bottom-right corner\n\nFor security issues, email security@naxcal.us immediately." },
@@ -294,7 +294,7 @@ export default function SupportPage() {
           {/* Quick suggestions */}
           {messages.length <= 2 && (
             <div className="px-4 pb-2 flex flex-wrap gap-1.5">
-              {["How do I deposit?", "Daily returns?", "Withdrawal PIN", "KYC verification"].map((q) => (
+              {["How do I deposit?", "Weekday credits?", "Withdrawal PIN", "KYC verification"].map((q) => (
                 <button key={q} onClick={() => { setChatInput(q); setTimeout(() => { setMessages((p) => [...p, { role: "user", text: q }]); setTyping(true); setTimeout(() => { const r = findBotResponse(q); setMessages((p) => [...p, { role: "bot", text: r || "I'm not sure about that." }]); setTyping(false); }, 800); }, 50); }}
                   className="px-2.5 py-1 rounded-full text-[11px] text-naxcal-teal font-medium cursor-pointer hover:bg-naxcal-teal/5 transition-colors" style={{ border: "1px solid rgba(26,138,110,0.2)" }}>
                   {q}

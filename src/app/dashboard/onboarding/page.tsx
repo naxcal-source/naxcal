@@ -42,7 +42,7 @@ export default function OnboardingPage() {
         {[
           { icon: Wallet, title: "Deposit Capital", desc: "Fund your account with crypto. 12+ currencies supported." },
           { icon: TrendingUp, title: "Track Credits", desc: "View published eligible-weekday rates and account history. Returns are not guaranteed." },
-          { icon: Shield, title: "Withdraw Anytime", desc: "Your capital is never locked. Withdraw within 24 hours." },
+          { icon: Shield, title: "Request Withdrawals", desc: "Submit requests from your dashboard, subject to account and security checks." },
         ].map((item, i) => (
           <div key={i} className="text-center p-5 rounded-xl" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
             <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3" style={{ background: "rgba(26,138,110,0.1)" }}>

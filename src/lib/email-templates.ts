@@ -83,18 +83,18 @@ export function dailyProfitEmail(name: string, amount: number, percentage: numbe
   const fmt = (n: number) => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const date = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
   return {
-    subject: `💰 Your daily return: +${fmt(amount)} (${percentage}%)`,
+    subject: `💰 Eligible-weekday credit: +${fmt(amount)} (${percentage}%)`,
     html: layout(`
 <div style="text-align:center;margin-bottom:8px">
 <p style="margin:0;font-size:36px;font-weight:700;color:#1a8a6e">+${fmt(amount)}</p>
-<p style="margin:4px 0 0;font-size:16px;color:#374151;font-weight:600">Daily Return Posted</p>
+<p style="margin:4px 0 0;font-size:16px;color:#374151;font-weight:600">Eligible-Weekday Credit Posted</p>
 <p style="margin:4px 0 0;font-size:13px;color:#9ca3af">${percentage}% return for ${date}</p>
 </div>
 ${divider}
 <table style="width:100%;border-collapse:collapse;margin:0 0 24px">
 <tr>
 <td style="text-align:center;padding:16px;width:33%">
-<p style="margin:0;font-size:12px;color:#9ca3af;text-transform:uppercase">Today's Return</p>
+<p style="margin:0;font-size:12px;color:#9ca3af;text-transform:uppercase">Credit Amount</p>
 <p style="margin:4px 0 0;font-size:20px;font-weight:700;color:#16a34a">+${fmt(amount)}</p>
 </td>
 <td style="text-align:center;padding:16px;width:33%;border-left:1px solid #f3f4f6;border-right:1px solid #f3f4f6">
@@ -130,7 +130,7 @@ export function kycApprovedEmail(name: string) {
 <div style="background:#f9fafb;border-radius:12px;padding:20px 24px;margin:0 0 24px">
 <p style="margin:0 0 12px;font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;font-weight:600">Features Unlocked</p>
 <div style="margin:0 0 10px"><span style="color:#16a34a">✓</span> <span style="color:#374151;font-size:14px">Crypto deposits (BTC, ETH, USDT + 300 more)</span></div>
-<div style="margin:0 0 10px"><span style="color:#16a34a">✓</span> <span style="color:#374151;font-size:14px">Daily returns on your investment</span></div>
+<div style="margin:0 0 10px"><span style="color:#16a34a">✓</span> <span style="color:#374151;font-size:14px">Eligible-weekday credit tracking</span></div>
 <div style="margin:0 0 10px"><span style="color:#16a34a">✓</span> <span style="color:#374151;font-size:14px">Withdrawal requests</span></div>
 <div><span style="color:#16a34a">✓</span> <span style="color:#374151;font-size:14px">Stock investing (coming soon)</span></div>
 </div>
@@ -256,7 +256,7 @@ export function investorOutreachEmail(name: string, unsubscribeUrl: string) {
 <title>Private Invitation — Naxcal Capital</title>
 </head>
 <body style="margin:0;padding:0;background:#0a0a0a;font-family:${F};-webkit-font-smoothing:antialiased">
-<div style="display:none;max-height:0;overflow:hidden;font-size:1px;color:#0a0a0a">Daily returns of 1.5–2.1% on your capital. Regulated. Withdraw anytime. &#8203;&nbsp;</div>
+<div style="display:none;max-height:0;overflow:hidden;font-size:1px;color:#0a0a0a">Review portfolio tracking, published eligible-weekday rates, transaction records, and account support. &#8203;&nbsp;</div>
 
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0a0a0a;min-height:100vh">
 <tr><td align="center" style="padding:40px 16px">
@@ -273,7 +273,7 @@ export function investorOutreachEmail(name: string, unsubscribeUrl: string) {
   <!-- HERO -->
   <tr><td style="background:linear-gradient(160deg,#0d1f1a 0%,#060d10 60%,#0a0a0a 100%);padding:52px 40px 44px;text-align:center">
     <h1 style="margin:0 0 16px;font-size:36px;font-weight:800;color:#ffffff;line-height:1.15;letter-spacing:-0.5px">
-      Your capital.<br>Working every single day.
+      Your portfolio.<br>Clear records and support.
     </h1>
     <p style="margin:0 auto;max-width:420px;font-size:16px;color:rgba(255,255,255,0.75);line-height:1.7">
       Naxcal provides portfolio tracking, transaction history, and eligible-weekday credit reporting. We'd like to invite you to review the platform.
@@ -307,13 +307,13 @@ export function investorOutreachEmail(name: string, unsubscribeUrl: string) {
   <tr><td style="background:#0d1117;padding:40px 40px 32px">
     <p style="margin:0 0 20px;font-size:15px;color:rgba(255,255,255,0.9);line-height:1.8">Hi ${name},</p>
     <p style="margin:0 0 20px;font-size:15px;color:rgba(255,255,255,0.75);line-height:1.8">
-      We don't advertise. Naxcal grows through introductions — and you came highly recommended. We're reaching out directly to offer you early access before we close our current onboarding window.
+      We are inviting you to review Naxcal's portfolio dashboard, supported markets, account records, and onboarding process.
     </p>
     <p style="margin:0 0 20px;font-size:15px;color:rgba(255,255,255,0.75);line-height:1.8">
       The platform provides access to supported markets, transaction history, and eligible-weekday credit tracking. Published rates and projections are not guarantees of future results.
     </p>
     <p style="margin:0;font-size:15px;color:rgba(255,255,255,0.75);line-height:1.8">
-      To put it plainly: <strong style="color:#ffffff">a $500,000 position at our Gold tier returns approximately $10,500 per day</strong>. Most of our investors treat it as a self-running income stream while their primary assets continue to grow elsewhere.
+      Published tier examples use eligible weekdays only. They are illustrative projections, not promises, and investment values can rise or fall.
     </p>
   </td></tr>
 
@@ -323,26 +323,26 @@ export function investorOutreachEmail(name: string, unsubscribeUrl: string) {
       <tr style="background:rgba(255,255,255,0.04)">
         <td style="padding:12px 20px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:1px">Tier</td>
         <td style="padding:12px 20px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:1px">Min. Deposit</td>
-        <td style="padding:12px 20px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:1px">Daily Return</td>
+        <td style="padding:12px 20px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:1px">Eligible Weekday</td>
         <td style="padding:12px 20px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:1px">Monthly Est.</td>
       </tr>
       <tr style="border-top:1px solid rgba(255,255,255,0.06)">
         <td style="padding:16px 20px"><span style="color:#cd7f32;font-weight:700;font-size:14px">Bronze</span></td>
-        <td style="padding:16px 20px;color:rgba(255,255,255,0.7);font-size:14px">$1,000</td>
+        <td style="padding:16px 20px;color:rgba(255,255,255,0.7);font-size:14px">$0</td>
         <td style="padding:16px 20px;color:#22a882;font-weight:700;font-size:14px">1.5%</td>
-        <td style="padding:16px 20px;color:rgba(255,255,255,0.7);font-size:14px">~45%</td>
+        <td style="padding:16px 20px;color:rgba(255,255,255,0.7);font-size:14px">~32.5%</td>
       </tr>
       <tr style="border-top:1px solid rgba(255,255,255,0.06)">
         <td style="padding:16px 20px"><span style="color:#c0c0c0;font-weight:700;font-size:14px">Silver</span></td>
-        <td style="padding:16px 20px;color:rgba(255,255,255,0.7);font-size:14px">$10,000</td>
+        <td style="padding:16px 20px;color:rgba(255,255,255,0.7);font-size:14px">$5,000</td>
         <td style="padding:16px 20px;color:#22a882;font-weight:700;font-size:14px">1.8%</td>
-        <td style="padding:16px 20px;color:rgba(255,255,255,0.7);font-size:14px">~54%</td>
+        <td style="padding:16px 20px;color:rgba(255,255,255,0.7);font-size:14px">~39%</td>
       </tr>
       <tr style="border-top:1px solid rgba(255,255,255,0.06);background:rgba(26,138,110,0.06)">
         <td style="padding:16px 20px"><span style="color:#f0a500;font-weight:700;font-size:14px">Gold ✦</span></td>
-        <td style="padding:16px 20px;color:rgba(255,255,255,0.7);font-size:14px">$50,000</td>
+        <td style="padding:16px 20px;color:rgba(255,255,255,0.7);font-size:14px">$25,000</td>
         <td style="padding:16px 20px;color:#22a882;font-weight:700;font-size:14px">2.1%</td>
-        <td style="padding:16px 20px;color:rgba(255,255,255,0.7);font-size:14px">~63%</td>
+        <td style="padding:16px 20px;color:rgba(255,255,255,0.7);font-size:14px">~45.5%</td>
       </tr>
     </table>
   </td></tr>
@@ -368,8 +368,8 @@ export function investorOutreachEmail(name: string, unsubscribeUrl: string) {
         <td width="33%" style="padding-left:8px">
           <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:16px;text-align:center">
             <div style="font-size:20px;margin-bottom:6px">⚡</div>
-            <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.85)">Withdraw Anytime</div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:3px">No lock-in period</div>
+            <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.85)">Withdrawal Requests</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:3px">Subject to account checks</div>
           </div>
         </td>
       </tr>

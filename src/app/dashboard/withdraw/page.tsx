@@ -29,8 +29,7 @@ export default function WithdrawPage() {
   const [recentWithdrawals, setRecentWithdrawals] = useState<Transaction[]>([]);
   const [hasMonthlyDeposit, setHasMonthlyDeposit] = useState<boolean | null>(null);
   const balance = Number(profile?.balance ?? 0);
-  const [cryptoPortfolioValue, setCryptoPortfolioValue] = useState(0);
-  const availableWithdrawBalance = balance + cryptoPortfolioValue;
+  const availableWithdrawBalance = balance;
   const fmt = (n: number) => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const now = new Date();
@@ -38,18 +37,6 @@ export default function WithdrawPage() {
 
   useEffect(() => {
     if (!profile) return;
-    fetch("/api/crypto/portfolio")
-      .then((res) => res.json())
-      .then((data) => {
-        const rows = Array.isArray(data) ? data : [];
-        const total = rows.reduce((sum, item) => {
-          const value = Number(item.value_usd ?? item.usd_value ?? item.market_value ?? item.value ?? 0);
-          return sum + (Number.isFinite(value) ? value : 0);
-        }, 0);
-        setCryptoPortfolioValue(total);
-      })
-      .catch(() => setCryptoPortfolioValue(0));
-
     fetch("/api/me/transactions?type=withdrawal&limit=5")
       .then((r) => r.json())
       .then((data) => { if (Array.isArray(data)) setRecentWithdrawals(data); });
@@ -81,7 +68,7 @@ export default function WithdrawPage() {
     try {
       const res = await fetch("/api/withdraw", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Idempotency-Key": crypto.randomUUID() },
         body: JSON.stringify({ amount: numAmount, asset, wallet, pin }),
       });
       const data = await res.json();

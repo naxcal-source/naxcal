@@ -20,7 +20,8 @@ export type Profile = {
   is_active: boolean;
   created_at: string;
   display_currency?: string;
-  withdrawal_pin?: string | null;
+  has_withdrawal_pin?: boolean;
+  notification_preferences?: Record<string, boolean>;
 };
 
 const RATES: Record<string, { rate: number; symbol: string; code: string }> = {

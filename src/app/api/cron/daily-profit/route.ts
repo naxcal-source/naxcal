@@ -2,19 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { sendDailyProfitEmail } from "@/lib/emails";
 import { createNotification } from "@/lib/notifications";
+import { accountValue, getPersistedCryptoValues } from "@/lib/portfolio-value";
+import { isWeekendLabel } from "@/lib/business-days";
+import { recordSystemEvent } from "@/lib/system-events";
 
 export const TIER_RATES: Record<string, number> = {
   bronze: 1.5,
   silver: 1.8,
   gold: 2.1,
 };
-
-function isWeekendLabel(label?: string) {
-  if (!label || !/^\d{4}-\d{2}-\d{2}$/.test(label)) return false;
-
-  const day = new Date(label + "T00:00:00Z").getUTCDay();
-  return day === 0 || day === 6;
-}
 
 export async function runDailyProfit(label?: string) {
   if (isWeekendLabel(label)) {
@@ -24,7 +20,7 @@ export async function runDailyProfit(label?: string) {
 
   const { data: users, error: fetchError } = await supabaseAdmin
     .from("profiles")
-    .select("id, email, full_name, balance, total_profit, tier")
+    .select("id, email, full_name, balance, total_profit, tier, notification_preferences")
     .eq("is_active", true);
 
   if (fetchError) throw new Error("Failed to fetch users: " + fetchError.message);
@@ -33,25 +29,7 @@ export async function runDailyProfit(label?: string) {
   // Migrated wallets can have no cash balance while their investable value lives
   // entirely in crypto_positions. Use the same persisted positions that power the
   // crypto portfolio instead of excluding those users at the profile query.
-  const { data: cryptoPositions, error: cryptoError } = await supabaseAdmin
-    .from("crypto_positions")
-    .select("user_id, qty, avg_price")
-    .in("user_id", users.map((user) => user.id));
-
-  if (cryptoError) {
-    throw new Error("Failed to fetch crypto positions: " + cryptoError.message);
-  }
-
-  const cryptoValueByUser = new Map<string, number>();
-  for (const position of cryptoPositions || []) {
-    const value = Number(position.qty || 0) * Number(position.avg_price || 0);
-    if (!Number.isFinite(value) || value <= 0) continue;
-
-    cryptoValueByUser.set(
-      position.user_id,
-      (cryptoValueByUser.get(position.user_id) || 0) + value,
-    );
-  }
+  const cryptoValueByUser = await getPersistedCryptoValues(users.map((user) => user.id));
 
   let totalDistributed = 0;
   let usersProcessed = 0;
@@ -61,7 +39,7 @@ export async function runDailyProfit(label?: string) {
     const rate = TIER_RATES[tier] ?? 1.5;
     const cashBalance = Number(user.balance || 0);
     const cryptoValue = cryptoValueByUser.get(user.id) || 0;
-    const investmentBalance = cashBalance + cryptoValue;
+    const investmentBalance = accountValue(cashBalance, cryptoValue);
 
     if (investmentBalance <= 0) continue;
 
@@ -130,7 +108,8 @@ export async function runDailyProfit(label?: string) {
       });
     }
 
-    if (user.email) {
+    const emailPreferences = user.notification_preferences as Record<string, boolean> | null;
+    if (user.email && emailPreferences?.daily_profit !== false) {
       try {
         await sendDailyProfitEmail(
           user.email,
@@ -142,6 +121,11 @@ export async function runDailyProfit(label?: string) {
         );
       } catch (emailError) {
         console.error("Daily profit email failed for", user.email, emailError);
+        await recordSystemEvent("daily_profit_email_failed", "error", "Daily profit email failed", {
+          user_id: user.id,
+          label: label || null,
+          error: emailError instanceof Error ? emailError.message : "Unknown email error",
+        });
       }
     }
 
@@ -170,9 +154,13 @@ export async function GET(req: NextRequest) {
   try {
     const today = new Date().toISOString().slice(0, 10);
     const result = await runDailyProfit(today);
+    await recordSystemEvent("daily_profit_completed", "info", "Daily profit cron completed", { date: today, ...result });
     return NextResponse.json({ message: "Daily profit posted", ...result });
   } catch (err) {
     console.error("Cron daily profit error:", err);
+    await recordSystemEvent("daily_profit_failed", "error", "Daily profit cron failed", {
+      error: err instanceof Error ? err.message : "Unknown cron error",
+    });
     return NextResponse.json({ error: "Failed" }, { status: 500 });
   }
 }

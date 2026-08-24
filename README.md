@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Naxcal
 
-## Getting Started
+Naxcal is a Next.js investment account portal with Supabase authentication and ledger storage, Sumsub KYC, Resend email delivery, wallet migration, portfolio views, and guarded admin operations.
 
-First, run the development server:
+## Local setup
+
+1. Install Node.js 20+ and dependencies with `npm ci`.
+2. Add required environment variables to `.env.local` without committing it.
+3. Run `npm run dev` and open `http://localhost:3000`.
+
+Never expose service-role, webhook, cron, migration, or email API secrets through `NEXT_PUBLIC_*` variables.
+
+## Verification
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm test
+npm run lint
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Financial and security changes must test authorization, idempotency, duplicate prevention, and balance invariants.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Database changes
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Apply `supabase/security-and-ledger-hardening.sql` before deploying the matching application release. It removes direct client mutation policies and adds atomic withdrawals, shared rate limits, notification preferences, and operational events.
 
-## Learn More
+Back up production first, apply in staging, verify the application, and then deploy. Do not partially deploy the database and application changes.
 
-To learn more about Next.js, take a look at the following resources:
+## Scheduled jobs
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Daily profit: 08:00 UTC, Monday–Friday only.
+- Jay Jones wallet sync: 07:00 UTC daily.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Daily profit has both a weekday schedule and a server-side weekend guard. Cron routes require `CRON_SECRET`. Failures are written to `system_events` and surfaced in the admin dashboard.
 
-## Deploy on Vercel
+## Accounting rules
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `transactions` is the audit trail; corrections use explicit adjustment entries.
+- Balance changes must be atomic with their ledger entry.
+- Every retryable financial request needs an idempotency key.
+- Customer account value and admin AUM use the same persisted valuation helper.
+- Never delete or silently overwrite settled financial history.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Security rules
+
+- Withdrawal PINs are scrypt-hashed and verified only on the server.
+- KYC tokens are bound to the authenticated user.
+- Profile and admin updates use explicit field allowlists.
+- Never log secrets, PINs, access tokens, provider payloads, or authentication codes.
+
+## Production checklist
+
+1. Apply reviewed database migrations.
+2. Run tests, lint, and the production build.
+3. Complete KYC, deposit, and withdrawal smoke tests on a preview.
+4. Confirm Vercel checks and merge through a pull request.
+5. Verify the next scheduled cron and email delivery events.
+6. Review `system_events`, withdrawals, and the audit log.

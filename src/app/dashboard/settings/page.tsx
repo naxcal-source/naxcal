@@ -136,7 +136,10 @@ export default function SettingsPage() {
         dob: "", nationality: "", address: "", city: "", country: "", postal_code: "",
       });
       setPrefs({ auto_compound: !!p.auto_compound });
-      setHasPin(!!(p.withdrawal_pin as string));
+      setHasPin(!!p.has_withdrawal_pin);
+      if (p.notification_preferences && typeof p.notification_preferences === "object") {
+        setNotifications((current) => ({ ...current, ...(p.notification_preferences as typeof current) }));
+      }
     }
   }, [profile]);
 
@@ -172,6 +175,19 @@ export default function SettingsPage() {
     });
     setLoading(false);
     setSaved("Preferences saved"); setTimeout(() => setSaved(""), 3000);
+  };
+
+  const handleSaveNotifications = async () => {
+    setLoading(true);
+    const response = await fetch("/api/me", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notification_preferences: notifications }),
+    });
+    setLoading(false);
+    if (!response.ok) { setError("Unable to save notification preferences"); return; }
+    setSaved("Notification preferences saved");
+    setTimeout(() => setSaved(""), 3000);
   };
 
   const update = (field: string, value: string) => setForm((p) => ({ ...p, [field]: value }));
@@ -306,13 +322,18 @@ export default function SettingsPage() {
               if (pinForm.newPin.length !== 6 || !/^\d{6}$/.test(pinForm.newPin)) { setError("PIN must be exactly 6 digits."); return; }
               if (pinForm.newPin !== pinForm.confirmPin) { setError("PINs do not match."); return; }
               if (hasPin && pinForm.current.length !== 6) { setError("Enter your current PIN."); return; }
-              if (hasPin) {
-                const check = await fetch("/api/me").then(r => r.json());
-                if (check?.withdrawal_pin !== pinForm.current) { setError("Current PIN is incorrect."); return; }
-              }
               setLoading(true);
-              await fetch("/api/me", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ withdrawal_pin: pinForm.newPin }) });
+              const pinResponse = await fetch("/api/me/withdrawal-pin", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ currentPin: pinForm.current, newPin: pinForm.newPin }),
+              });
               setLoading(false);
+              if (!pinResponse.ok) {
+                const result = await pinResponse.json().catch(() => ({}));
+                setError(result.error || "Unable to update withdrawal PIN.");
+                return;
+              }
               setHasPin(true);
               setPinForm({ current: "", newPin: "", confirmPin: "" });
               setSaved("Withdrawal PIN updated successfully");
@@ -383,6 +404,9 @@ export default function SettingsPage() {
               </div>
             ))}
           </div>
+          <button onClick={handleSaveNotifications} disabled={loading} className="w-full mt-6 py-3 rounded-lg font-semibold text-sm cursor-pointer btn-teal text-white disabled:opacity-50">
+            {loading ? "Saving..." : "Save Notification Preferences"}
+          </button>
         </div>
       )}
 

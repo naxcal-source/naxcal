@@ -4,19 +4,19 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Users, Wallet, ArrowDownCircle, ArrowUpCircle, ShieldCheck, TrendingUp, ArrowRight, Send, Loader2, CheckCircle2, UserPlus } from "lucide-react";
 
-type Stats = { totalUsers: number; totalAUM: number; depositsToday: number; pendingWithdrawals: number; pendingKYC: number };
-type User = { id: string; full_name: string | null; email: string; balance: number; tier: string; kyc_status: string; created_at: string };
+type Stats = { totalUsers: number; totalAUM: number; depositsToday: number; pendingWithdrawals: number; pendingKYC: number; cronHealthy: boolean | null };
+type User = { id: string; full_name: string | null; email: string; balance: number; account_value?: number; tier: string; kyc_status: string; created_at: string };
 type Tx = { id: string; type: string; amount: number; status: string; created_at: string; user_id: string };
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState<Stats>({ totalUsers: 0, totalAUM: 0, depositsToday: 0, pendingWithdrawals: 0, pendingKYC: 0 });
+  const [stats, setStats] = useState<Stats>({ totalUsers: 0, totalAUM: 0, depositsToday: 0, pendingWithdrawals: 0, pendingKYC: 0, cronHealthy: null });
   const [recentUsers, setRecentUsers] = useState<User[]>([]);
   const [recentTx, setRecentTx] = useState<Tx[]>([]);
   useEffect(() => {
     const load = async () => {
       const profiles = await fetch("/api/admin/data?type=profiles").then(r => r.json()).catch(() => []);
       if (Array.isArray(profiles)) {
-        const totalAUM = profiles.reduce((s: number, p: Record<string, unknown>) => s + Number(p.balance), 0);
+        const totalAUM = profiles.reduce((s: number, p: Record<string, unknown>) => s + Number(p.account_value ?? p.balance), 0);
         const pendingKYC = profiles.filter((p: Record<string, unknown>) => p.kyc_status === "pending" || p.kyc_status === "submitted").length;
         setStats((prev) => ({ ...prev, totalUsers: profiles.length, totalAUM, pendingKYC }));
         setRecentUsers(profiles.slice(0, 5) as User[]);
@@ -30,6 +30,9 @@ export default function AdminDashboard() {
         setStats((prev) => ({ ...prev, depositsToday, pendingWithdrawals }));
         setRecentTx(txs.slice(0, 10) as Tx[]);
       }
+
+      const health = await fetch("/api/admin/health").then(r => r.json()).catch(() => null);
+      setStats((prev) => ({ ...prev, cronHealthy: typeof health?.healthy === "boolean" ? health.healthy : null }));
     };
     load();
   }, []);
@@ -42,6 +45,7 @@ export default function AdminDashboard() {
     { label: "Deposits Today", value: fmt(stats.depositsToday), icon: ArrowDownCircle, color: "#16a34a" },
     { label: "Pending Withdrawals", value: stats.pendingWithdrawals.toString(), icon: ArrowUpCircle, color: "#f0a500" },
     { label: "Pending KYC", value: stats.pendingKYC.toString(), icon: ShieldCheck, color: "#ef4444" },
+    { label: "Profit Cron", value: stats.cronHealthy === null ? "Unknown" : stats.cronHealthy ? "Healthy" : "Attention", icon: TrendingUp, color: stats.cronHealthy ? "#16a34a" : "#ef4444" },
   ];
 
   const [inviteEmail, setInviteEmail] = useState("");

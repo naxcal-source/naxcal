@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { HelpCircle, ChevronRight, ChevronDown, Search, Mail, MessageCircle, Copy, CheckCircle2, Clock, Send, Bot, User, ArrowRight } from "lucide-react";
+import { HelpCircle, ChevronRight, ChevronDown, Search, Mail, MessageCircle, Copy, CheckCircle2, Send, Bot, User, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { openCrispChat } from "@/components/CrispChat";
 
@@ -12,27 +12,27 @@ const faqSections = [
     title: "Getting Started",
     items: [
       { q: "How do I create an account?", a: "Click 'Start Investing' on the homepage, enter your full name, email, and password. After verifying your email, complete the KYC verification to unlock all features." },
-      { q: "What is KYC and why is it required?", a: "KYC (Know Your Customer) is a regulatory requirement. We verify your identity to comply with FCA regulations and protect against fraud. It typically takes under 24 hours." },
+      { q: "What is KYC and why is it required?", a: "KYC (Know Your Customer) verifies your identity, supports applicable legal obligations, and helps protect accounts against fraud. Review times vary, and the dashboard shows your current status." },
       { q: "What is the minimum deposit?", a: "The minimum deposit is $50 USD. You can deposit using any of our supported cryptocurrencies including BTC, ETH, USDT, and more." },
       { q: "How do I deposit funds?", a: "Go to Dashboard → Deposit, select your cryptocurrency, enter the amount, and send funds to the generated wallet address. Deposits are credited within 1-3 network confirmations." },
-      { q: "Is Naxcal regulated?", a: "Yes, Naxcal Capital Ltd is authorised and regulated by the Financial Conduct Authority (FCA). Your capital is protected under the compensation scheme." },
+      { q: "What protections apply to my account?", a: "Investment and crypto products involve risk, and statutory compensation protection should not be assumed. Review the Terms and Risk Disclosure before depositing, and contact compliance@naxcal.us if you need confirmation about a specific product." },
     ],
   },
   {
     title: "Returns & Profits",
     items: [
-      { q: "How are daily returns calculated?", a: "Returns are calculated based on your investment tier: Bronze (1.5%), Silver (1.8%), or Gold (2.1%). Returns are posted daily and automatically added to your balance." },
-      { q: "When are profits posted?", a: "Daily profits are typically posted between 8:00-10:00 AM UTC each day. You'll receive an email notification when your return is credited." },
-      { q: "Can I reinvest my profits?", a: "Yes, auto-compound is enabled by default. Your daily returns are automatically reinvested. You can change this in Settings → Preferences." },
-      { q: "What trading strategies does Naxcal use?", a: "We employ AI-driven algorithmic strategies across forex, equities, crypto, and commodities. Our diversified approach manages risk while targeting consistent daily returns." },
+      { q: "How are weekday returns calculated?", a: "Returns are calculated from your eligible investment balance using your tier rate: Bronze (1.5%), Silver (1.8%), or Gold (2.1%). The rate is applied once each weekday, Monday through Friday. Saturdays and Sundays do not earn a return." },
+      { q: "When are profits posted?", a: "Weekday profits are typically posted between 8:00-10:00 AM UTC, Monday through Friday. You'll receive an email notification when your return is credited. Nothing is posted on weekends." },
+      { q: "Can I reinvest my profits?", a: "Yes. When auto-compound is enabled, your Monday–Friday returns are automatically reinvested. You can change this in Settings → Preferences." },
+      { q: "Which markets appear in Naxcal?", a: "The platform presents account and market data across forex, equities, crypto, and commodities. Availability and treatment depend on the product terms. Diversification does not eliminate risk, and returns are not guaranteed." },
     ],
   },
   {
     title: "Withdrawals",
     items: [
-      { q: "How do I withdraw funds?", a: "Go to Dashboard → Withdraw, select the cryptocurrency, enter the amount and your wallet address, then enter your 6-digit withdrawal PIN. Withdrawals are processed within 24 hours." },
+      { q: "How do I withdraw funds?", a: "Go to Dashboard → Withdraw, select the cryptocurrency, enter the amount and your wallet address, then enter your 6-digit withdrawal PIN. The screen shows applicable eligibility and processing checks before submission." },
       { q: "What is the minimum withdrawal?", a: "The minimum withdrawal amount is $100 USD." },
-      { q: "How long do withdrawals take?", a: "Withdrawals are typically processed within 24 hours. After processing, blockchain confirmations may take additional time depending on network congestion." },
+      { q: "How long do withdrawals take?", a: "The processing target is typically within 24 hours, but security review, provider availability, and blockchain congestion can take longer. Check the transaction status rather than relying on the estimate." },
       { q: "Why was my withdrawal rejected?", a: "Common reasons include: KYC not completed, insufficient balance, invalid wallet address, or security hold. Contact support for specific details." },
     ],
   },
@@ -56,11 +56,11 @@ const faqSections = [
 
 // AI knowledge base for the chatbot
 const AI_RESPONSES: { keywords: string[]; response: string }[] = [
-  { keywords: ["deposit", "fund", "add money", "top up"], response: "To deposit funds:\n\n1. Go to **Dashboard → Deposit**\n2. Select your cryptocurrency (BTC, ETH, USDT, etc.)\n3. Enter the amount (minimum $50)\n4. Send crypto to the generated wallet address\n\nFunds are credited within 1-3 network confirmations. Your balance updates within 30 minutes." },
-  { keywords: ["withdraw", "cash out", "take out", "send money"], response: "To withdraw funds:\n\n1. Complete KYC verification first\n2. Set a withdrawal PIN in **Settings → Security**\n3. Go to **Dashboard → Withdraw**\n4. Enter amount (minimum $100), wallet address, and PIN\n\nWithdrawals are processed within 24 hours." },
+  { keywords: ["deposit", "fund", "add money", "top up"], response: "To deposit funds:\n\n1. Go to **Dashboard → Deposit**\n2. Select your cryptocurrency (BTC, ETH, USDT, etc.)\n3. Enter the amount (minimum $50)\n4. Send crypto to the generated wallet address\n\nCredit timing depends on provider status and network confirmations. The displayed 30-minute window is a target, not a guarantee." },
+  { keywords: ["withdraw", "cash out", "take out", "send money"], response: "To withdraw funds:\n\n1. Complete KYC verification first\n2. Set a withdrawal PIN in **Settings → Security**\n3. Go to **Dashboard → Withdraw**\n4. Enter amount (minimum $100), wallet address, and PIN\n\nThe processing target is typically within 24 hours, but eligibility, security, provider, and network checks can take longer." },
   { keywords: ["kyc", "verify", "verification", "identity", "document", "passport", "id"], response: "To verify your identity:\n\n1. Go to **Dashboard → Verification**\n2. Complete the Sumsub verification process\n3. Upload your government-issued ID\n4. Take a selfie for facial verification\n\nReview typically takes under 24 hours. You'll receive an email once approved." },
-  { keywords: ["return", "profit", "earn", "daily", "interest", "yield"], response: "Daily returns are based on your investment tier:\n\n• **Bronze**: 1.5% daily (balance $0+)\n• **Silver**: 1.8% daily (balance $5,000+)\n• **Gold**: 2.1% daily (balance $25,000+)\n\nReturns are posted daily between 8-10 AM UTC and auto-reinvested by default." },
-  { keywords: ["tier", "upgrade", "bronze", "silver", "gold", "level"], response: "Investment tiers are based on your total balance:\n\n• **Bronze**: $0+ → 1.5% daily\n• **Silver**: $5,000+ → 1.8% daily\n• **Gold**: $25,000+ → 2.1% daily\n\nYour tier upgrades automatically when your balance reaches the threshold." },
+  { keywords: ["return", "profit", "earn", "daily", "interest", "yield"], response: "Returns are based on your investment tier:\n\n• **Bronze**: 1.5% each weekday (balance $0+)\n• **Silver**: 1.8% each weekday (balance $5,000+)\n• **Gold**: 2.1% each weekday (balance $25,000+)\n\nReturns are posted Monday through Friday between 8-10 AM UTC. Saturdays and Sundays are excluded." },
+  { keywords: ["tier", "upgrade", "bronze", "silver", "gold", "level"], response: "Investment tiers are based on your total balance:\n\n• **Bronze**: $0+ → 1.5% each weekday\n• **Silver**: $5,000+ → 1.8% each weekday\n• **Gold**: $25,000+ → 2.1% each weekday\n\nWeekday means Monday through Friday; weekends do not earn returns. Your tier upgrades automatically when your balance reaches the threshold." },
   { keywords: ["pin", "withdrawal pin", "set pin", "change pin"], response: "To set or change your withdrawal PIN:\n\n1. Go to **Settings → Security**\n2. Scroll to **Withdrawal PIN**\n3. Enter a 6-digit numeric PIN\n4. Confirm the PIN\n\nThis PIN is required for every withdrawal request." },
   { keywords: ["2fa", "two factor", "authenticator", "google auth", "security"], response: "To enable Two-Factor Authentication:\n\n1. Go to **Settings → Security**\n2. Click **Enable 2FA**\n3. Scan the QR code with Google Authenticator or Authy\n4. Enter the 6-digit code to verify\n\nThis adds an extra layer of security to your account." },
   { keywords: ["swap", "exchange", "convert", "trade crypto"], response: "To swap cryptocurrencies:\n\n1. Go to **Dashboard → Swap**\n2. Select the token you want to swap FROM\n3. Select the token you want TO receive\n4. Enter the amount\n5. Click **Swap Now**\n\nSwaps use live CoinGecko rates with a 0.5% fee." },
@@ -68,9 +68,9 @@ const AI_RESPONSES: { keywords: string[]; response: string }[] = [
   { keywords: ["referral", "invite", "refer", "bonus", "friend"], response: "Share your referral code to earn bonuses:\n\n1. Go to **Dashboard → Referrals**\n2. Copy your unique referral link\n3. Share via WhatsApp, Email, or copy the link\n\nYou earn **5% of your referral's first deposit** as a bonus." },
   { keywords: ["currency", "gbp", "eur", "pound", "euro", "dollar"], response: "To change your display currency:\n\n1. Go to **Settings → Preferences**\n2. Select USD ($), GBP (£), or EUR (€)\n\nAll amounts across the dashboard will convert automatically." },
   { keywords: ["password", "reset", "forgot", "change password"], response: "To change your password:\n\n1. Go to **Settings → Security**\n2. Enter your current password\n3. Enter and confirm your new password\n\nIf you forgot your password, use the **Forgot Password** link on the login page." },
-  { keywords: ["fee", "charge", "cost", "commission"], response: "Naxcal fees:\n\n• **Deposits**: No fees (network fees apply)\n• **Withdrawals**: No fees (network fees apply)\n• **Crypto swaps**: 0.5% per swap\n• **Stock trades**: No commission\n• **Daily returns**: Performance fee may apply (shown in your dashboard)" },
+  { keywords: ["fee", "charge", "cost", "commission"], response: "Naxcal fees:\n\n• **Deposits**: No fees (network fees apply)\n• **Withdrawals**: No fees (network fees apply)\n• **Crypto swaps**: 0.5% per swap\n• **Stock trades**: No commission\n• **Weekday returns**: Performance fee may apply (shown in your dashboard)" },
   { keywords: ["minimum", "min deposit", "min withdrawal"], response: "Minimum amounts:\n\n• **Minimum deposit**: $50 USD\n• **Minimum withdrawal**: $100 USD\n• **Minimum stock investment**: $50 USD" },
-  { keywords: ["safe", "secure", "trust", "legit", "scam", "regulated"], response: "Naxcal security measures:\n\n• FCA Authorised & Regulated\n• 256-bit SSL encryption\n• Two-factor authentication (2FA)\n• Cold storage for crypto assets\n• Multi-signature wallet protection\n• Sumsub KYC verification\n\nYour capital is protected under the UK compensation scheme." },
+  { keywords: ["safe", "secure", "trust", "legit", "scam", "regulated"], response: "Naxcal account controls include:\n\n• Encrypted HTTPS connections\n• Two-factor authentication (2FA)\n• Withdrawal PIN verification\n• Sumsub identity verification\n• Transaction statements and account alerts\n\nInvestment and crypto products involve risk. Do not assume statutory compensation protection applies; review the Terms and Risk Disclosure before depositing." },
   { keywords: ["contact", "email", "phone", "support", "help"], response: "You can reach us at:\n\n• **Email**: support@naxcal.us\n• **Live Chat**: Click the chat bubble in the bottom-right corner\n• **Response time**: Within 2 hours\n\nFor security issues, email security@naxcal.us immediately." },
   { keywords: ["statement", "download", "csv", "history", "export"], response: "To download your transaction statement:\n\n1. Go to **Dashboard**\n2. Click **Statement** in Quick Actions\n3. A CSV file will download automatically\n\nYou can also export from the **Transactions** page using the Export button." },
 ];
@@ -96,7 +96,6 @@ export default function SupportPage() {
   const [openSection, setOpenSection] = useState<string | null>("Getting Started");
   const [openItem, setOpenItem] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: "bot", text: "Hi! I'm Naxcal's AI assistant. I can help with questions about deposits, withdrawals, returns, security, and more. What do you need help with?" },
@@ -295,7 +294,7 @@ export default function SupportPage() {
           {/* Quick suggestions */}
           {messages.length <= 2 && (
             <div className="px-4 pb-2 flex flex-wrap gap-1.5">
-              {["How do I deposit?", "Daily returns?", "Withdrawal PIN", "KYC verification"].map((q) => (
+              {["How do I deposit?", "Weekday returns?", "Withdrawal PIN", "KYC verification"].map((q) => (
                 <button key={q} onClick={() => { setChatInput(q); setTimeout(() => { setMessages((p) => [...p, { role: "user", text: q }]); setTyping(true); setTimeout(() => { const r = findBotResponse(q); setMessages((p) => [...p, { role: "bot", text: r || "I'm not sure about that." }]); setTyping(false); }, 800); }, 50); }}
                   className="px-2.5 py-1 rounded-full text-[11px] text-naxcal-teal font-medium cursor-pointer hover:bg-naxcal-teal/5 transition-colors" style={{ border: "1px solid rgba(26,138,110,0.2)" }}>
                   {q}

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth-api";
+import { adminAuthErrorResponse, requireAdminAccess } from "@/lib/auth-api";
 import { createDraftBroadcast, listAudiences, listBroadcasts } from "@/lib/resend-admin";
 
 export async function GET() {
-  if (!(await requireAdmin())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const admin = await requireAdminAccess();
+  if (!admin.ok) return adminAuthErrorResponse(admin);
 
   try {
     const [audiences, broadcasts] = await Promise.all([listAudiences(), listBroadcasts()]);
@@ -15,7 +16,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  if (!(await requireAdmin())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const admin = await requireAdminAccess();
+  if (!admin.ok) return adminAuthErrorResponse(admin);
 
   try {
     const { audienceId, name, subject, html } = await req.json();

@@ -14,11 +14,14 @@ ALTER TABLE crypto_positions ENABLE ROW LEVEL SECURITY;
 DO $$ BEGIN
   -- profiles
   DROP POLICY IF EXISTS "Users read own profile" ON profiles;
+  DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
   DROP POLICY IF EXISTS "Users update own profile" ON profiles;
+  DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
   DROP POLICY IF EXISTS "Users insert own profile" ON profiles;
   DROP POLICY IF EXISTS "Service role full access profiles" ON profiles;
   -- transactions
   DROP POLICY IF EXISTS "Users read own transactions" ON transactions;
+  DROP POLICY IF EXISTS "Users can view own transactions" ON transactions;
   DROP POLICY IF EXISTS "Users insert own transactions" ON transactions;
   DROP POLICY IF EXISTS "Service role full access transactions" ON transactions;
   -- announcements
@@ -36,29 +39,19 @@ DO $$ BEGIN
 END $$;
 
 -- ============================================
--- PROFILES
+-- PROFILES — all access is mediated by authenticated server routes
 -- ============================================
-CREATE POLICY "Users read own profile" ON profiles
-  FOR SELECT USING (auth.uid() = id);
-
-CREATE POLICY "Users update own profile" ON profiles
-  FOR UPDATE USING (auth.uid() = id)
-  WITH CHECK (auth.uid() = id);
-
-CREATE POLICY "Users insert own profile" ON profiles
-  FOR INSERT WITH CHECK (auth.uid() = id);
+REVOKE ALL PRIVILEGES ON TABLE profiles FROM anon, authenticated;
+GRANT ALL PRIVILEGES ON TABLE profiles TO service_role;
 
 CREATE POLICY "Service role full access profiles" ON profiles
   FOR ALL USING (auth.role() = 'service_role');
 
 -- ============================================
--- TRANSACTIONS
+-- TRANSACTIONS — ledger writes and reads are scoped by server routes
 -- ============================================
-CREATE POLICY "Users read own transactions" ON transactions
-  FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users insert own transactions" ON transactions
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
+REVOKE ALL PRIVILEGES ON TABLE transactions FROM anon, authenticated;
+GRANT ALL PRIVILEGES ON TABLE transactions TO service_role;
 
 CREATE POLICY "Service role full access transactions" ON transactions
   FOR ALL USING (auth.role() = 'service_role');

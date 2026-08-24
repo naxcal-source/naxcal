@@ -1,12 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useDashboard } from "@/contexts/DashboardContext";
-import { PieChart, Briefcase, ChevronRight, ArrowUpRight, ArrowDownRight, TrendingUp, ArrowLeftRight, Wallet } from "lucide-react";
+import { Briefcase, ChevronRight, ArrowUpRight, ArrowDownRight, TrendingUp, ArrowLeftRight, Wallet } from "lucide-react";
 import StockLogo from "@/components/StockLogo";
 import { cn } from "@/lib/utils";
+import {
+  clearIdempotentRequest,
+  getOrCreateIdempotentRequest,
+  shouldResetIdempotencyKey,
+  TRADE_IDEMPOTENCY_STORAGE_KEYS,
+  type PendingIdempotentRequest,
+} from "@/lib/idempotency";
 
 type StockPos = { symbol: string; name: string; qty: number; avg_entry: number; current_price: number; market_value: number; unrealized_pl: number; unrealized_plpc: number };
 type CryptoPos = { symbol: string; qty: number; avg_price: number; current_price: number; market_value: number; unrealized_pl: number };
@@ -35,7 +42,7 @@ type OnchainWalletPortfolio = {
 };
 
 export default function PortfolioPage() {
-  const { profile, fmt } = useDashboard();
+  const { profile, fmt, refreshProfile } = useDashboard();
   const [stocks, setStocks] = useState<StockPos[]>([]);
   const [cryptos, setCryptos] = useState<CryptoPos[]>([]);
   const [onchainWallet, setOnchainWallet] = useState<OnchainWalletPortfolio | null>(null);
@@ -44,9 +51,12 @@ export default function PortfolioPage() {
   const [sellAmount, setSellAmount] = useState("");
   const [sellError, setSellError] = useState("");
   const [sellSuccess, setSellSuccess] = useState("");
+  const [cryptoSellLoading, setCryptoSellLoading] = useState(false);
   const [stockSellingSymbol, setStockSellingSymbol] = useState<string | null>(null);
   const [stockSellAmount, setStockSellAmount] = useState("");
   const [stockSellLoading, setStockSellLoading] = useState(false);
+  const cryptoSellRequestRef = useRef<PendingIdempotentRequest | null>(null);
+  const stockSellRequestRef = useRef<PendingIdempotentRequest | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -94,14 +104,37 @@ export default function PortfolioPage() {
       return;
     }
 
+    setCryptoSellLoading(true);
+    const requestBody = { symbol: sellingSymbol, amount };
+    const pendingRequest = getOrCreateIdempotentRequest(
+      cryptoSellRequestRef.current,
+      JSON.stringify(requestBody),
+      TRADE_IDEMPOTENCY_STORAGE_KEYS.cryptoSell,
+    );
+    cryptoSellRequestRef.current = pendingRequest;
+
     try {
       const response = await fetch("/api/crypto/sell", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ symbol: sellingSymbol, amount }),
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": pendingRequest.key,
+        },
+        body: JSON.stringify(requestBody),
       });
 
       const result = await response.json();
+
+      if (
+        shouldResetIdempotencyKey(response.status) &&
+        cryptoSellRequestRef.current?.key === pendingRequest.key
+      ) {
+        clearIdempotentRequest(
+          TRADE_IDEMPOTENCY_STORAGE_KEYS.cryptoSell,
+          pendingRequest.key,
+        );
+        cryptoSellRequestRef.current = null;
+      }
 
       if (!response.ok) {
         setSellError(result.error || "Sell failed.");
@@ -113,21 +146,17 @@ export default function PortfolioPage() {
       );
       setSellingSymbol(null);
       setSellAmount("");
+      refreshProfile();
 
-      const [cryptoRes, meRes] = await Promise.all([
-        fetch("/api/crypto/portfolio"),
-        fetch("/api/me"),
-      ]);
-
-      const cryptoData = await cryptoRes.json();
-      const meData = await meRes.json();
-
-      if (Array.isArray(cryptoData)) setCryptos(cryptoData);
-      if (meData?.profile) {
-        window.location.reload();
+      const cryptoRes = await fetch("/api/crypto/portfolio").catch(() => null);
+      if (cryptoRes?.ok) {
+        const cryptoData = await cryptoRes.json().catch(() => null);
+        if (Array.isArray(cryptoData)) setCryptos(cryptoData);
       }
     } catch {
-      setSellError("Sell failed. Please try again.");
+      setSellError("Network error. Retrying will not duplicate the sale.");
+    } finally {
+      setCryptoSellLoading(false);
     }
   };
 
@@ -154,17 +183,40 @@ export default function PortfolioPage() {
     setSellError("");
     setSellSuccess("");
 
+    const requestBody = { symbol: selectedStock.symbol, qty };
+    const pendingRequest = getOrCreateIdempotentRequest(
+      stockSellRequestRef.current,
+      JSON.stringify(requestBody),
+      TRADE_IDEMPOTENCY_STORAGE_KEYS.stockSell,
+    );
+    stockSellRequestRef.current = pendingRequest;
+
     try {
       const res = await fetch("/api/stocks/sell", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ symbol: selectedStock.symbol, qty }),
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": pendingRequest.key,
+        },
+        body: JSON.stringify(requestBody),
       });
 
       const data = await res.json();
 
+      if (
+        shouldResetIdempotencyKey(res.status) &&
+        stockSellRequestRef.current?.key === pendingRequest.key
+      ) {
+        clearIdempotentRequest(
+          TRADE_IDEMPOTENCY_STORAGE_KEYS.stockSell,
+          pendingRequest.key,
+        );
+        stockSellRequestRef.current = null;
+      }
+
       if (!res.ok) {
-        throw new Error(data?.error || "Unable to sell stock.");
+        setSellError(data?.error || "Unable to sell stock.");
+        return;
       }
 
       setSellSuccess(`Sold ${qty.toFixed(4)} ${selectedStock.symbol} shares successfully.`);
@@ -172,8 +224,8 @@ export default function PortfolioPage() {
       setStockSellAmount("");
 
       window.location.reload();
-    } catch (error: any) {
-      setSellError(error?.message || "Unable to sell stock.");
+    } catch {
+      setSellError("Network error. Retrying will not duplicate the sale.");
     } finally {
       setStockSellLoading(false);
     }
@@ -527,9 +579,10 @@ export default function PortfolioPage() {
               </button>
               <button
                 onClick={sellCrypto}
-                className="flex-1 py-2 rounded-lg text-xs font-semibold text-white btn-teal"
+                disabled={cryptoSellLoading}
+                className="flex-1 py-2 rounded-lg text-xs font-semibold text-white btn-teal disabled:opacity-60"
               >
-                Sell
+                {cryptoSellLoading ? "Selling..." : "Sell"}
               </button>
             </div>
           </div>

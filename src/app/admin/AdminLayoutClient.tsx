@@ -47,7 +47,7 @@ export default function AdminLayoutClient({
     router.push("/login");
   };
 
-  const SidebarContent = () => (
+  const renderSidebar = () => (
     <div className="flex flex-col h-full">
       <div className="p-6 pb-4">
         <Image src="/Naxcal_Primary_Logo.png" alt="Naxcal" width={140} height={40} className="h-9 w-auto mb-2" style={{ filter: "brightness(1.5) drop-shadow(0 0 16px rgba(26,138,110,0.5))" }} />
@@ -80,14 +80,14 @@ export default function AdminLayoutClient({
   return (
     <div className="min-h-screen flex" style={{ background: "#111111" }}>
       <aside className="hidden lg:block w-[250px] shrink-0 border-r border-white/[0.06]" style={{ background: "#0a0a0a" }}>
-        <SidebarContent />
+        {renderSidebar()}
       </aside>
 
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/60" onClick={() => setSidebarOpen(false)} />
           <aside className="absolute left-0 top-0 bottom-0 w-[250px]" style={{ background: "#0a0a0a" }}>
-            <SidebarContent />
+            {renderSidebar()}
           </aside>
         </div>
       )}

@@ -3,6 +3,7 @@
 CREATE TABLE IF NOT EXISTS email_suppressions (
   email TEXT PRIMARY KEY,
   reason TEXT DEFAULT 'unsubscribed',
+  scope TEXT NOT NULL DEFAULT 'marketing' CHECK (scope IN ('marketing', 'all')),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

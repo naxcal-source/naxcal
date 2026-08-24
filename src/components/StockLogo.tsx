@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { getStockLogoUrl } from "@/lib/stock-logos";
 
 export default function StockLogo({ symbol, size = 36, className = "" }: { symbol: string; size?: number; className?: string }) {
@@ -17,7 +18,7 @@ export default function StockLogo({ symbol, size = 36, className = "" }: { symbo
   }
 
   return (
-    <img src={url} alt={symbol} width={size} height={size}
+    <Image src={url} alt={symbol} width={size} height={size}
       className={`rounded-full object-cover shrink-0 ${className}`}
       style={{ width: size, height: size, background: "#f1f5f9" }}
       onError={() => setFailed(true)} />

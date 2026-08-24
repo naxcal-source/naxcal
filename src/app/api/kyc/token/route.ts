@@ -1,27 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
+import { mfaAuthErrorResponse, requireMfaAuth } from "@/lib/auth-api";
+import { durableRateLimit } from "@/lib/durable-rate-limit";
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId, email } = await req.json();
-
-    if (!userId) {
-      return NextResponse.json({ error: "Missing userId" }, { status: 400 });
+    const auth = await requireMfaAuth();
+    if (!auth.ok) return mfaAuthErrorResponse(auth);
+    const { user } = auth;
+    const limit = await durableRateLimit(`kyc-token:${user.id}`, 10, 10 * 60 * 1000);
+    if (!limit.allowed) {
+      return NextResponse.json({ error: "Too many verification requests" }, { status: 429 });
     }
 
+    const appToken = process.env.SUMSUB_APP_TOKEN;
+    const secretKey = process.env.SUMSUB_SECRET_KEY;
+    if (!appToken || !secretKey) {
+      return NextResponse.json({ error: "KYC is not configured" }, { status: 503 });
+    }
+
+    // Never trust a caller-supplied identity for a provider access token.
+    await req.json().catch(() => ({}));
+    const userId = user.id;
     const ts = Math.floor(Date.now() / 1000).toString();
     const method = "POST";
     const path = `/resources/accessTokens?userId=${userId}&levelName=basic-kyc-level&ttlInSecs=600`;
 
     const signature = crypto
-      .createHmac("sha256", process.env.SUMSUB_SECRET_KEY!)
+      .createHmac("sha256", secretKey)
       .update(ts + method + path)
       .digest("hex");
 
     const res = await fetch(`https://api.sumsub.com${path}`, {
       method: "POST",
       headers: {
-        "X-App-Token": process.env.SUMSUB_APP_TOKEN!,
+        "X-App-Token": appToken,
         "X-App-Access-Ts": ts,
         "X-App-Access-Sig": signature,
         "Content-Type": "application/json",

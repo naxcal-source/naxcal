@@ -10,7 +10,7 @@ export async function GET() {
 
   const { data } = await client
     .from("referrals")
-    .select("*")
+    .select("id, referred_id, bonus_amount, status, created_at")
     .eq("referrer_id", user.id)
     .order("created_at", { ascending: false });
 

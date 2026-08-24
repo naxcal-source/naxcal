@@ -5,7 +5,6 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { useDashboard } from "@/contexts/DashboardContext";
-import { createClient } from "@/lib/supabase";
 import { ShieldCheck, ChevronRight, Check, Clock, AlertTriangle, Loader2 } from "lucide-react";
 
 const SumsubWebSdk = dynamic(() => import("@sumsub/websdk-react"), { ssr: false });
@@ -15,16 +14,13 @@ export default function KYCPage() {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const supabase = createClient();
 
   const fetchToken = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
       const res = await fetch("/api/kyc/token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id, email: user.email }),
+        body: JSON.stringify({}),
       });
       if (!res.ok) throw new Error("Failed to get token");
       const data = await res.json();
@@ -44,7 +40,7 @@ export default function KYCPage() {
       setLoading(false);
     };
     if (profile) init();
-  }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [profile]);
 
   if (loading) {
     return (
@@ -121,9 +117,11 @@ export default function KYCPage() {
             onMessage={(type: string) => {
               if (type === "idCheck.applicantSubmitted") {
                 if (profile) {
-                  supabase.from("profiles").update({ kyc_status: "submitted" }).eq("id", profile.id).then(() => {
-                    refreshProfile();
-                  });
+                  fetch("/api/kyc/submitted", { method: "POST" })
+                    .then((response) => {
+                      if (response.ok) return refreshProfile();
+                    })
+                    .catch(console.error);
                 }
               }
             }}

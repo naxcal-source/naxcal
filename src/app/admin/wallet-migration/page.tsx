@@ -124,7 +124,6 @@ export default function AdminWalletMigrationPage() {
   const [data, setData] = useState<MigrationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [runningChain, setRunningChain] = useState<string | null>(null);
-  const [approvingLedger, setApprovingLedger] = useState(false);
   const [includeTransactions, setIncludeTransactions] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -143,47 +142,6 @@ export default function AdminWalletMigrationPage() {
     const json = (await response.json()) as MigrationData;
     setData(json);
     setLoading(false);
-  }
-
-  async function approveVerifiedPortfolioToLedger() {
-    const total = data?.verifiedPortfolioValuation?.totalUsd || 0;
-
-    const confirmed = window.confirm(
-      `Approve the verified on-chain portfolio value of $${formatNumber(
-        total,
-      )} into Emmett/Jay's internal investment balance? This creates one completed internal deposit transaction and updates the platform balance.`,
-    );
-
-    if (!confirmed) return;
-
-    setApprovingLedger(true);
-    setMessage(null);
-
-    try {
-      const response = await fetch("/api/admin/wallet-migration", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          action: "approve_verified_portfolio_to_internal_ledger",
-        }),
-      });
-
-      const json = await response.json();
-
-      if (!response.ok) {
-        setMessage(json.message || json.error || "Ledger approval failed.");
-      } else {
-        setMessage(json.message || "Ledger approval completed.");
-      }
-
-      await loadData();
-    } catch {
-      setMessage("Ledger approval request failed.");
-    } finally {
-      setApprovingLedger(false);
-    }
   }
 
   async function runChain(chain: string) {
@@ -219,7 +177,7 @@ export default function AdminWalletMigrationPage() {
   }
 
   useEffect(() => {
-    loadData();
+    void Promise.resolve().then(loadData);
   }, []);
 
   const stateByChain = useMemo(() => {
@@ -242,8 +200,8 @@ export default function AdminWalletMigrationPage() {
             </p>
             <h1 className="mt-2 text-3xl font-bold">Wallet Migration</h1>
             <p className="mt-2 max-w-3xl text-sm text-zinc-400">
-              Import Jay Jones&apos;s EVM wallet data chain by chain. On-chain
-              data remains separate from the internal investment ledger.
+              Import the configured account&apos;s EVM wallet data chain by chain.
+              On-chain data remains separate from the internal investment ledger.
             </p>
           </div>
 
@@ -276,13 +234,14 @@ export default function AdminWalletMigrationPage() {
               <div className="flex items-center gap-3">
                 <ShieldCheck className="h-5 w-5 text-emerald-300" />
                 <h2 className="text-xl font-semibold text-emerald-100">
-                  Approve verified on-chain portfolio value
+                  Verified on-chain portfolio value (read only)
                 </h2>
               </div>
               <p className="mt-2 max-w-3xl text-sm text-emerald-100/75">
                 This uses trusted official USDC contracts plus native ETH, BNB,
                 MATIC and AVAX balances priced in USD. Spam/reward/claim tokens
-                are excluded. Approval creates one audited internal deposit.
+                are excluded. This view cannot credit or rewrite the internal
+                investment ledger.
               </p>
               <p className="mt-3 text-3xl font-bold text-white">
                 ${formatNumber(data?.verifiedPortfolioValuation?.totalUsd)}
@@ -291,18 +250,6 @@ export default function AdminWalletMigrationPage() {
                 Priced at: {formatDate(data?.verifiedPortfolioValuation?.pricedAt)}
               </p>
             </div>
-
-            <button
-              onClick={approveVerifiedPortfolioToLedger}
-              disabled={
-                approvingLedger ||
-                !data?.verifiedPortfolioValuation?.totalUsd ||
-                data.verifiedPortfolioValuation.missingPrices.length > 0
-              }
-              className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {approvingLedger ? "Approving..." : "Approve Verified Value"}
-            </button>
           </div>
 
           {Boolean(data?.verifiedPortfolioValuation?.missingPrices?.length) && (
@@ -363,7 +310,7 @@ export default function AdminWalletMigrationPage() {
               User
             </div>
             <p className="mt-4 text-xl font-semibold">
-              {data?.user?.full_name || "Jay Jones"}
+              {data?.user?.full_name || "Migration target"}
             </p>
             <p className="mt-1 break-all text-sm text-zinc-400">
               {data?.user?.email || "—"}

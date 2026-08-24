@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useDashboard } from "@/contexts/DashboardContext";
@@ -28,28 +28,27 @@ export default function WithdrawPage() {
   const [error, setError] = useState("");
   const [recentWithdrawals, setRecentWithdrawals] = useState<Transaction[]>([]);
   const [hasMonthlyDeposit, setHasMonthlyDeposit] = useState<boolean | null>(null);
+  const [currentTime, setCurrentTime] = useState<number | null>(null);
+  const requestKeyRef = useRef<string | null>(null);
   const balance = Number(profile?.balance ?? 0);
-  const [cryptoPortfolioValue, setCryptoPortfolioValue] = useState(0);
-  const availableWithdrawBalance = balance + cryptoPortfolioValue;
+  const availableWithdrawBalance = balance;
   const fmt = (n: number) => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const now = new Date();
   const currentMonthName = now.toLocaleString("en-US", { month: "long", year: "numeric" });
 
   useEffect(() => {
-    if (!profile) return;
-    fetch("/api/crypto/portfolio")
-      .then((res) => res.json())
-      .then((data) => {
-        const rows = Array.isArray(data) ? data : [];
-        const total = rows.reduce((sum, item) => {
-          const value = Number(item.value_usd ?? item.usd_value ?? item.market_value ?? item.value ?? 0);
-          return sum + (Number.isFinite(value) ? value : 0);
-        }, 0);
-        setCryptoPortfolioValue(total);
-      })
-      .catch(() => setCryptoPortfolioValue(0));
+    const updateCurrentTime = () => setCurrentTime(Date.now());
+    const initialTimer = setTimeout(updateCurrentTime, 0);
+    const interval = setInterval(updateCurrentTime, 60_000);
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(interval);
+    };
+  }, []);
 
+  useEffect(() => {
+    if (!profile) return;
     fetch("/api/me/transactions?type=withdrawal&limit=5")
       .then((r) => r.json())
       .then((data) => { if (Array.isArray(data)) setRecentWithdrawals(data); });
@@ -59,14 +58,15 @@ export default function WithdrawPage() {
       .then((r) => r.json())
       .then((data: Transaction[]) => {
         if (!Array.isArray(data)) return;
-        const y = now.getFullYear(), m = now.getMonth();
+        const currentDate = new Date();
+        const y = currentDate.getFullYear(), m = currentDate.getMonth();
         const found = data.some((tx) => {
           const d = new Date(tx.created_at);
           return tx.status === "completed" && d.getFullYear() === y && d.getMonth() === m;
         });
         setHasMonthlyDeposit(found);
       });
-  }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [profile]);
 
   const depositBlocked = hasMonthlyDeposit === false;
 
@@ -79,14 +79,24 @@ export default function WithdrawPage() {
 
     setLoading(true);
     try {
+      requestKeyRef.current ||= window.crypto.randomUUID();
       const res = await fetch("/api/withdraw", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": requestKeyRef.current,
+        },
         body: JSON.stringify({ amount: numAmount, asset, wallet, pin }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Withdrawal failed."); setLoading(false); return; }
+      if (!res.ok) {
+        if (res.status < 500) requestKeyRef.current = null;
+        setError(data.error || "Withdrawal failed.");
+        setLoading(false);
+        return;
+      }
       await refreshProfile();
+      requestKeyRef.current = null;
       setSuccess(true);
     } catch {
       setError("Network error. Please try again.");
@@ -98,11 +108,11 @@ export default function WithdrawPage() {
 
   const LOCKUP_DAYS: Record<string, number> = { bronze: 7, silver: 14, gold: 30 };
   const lockupDays = LOCKUP_DAYS[profile?.tier?.toLowerCase() ?? "bronze"] ?? 7;
-  const accountAge = profile?.created_at
-    ? Math.floor((Date.now() - new Date(profile.created_at).getTime()) / 86_400_000)
+  const accountAge = profile?.created_at && currentTime !== null
+    ? Math.floor((currentTime - new Date(profile.created_at).getTime()) / 86_400_000)
     : 0;
   const daysRemaining = Math.max(0, lockupDays - accountAge);
-  const lockupBlocked = daysRemaining > 0;
+  const lockupBlocked = currentTime !== null && daysRemaining > 0;
   const unlockDate = profile?.created_at
     ? new Date(new Date(profile.created_at).getTime() + lockupDays * 86_400_000).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
     : "";
@@ -167,7 +177,7 @@ export default function WithdrawPage() {
               {daysRemaining} day{daysRemaining !== 1 ? "s" : ""} remaining — unlocks {unlockDate}
             </span>
           </div>
-          <p className="text-xs text-[#9ca3af]">Your balance continues to earn daily returns during this period.</p>
+          <p className="text-xs text-[#9ca3af]">Your balance continues to earn returns Monday through Friday during this period; weekends are excluded.</p>
         </div>
       ) : !kycBlocked && (
         <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg mb-4" style={{ background: "rgba(26,138,110,0.06)", border: "1px solid rgba(26,138,110,0.15)" }}>
@@ -184,15 +194,16 @@ export default function WithdrawPage() {
             </div>
             <h2 className="text-lg font-bold text-[#0f172a] mb-2">Withdrawal Requested</h2>
             <p className="text-sm text-[#6b7280]">Your withdrawal of {fmt(parseFloat(amount))} is being processed.</p>
-            <p className="text-xs text-[#9ca3af] mt-2">Withdrawals are typically processed within 24 hours.</p>
+            <p className="text-xs text-[#9ca3af] mt-2">Processing target: typically within 24 hours. Reviews, providers, and networks can take longer.</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Available balance */}
             <div className="flex items-center justify-between p-4 rounded-xl" style={{ background: "linear-gradient(135deg, rgba(26,138,110,0.06), rgba(26,138,110,0.02))", border: "1px solid rgba(26,138,110,0.15)" }}>
-              <span className="text-xs text-[#6b7280] font-medium">Available Balance</span>
+              <span className="text-xs text-[#6b7280] font-medium">Available Cash</span>
               <span className="text-lg font-bold text-[#0f172a]">{fmt(availableWithdrawBalance)}</span>
             </div>
+            <p className="text-xs text-[#9ca3af]">Crypto holdings must be sold to cash before they can be withdrawn.</p>
 
             {error && <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">{error}</div>}
 
@@ -253,7 +264,7 @@ export default function WithdrawPage() {
 
             <div className="flex items-center gap-2 justify-center text-[10px] text-[#9ca3af]">
               <Clock size={10} />
-              <span>Withdrawals processed within 24 hours — Minimum: $100</span>
+              <span>Typical processing target: 24 hours — Minimum: $100</span>
             </div>
           </form>
         )}

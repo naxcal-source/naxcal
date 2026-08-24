@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useDashboard } from "@/contexts/DashboardContext";
-import { ArrowDownCircle, ChevronRight, AlertTriangle, Loader2, Copy, Check, CheckCircle2, RefreshCw } from "lucide-react";
+import { ArrowDownCircle, ChevronRight, AlertTriangle, Loader2, Copy, Check, CheckCircle2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { cn } from "@/lib/utils";
 
@@ -41,10 +41,11 @@ export default function DepositPage() {
   const [recentDeposits, setRecentDeposits] = useState<Transaction[]>([]);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const requestKeyRef = useRef<string | null>(null);
   useEffect(() => {
     if (!profile) return;
     fetch("/api/me/transactions?type=deposit&limit=5").then(r => r.json()).then(data => { if (Array.isArray(data)) setRecentDeposits(data); }).catch(() => {});
-  }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [profile]);
 
   useEffect(() => {
     return () => {
@@ -62,16 +63,26 @@ export default function DepositPage() {
     setError("");
 
     try {
+      requestKeyRef.current ||= window.crypto.randomUUID();
       const res = await fetch("/api/payments/create-deposit", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": requestKeyRef.current,
+        },
         body: JSON.stringify({ user_id: profile.id, amount: parseFloat(amount), currency: selected.symbol }),
       });
 
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Failed to generate address"); setLoading(false); return; }
+      if (!res.ok) {
+        if (res.status < 500) requestKeyRef.current = null;
+        setError(data.error || "Failed to generate address");
+        setLoading(false);
+        return;
+      }
 
       setPaymentData(data);
+      requestKeyRef.current = null;
       setStep(3);
       setPaymentStatus("waiting");
       setCountdown(3600);
@@ -262,7 +273,7 @@ export default function DepositPage() {
                     `Only send ${selected.name} (${selected.network}) to this address`,
                     "Minimum deposit: $50",
                     "Funds credited within 1-3 network confirmations",
-                    "Balance updates within 30 minutes",
+                    "Balance update target: typically within 30 minutes",
                   ].map((notice, i) => (
                     <div key={i} className="flex items-start gap-2 text-xs text-amber-800">
                       <AlertTriangle size={11} className="text-amber-500 shrink-0 mt-0.5" />

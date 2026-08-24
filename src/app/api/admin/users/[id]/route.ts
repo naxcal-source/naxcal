@@ -1,70 +1,100 @@
+import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthUserWithClient } from "@/lib/auth-api";
+import { adminAuthErrorResponse, requireAdminAccess } from "@/lib/auth-api";
+import { processEmailOutbox } from "@/lib/email-outbox";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
-async function verifyAdmin() {
-  const { user } = await getAuthUserWithClient();
-  if (!user) return null;
-  const { data } = await supabaseAdmin.from("profiles").select("is_admin").eq("id", user.id).single();
-  if (!data?.is_admin) return null;
-  return user;
-}
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await verifyAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
+  const admin = await requireAdminAccess();
+  if (!admin.ok) return adminAuthErrorResponse(admin);
   const { id } = await params;
+  if (!UUID.test(id)) return NextResponse.json({ error: "Invalid user" }, { status: 400 });
 
-  const [{ data: profile }, { data: transactions }] = await Promise.all([
-    supabaseAdmin.from("profiles").select("*").eq("id", id).single(),
-    supabaseAdmin.from("transactions").select("*").eq("user_id", id).order("created_at", { ascending: false }).limit(20),
+  const [{ data: profile, error: profileError }, { data: transactions, error: transactionError }] = await Promise.all([
+    supabaseAdmin.from("profiles")
+      .select("id, email, full_name, phone, date_of_birth, nationality, address, city, country, postal_code, kyc_status, kyc_rejection_reason, tier, balance, total_deposited, total_withdrawn, total_profit, referral_code, referred_by, auto_compound, two_factor_enabled, is_active, onboarding_complete, created_at, updated_at, display_currency")
+      .eq("id", id).single(),
+    supabaseAdmin.from("transactions")
+      .select("id, type, amount, asset, status, description, tx_hash, wallet_address, admin_note, balance_before, balance_after, created_at, updated_at")
+      .eq("user_id", id).order("created_at", { ascending: false }).limit(20),
   ]);
 
-  if (!profile) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (profileError || !profile) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (transactionError) return NextResponse.json({ error: "Could not load transactions" }, { status: 500 });
   return NextResponse.json({ profile, transactions: transactions ?? [] });
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await verifyAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
+  const admin = await requireAdminAccess();
+  if (!admin.ok) return adminAuthErrorResponse(admin);
   const { id } = await params;
-  const body = await req.json();
-  const { action } = body;
+  if (!UUID.test(id)) return NextResponse.json({ error: "Invalid user" }, { status: 400 });
 
-  if (action === "adjust") {
-    const { amount, type, note } = body;
-    const { data: profile } = await supabaseAdmin.from("profiles").select("balance").eq("id", id).single();
-    if (!profile) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const body = await req.json().catch(() => null);
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  }
 
-    const amt = parseFloat(amount);
-    const newBal = type === "add" ? Number(profile.balance) + amt : Math.max(0, Number(profile.balance) - amt);
-
-    await supabaseAdmin.from("profiles").update({ balance: newBal }).eq("id", id);
-    await supabaseAdmin.from("transactions").insert({
-      user_id: id,
-      type: type === "add" ? "bonus" : "fee",
-      amount: amt,
-      status: "completed",
-      description: `Admin adjustment: ${note || "Manual balance change"}`,
-      balance_before: Number(profile.balance),
-      balance_after: newBal,
+  if (body.action === "adjust") {
+    const amount = Number(body.amount);
+    const direction = body.type;
+    const reason = typeof body.note === "string" ? body.note.trim() : "";
+    const requestKey = req.headers.get("idempotency-key") || "";
+    if (!Number.isFinite(amount) || amount <= 0 || !["add", "subtract"].includes(direction)) {
+      return NextResponse.json({ error: "Invalid adjustment amount" }, { status: 400 });
+    }
+    const { data, error } = await supabaseAdmin.rpc("adjust_user_balance", {
+      p_user_id: id,
+      p_delta: direction === "add" ? amount : -amount,
+      p_reason: reason,
+      p_admin_id: admin.userId,
+      p_request_key: requestKey,
     });
-    return NextResponse.json({ balance: newBal });
+    if (error) return NextResponse.json({ error: error.message }, { status: 409 });
+    return NextResponse.json(data || { status: "applied" });
   }
 
-  if (action === "kyc") {
-    const { status } = body;
-    await supabaseAdmin.from("profiles").update({ kyc_status: status }).eq("id", id);
-    return NextResponse.json({ status: "ok" });
+  if (body.action === "kyc") {
+    const decision = body.status;
+    const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, 500) : "";
+    if (!["approved", "rejected"].includes(decision) || (decision === "rejected" && reason.length < 3)) {
+      return NextResponse.json({ error: "Invalid KYC review" }, { status: 400 });
+    }
+    const eventKey = `admin-${crypto.randomUUID()}`;
+    const { data, error } = await supabaseAdmin.rpc("apply_kyc_review", {
+      p_event_key: eventKey,
+      p_user_id: id,
+      p_decision: decision,
+      p_reason: reason || null,
+      p_occurred_at: new Date().toISOString(),
+      p_source: "admin",
+      p_actor_id: admin.userId,
+      p_payload: {},
+    });
+    if (error) return NextResponse.json({ error: error.message }, { status: 409 });
+    const result = (data || {}) as Record<string, unknown>;
+    if (typeof result.dedupe_key === "string") {
+      processEmailOutbox({ dedupeKey: result.dedupe_key, limit: 1 }).catch(console.error);
+    }
+    return NextResponse.json(result);
   }
 
-  if (action === "freeze") {
-    const { data: profile } = await supabaseAdmin.from("profiles").select("is_active").eq("id", id).single();
-    if (!profile) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    await supabaseAdmin.from("profiles").update({ is_active: !profile.is_active }).eq("id", id);
-    return NextResponse.json({ is_active: !profile.is_active });
+  if (body.action === "freeze") {
+    const desiredState = body.is_active;
+    const reason = typeof body.reason === "string" ? body.reason.trim() : "";
+    if (typeof desiredState !== "boolean") {
+      return NextResponse.json({ error: "Desired account state is required" }, { status: 400 });
+    }
+    const { data, error } = await supabaseAdmin.rpc("set_user_active_state", {
+      p_user_id: id,
+      p_is_active: desiredState,
+      p_admin_id: admin.userId,
+      p_reason: reason,
+    });
+    if (error) return NextResponse.json({ error: error.message }, { status: 409 });
+    return NextResponse.json(data || { status: "applied" });
   }
 
   return NextResponse.json({ error: "Invalid action" }, { status: 400 });

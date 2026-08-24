@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthUser } from "@/lib/auth-api";
+import { adminAuthErrorResponse, requireAdminAccess } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { SUPPORTED_EVM_CHAINS } from "@/lib/blockchain/evm-chains";
-import { runJayJonesWalletMigration } from "@/lib/migrations/jay-jones-wallet-migration";
+import { runConfiguredWalletMigration } from "@/lib/migrations/jay-jones-wallet-migration";
 
-const JAY_JONES_USER_ID = "f46c9612-c3be-444a-8373-51575e8947aa";
-const JAY_JONES_EVM_WALLET = "0xF6D4E5a7c5215F91f59a95065190CCa24bf64554";
+const MIGRATION_TARGET_USER_ID = process.env.MIGRATION_TARGET_USER_ID || "";
+const MIGRATION_TARGET_EVM_WALLET =
+  process.env.MIGRATION_TARGET_EVM_WALLET || "";
 
 const TRUSTED_STABLECOIN_CONTRACTS: Record<
   string,
@@ -79,7 +80,9 @@ async function fetchTrustedStablecoinBalances(walletId: string) {
   for (const filter of filters) {
     const { data, error } = await supabaseAdmin
       .from("onchain_token_balances")
-      .select("*")
+      .select(
+        "chain, chain_id, token_contract_address, token_symbol, token_name, normalized_balance",
+      )
       .eq("wallet_id", walletId)
       .eq("chain_id", filter.chainId)
       .ilike("token_contract_address", filter.address);
@@ -96,31 +99,17 @@ async function fetchTrustedStablecoinBalances(walletId: string) {
 
 
 async function requireAdmin() {
-  const user = await getAuthUser();
-
-  if (!user) {
+  const access = await requireAdminAccess();
+  if (!access.ok) {
     return {
       ok: false as const,
-      response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
-    };
-  }
-
-  const { data: adminCheck } = await supabaseAdmin
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .single();
-
-  if (!adminCheck?.is_admin) {
-    return {
-      ok: false as const,
-      response: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
+      response: adminAuthErrorResponse(access),
     };
   }
 
   return {
     ok: true as const,
-    user,
+    user: { id: access.userId },
   };
 }
 
@@ -147,28 +136,12 @@ async function fetchNativeUsdPrices() {
   return (await response.json()) as Record<string, { usd?: number }>;
 }
 
-async function getJayWallet() {
-  const { data: wallet, error: walletError } = await supabaseAdmin
-    .from("wallets")
-    .select("*")
-    .eq("user_id", JAY_JONES_USER_ID)
-    .eq("wallet_type", "evm")
-    .eq("address", JAY_JONES_EVM_WALLET)
-    .single();
-
-  if (walletError || !wallet) {
-    throw new Error("Jay Jones EVM wallet not found.");
-  }
-
-  return wallet;
-}
-
 async function buildVerifiedPortfolioValuation(walletId: string) {
   const prices = await fetchNativeUsdPrices();
 
   const { data: nativeBalances, error: nativeError } = await supabaseAdmin
     .from("onchain_native_balances")
-    .select("*")
+    .select("chain, chain_id, asset_symbol, normalized_balance")
     .eq("wallet_id", walletId);
 
   if (nativeError) {
@@ -246,124 +219,6 @@ async function buildVerifiedPortfolioValuation(walletId: string) {
   };
 }
 
-async function approveVerifiedPortfolioToInternalLedger(adminUserId: string) {
-  const { data: profile, error: profileError } = await supabaseAdmin
-    .from("profiles")
-    .select("id, balance, total_deposited")
-    .eq("id", JAY_JONES_USER_ID)
-    .single();
-
-  if (profileError || !profile) {
-    throw new Error("Jay Jones profile not found.");
-  }
-
-  const wallet = await getJayWallet();
-  const valuation = await buildVerifiedPortfolioValuation(wallet.id);
-
-  if (valuation.missingPrices.length > 0) {
-    throw new Error(
-      `Cannot approve because prices are missing for: ${valuation.missingPrices.join(
-        ", ",
-      )}`,
-    );
-  }
-
-  const approvedAmount = Number(valuation.totalUsd.toFixed(2));
-
-  if (approvedAmount <= 0) {
-    throw new Error("Verified portfolio value is zero.");
-  }
-
-  const verifiedTxHash = `onchain_verified_portfolio:${wallet.id}:v1`;
-
-  const { data: existingVerified } = await supabaseAdmin
-    .from("transactions")
-    .select("id")
-    .eq("user_id", JAY_JONES_USER_ID)
-    .eq("tx_hash", verifiedTxHash)
-    .maybeSingle();
-
-  if (existingVerified) {
-    return {
-      success: true,
-      approvedAmount: 0,
-      transactionsCreated: 0,
-      message:
-        "Verified on-chain portfolio value was already approved. Duplicate credit skipped.",
-    };
-  }
-
-  const { data: oldStableApprovals } = await supabaseAdmin
-    .from("transactions")
-    .select("id")
-    .eq("user_id", JAY_JONES_USER_ID)
-    .like("tx_hash", "onchain_migration:%")
-    .limit(1);
-
-  if ((oldStableApprovals || []).length > 0) {
-    throw new Error(
-      "Existing on-chain migration approvals were found. Refusing to approve full verified portfolio to avoid double credit.",
-    );
-  }
-
-  const balanceBefore = Number(profile.balance || 0);
-  const balanceAfter = balanceBefore + approvedAmount;
-  const totalDepositedBefore = Number(profile.total_deposited || 0);
-  const totalDepositedAfter = totalDepositedBefore + approvedAmount;
-
-  const { error: insertError } = await supabaseAdmin.from("transactions").insert({
-    user_id: JAY_JONES_USER_ID,
-    type: "deposit",
-    amount: approvedAmount,
-    asset: "USD",
-    status: "completed",
-    description: "Approved verified on-chain migration portfolio value",
-    tx_hash: verifiedTxHash,
-    wallet_address: JAY_JONES_EVM_WALLET,
-    admin_note: `Approved by admin ${adminUserId}. Verified valuation rows: ${valuation.rows.length}. Priced at ${valuation.pricedAt}. Native prices from CoinGecko. Trusted USDC contracts only. Spam tokens excluded.`,
-    balance_before: balanceBefore,
-    balance_after: balanceAfter,
-  });
-
-  if (insertError) {
-    throw new Error(insertError.message);
-  }
-
-  const { error: updateError } = await supabaseAdmin
-    .from("profiles")
-    .update({
-      balance: balanceAfter,
-      total_deposited: totalDepositedAfter,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", JAY_JONES_USER_ID);
-
-  if (updateError) {
-    throw new Error(updateError.message);
-  }
-
-  await supabaseAdmin.from("migration_audit_logs").insert({
-    user_id: JAY_JONES_USER_ID,
-    wallet_id: wallet.id,
-    administrator_id: adminUserId,
-    wallet_address: JAY_JONES_EVM_WALLET,
-    action: "APPROVE_VERIFIED_PORTFOLIO_TO_INTERNAL_LEDGER",
-    status: "COMPLETED",
-    message: `Approved verified on-chain portfolio value of ${approvedAmount.toFixed(
-      2,
-    )} USD into internal ledger.`,
-    metadata: valuation,
-  });
-
-  return {
-    success: true,
-    approvedAmount,
-    transactionsCreated: 1,
-    valuation,
-    message: `Approved verified on-chain portfolio value of $${approvedAmount.toLocaleString()} into the internal investment ledger.`,
-  };
-}
-
 export async function GET() {
   try {
     const admin = await requireAdmin();
@@ -372,15 +227,15 @@ export async function GET() {
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("id, full_name, email, balance, is_admin")
-      .eq("id", JAY_JONES_USER_ID)
+      .eq("id", MIGRATION_TARGET_USER_ID)
       .single();
 
     const { data: wallet } = await supabaseAdmin
       .from("wallets")
-      .select("*")
-      .eq("user_id", JAY_JONES_USER_ID)
+      .select("id, address, ownership_status")
+      .eq("user_id", MIGRATION_TARGET_USER_ID)
       .eq("wallet_type", "evm")
-      .eq("address", JAY_JONES_EVM_WALLET)
+      .eq("address", MIGRATION_TARGET_EVM_WALLET)
       .maybeSingle();
 
     const walletId = wallet?.id;
@@ -388,7 +243,9 @@ export async function GET() {
     const { data: chainStates } = walletId
       ? await supabaseAdmin
           .from("wallet_chain_states")
-          .select("*")
+          .select(
+            "chain, chain_id, has_activity, native_balance, token_count, transaction_count, sync_status, error, last_synced_at",
+          )
           .eq("wallet_id", walletId)
           .order("chain_id", { ascending: true })
       : { data: [] };
@@ -396,7 +253,7 @@ export async function GET() {
     const { data: nativeBalances } = walletId
       ? await supabaseAdmin
           .from("onchain_native_balances")
-          .select("*")
+          .select("chain, chain_id, asset_symbol, normalized_balance")
           .eq("wallet_id", walletId)
           .order("chain_id", { ascending: true })
       : { data: [] };
@@ -404,7 +261,9 @@ export async function GET() {
     const { data: tokenBalances } = walletId
       ? await supabaseAdmin
           .from("onchain_token_balances")
-          .select("*")
+          .select(
+            "chain, chain_id, token_symbol, token_name, normalized_balance",
+          )
           .eq("wallet_id", walletId)
           .order("normalized_balance", { ascending: false })
           .limit(25)
@@ -412,8 +271,10 @@ export async function GET() {
 
     const { data: migrationRuns } = await supabaseAdmin
       .from("migration_runs")
-      .select("*")
-      .eq("wallet_address", JAY_JONES_EVM_WALLET)
+      .select(
+        "id, status, transactions_discovered, transactions_imported, balances_discovered, tokens_discovered, migration_started_at, migration_completed_at, error, created_at",
+      )
+      .eq("wallet_address", MIGRATION_TARGET_EVM_WALLET)
       .order("created_at", { ascending: false })
       .limit(10);
 
@@ -431,7 +292,7 @@ export async function GET() {
       migrationRuns: migrationRuns || [],
       verifiedPortfolioValuation,
       warning:
-        "On-chain wallet data is separate from the internal investment ledger until an admin approves the verified valuation.",
+        "On-chain wallet data is read-only evidence and remains separate from the internal investment ledger.",
     });
   } catch (error) {
     return NextResponse.json(
@@ -453,8 +314,12 @@ export async function POST(req: NextRequest) {
     const action = body.action as string | undefined;
 
     if (action === "approve_verified_portfolio_to_internal_ledger") {
-      const result = await approveVerifiedPortfolioToInternalLedger(admin.user.id);
-      return NextResponse.json(result);
+      return NextResponse.json(
+        {
+          error: "Direct wallet valuation credits are disabled. Use a reviewed, atomic, idempotent migration command with immutable evidence.",
+        },
+        { status: 410 },
+      );
     }
 
     const chain = body.chain as string | undefined;
@@ -464,7 +329,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing chain" }, { status: 400 });
     }
 
-    const result = await runJayJonesWalletMigration(admin.user.id, chain, {
+    const result = await runConfiguredWalletMigration(admin.user.id, chain, {
       includeTransactions,
     });
 

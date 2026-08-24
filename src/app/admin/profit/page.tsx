@@ -1,233 +1,227 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase";
-import { TrendingUp, Loader2, CheckCircle2, AlertTriangle, CalendarClock } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import {
+  AlertTriangle,
+  CalendarClock,
+  CheckCircle2,
+  Loader2,
+  RefreshCw,
+  TrendingUp,
+} from "lucide-react";
 
-type EligibleUser = { id: string; email: string; full_name: string | null; balance: number; tier: string; is_active: boolean };
-type ProfitHistory = { id: string; profit_percentage: number; total_distributed: number; users_credited: number; notes: string | null; created_at: string };
+type PolicyRate = {
+  tier: string;
+  rate_percent: number | string;
+};
+
+type ProfitPolicy = {
+  id: string;
+  name: string;
+  effective_from: string;
+  effective_to: string | null;
+  accrual_calendar: string;
+  compounding_mode: string;
+  enabled: boolean;
+  profit_policy_rates: PolicyRate[];
+};
+
+type ProfitAccrual = {
+  id: string;
+  profit_date: string;
+  tier: string;
+  effective_rate_percent: number | string;
+  eligible_basis: number | string;
+  profit_amount: number | string;
+  source: string;
+  profiles: { full_name: string | null; email: string } | null;
+};
+
+type ProfitJob = {
+  id: string;
+  status: string;
+  attempts: number;
+  last_error: string | null;
+};
+
+type ProfitOperations = {
+  policies: ProfitPolicy[];
+  recent_accruals: ProfitAccrual[];
+  open_jobs: ProfitJob[];
+};
+
+function money(value: number | string) {
+  return Number(value).toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
 
 export default function AdminProfitPage() {
-  const [percentage, setPercentage] = useState("");
-  const [feePercent, setFeePercent] = useState("20");
-  const [eligible, setEligible] = useState<EligibleUser[]>([]);
-  const [history, setHistory] = useState<ProfitHistory[]>([]);
-  const [posting, setPosting] = useState(false);
-  const [catchingUp, setCatchingUp] = useState(false);
-  const [missedDays, setMissedDays] = useState<string[]>([]);
-  const [confirmModal, setConfirmModal] = useState(false);
-  const [result, setResult] = useState<{ users: number; total: number; days?: number } | null>(null);
+  const [data, setData] = useState<ProfitOperations | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const supabase = createClient();
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await fetch("/api/admin/profit-reconciliation", {
+        cache: "no-store",
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(body?.error || "Could not load profit operations");
+      }
+      setData(body as ProfitOperations);
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : "Could not load profit operations",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    fetch("/api/admin/users").then(r => r.json()).then(data => {
-      if (Array.isArray(data)) setEligible((data as EligibleUser[]).filter(u => u.balance > 0 && u.is_active));
-    }).catch(() => {});
+    void Promise.resolve().then(load);
+  }, [load]);
 
-    supabase.from("daily_profits").select("*").order("created_at", { ascending: false }).limit(10)
-      .then(({ data }) => { if (data) setHistory(data as ProfitHistory[]); });
-
-    // Check for missed days
-    fetch("/api/admin/catch-up-profit").then(r => r.json()).then(data => {
-      if (data.missedDays?.length > 0) setMissedDays(data.missedDays);
-    }).catch(() => {});
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const pct = parseFloat(percentage) || 0;
-  const fee = parseFloat(feePercent) || 0;
-  const totalGross = eligible.reduce((s, u) => s + u.balance * (pct / 100), 0);
-  const totalFee = totalGross * (fee / 100);
-  const totalNet = totalGross - totalFee;
-  const fmt = (n: number) => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-  const handlePost = async () => {
-    setConfirmModal(false);
-    setPosting(true);
-    setError("");
-    setResult(null);
-
-    try {
-      const res = await fetch("/api/admin/post-profit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ percentage: pct, fee_percentage: fee }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) { setError(data.error || "Failed to post profit"); setPosting(false); return; }
-
-      setResult({ users: data.users, total: data.total });
-
-      const [histRes, usersRes] = await Promise.all([
-        supabase.from("daily_profits").select("*").order("created_at", { ascending: false }).limit(10),
-        fetch("/api/admin/users").then(r => r.json()),
-      ]);
-      if (histRes.data) setHistory(histRes.data as ProfitHistory[]);
-      if (Array.isArray(usersRes)) setEligible((usersRes as EligibleUser[]).filter(u => u.balance > 0 && u.is_active));
-
-    } catch (err) {
-      console.error("Post profit error:", err);
-      setError("An error occurred while posting profit.");
-    } finally {
-      setPosting(false);
-    }
-  };
-
-  const handleCatchUp = async () => {
-    if (!confirm(`Post missed daily returns for ${missedDays.length} day(s)?\n\n${missedDays.join(", ")}\n\nThis will apply tier-based rates (Bronze 1.5%, Silver 1.8%, Gold 2.1%) for each missed day.`)) return;
-    setCatchingUp(true);
-    setError("");
-    setResult(null);
-    try {
-      const res = await fetch("/api/admin/catch-up-profit", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error || "Catch-up failed"); return; }
-      setResult({ users: data.users, total: data.total, days: data.days });
-      setMissedDays([]);
-      const [histRes, usersRes] = await Promise.all([
-        supabase.from("daily_profits").select("*").order("created_at", { ascending: false }).limit(10),
-        fetch("/api/admin/users").then(r => r.json()),
-      ]);
-      if (histRes.data) setHistory(histRes.data as ProfitHistory[]);
-      if (Array.isArray(usersRes)) setEligible((usersRes as EligibleUser[]).filter(u => u.balance > 0 && u.is_active));
-    } catch {
-      setError("Catch-up failed.");
-    } finally {
-      setCatchingUp(false);
-    }
-  };
+  const activePolicies = data?.policies.filter((policy) => policy.enabled) || [];
+  const failedJobs = data?.open_jobs.filter((job) => job.status === "failed") || [];
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="flex items-center gap-3 mb-6">
-        <TrendingUp size={22} className="text-naxcal-teal" />
-        <h1 className="text-xl font-bold text-white">Post Daily Profit</h1>
-      </div>
-
-      {missedDays.length > 0 && (
-        <div className="p-4 rounded-xl mb-4 flex items-start justify-between gap-3" style={{ background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.25)" }}>
-          <div className="flex items-start gap-3">
-            <CalendarClock size={20} className="text-amber-400 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm text-amber-300 font-semibold mb-0.5">{missedDays.length} missed day{missedDays.length > 1 ? "s" : ""} detected</p>
-              <p className="text-xs text-amber-400/70">{missedDays.join(" · ")}</p>
-            </div>
+    <div className="mx-auto max-w-5xl space-y-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-3">
+            <TrendingUp size={22} className="text-naxcal-teal" />
+            <h1 className="text-xl font-bold text-white">Profit Operations</h1>
           </div>
-          <button onClick={handleCatchUp} disabled={catchingUp}
-            className="shrink-0 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-amber-500 hover:bg-amber-600 cursor-pointer disabled:opacity-50 flex items-center gap-1.5">
-            {catchingUp ? <><Loader2 size={12} className="animate-spin" /> Posting...</> : "Catch Up Now"}
-          </button>
+          <p className="mt-2 max-w-2xl text-sm text-white/40">
+            Scheduled accruals use one reviewed, versioned policy. Global manual
+            posting and inferred catch-up runs are disabled.
+          </p>
         </div>
-      )}
-
-      {result && (
-        <div className="p-4 rounded-xl mb-6 flex items-center gap-3" style={{ background: "rgba(22,163,74,0.1)", border: "1px solid rgba(22,163,74,0.2)" }}>
-          <CheckCircle2 size={20} className="text-emerald-400" />
-          <p className="text-sm text-emerald-400">{result.days ? `${result.days} day(s) caught up — ` : ""}Profit posted to {result.users} users. Total distributed: {fmt(result.total)}</p>
-        </div>
-      )}
-
-      {error && (
-        <div className="p-4 rounded-xl mb-6 flex items-center gap-3" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}>
-          <AlertTriangle size={20} className="text-red-400" />
-          <p className="text-sm text-red-400">{error}</p>
-        </div>
-      )}
-
-      <div className="rounded-xl p-6" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.06)" }}>
-        <div className="grid sm:grid-cols-2 gap-4 mb-6">
-          <div>
-            <label className="block text-xs text-white/40 mb-1.5 uppercase tracking-wider">Profit Percentage (%)</label>
-            <input type="number" value={percentage} onChange={(e) => setPercentage(e.target.value)} placeholder="e.g. 1.8" step="0.1"
-              className="w-full px-4 py-3 rounded-lg text-xl font-bold text-white placeholder:text-white/20 outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)" }} />
-          </div>
-          <div>
-            <label className="block text-xs text-white/40 mb-1.5 uppercase tracking-wider">Your Fee (%)</label>
-            <input type="number" value={feePercent} onChange={(e) => setFeePercent(e.target.value)} placeholder="e.g. 20" step="1"
-              className="w-full px-4 py-3 rounded-lg text-xl font-bold text-white placeholder:text-white/20 outline-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)" }} />
-          </div>
-        </div>
-
-        {/* Preview */}
-        {pct > 0 && (
-          <div className="rounded-xl p-4 mb-6 space-y-3" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.06)" }}>
-            <h3 className="text-xs text-white/40 uppercase tracking-wider font-medium">Distribution Preview</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div>
-                <p className="text-[10px] text-white/30">Eligible Users</p>
-                <p className="text-lg font-bold text-white">{eligible.length}</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-white/30">Gross Amount</p>
-                <p className="text-lg font-bold text-white">{fmt(totalGross)}</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-white/30">Your Fee ({fee}%)</p>
-                <p className="text-lg font-bold text-amber-400">{fmt(totalFee)}</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-white/30">Net to Users</p>
-                <p className="text-lg font-bold text-emerald-400">{fmt(totalNet)}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <button onClick={() => setConfirmModal(true)} disabled={!pct || pct <= 0 || posting || eligible.length === 0}
-          className="w-full py-3.5 rounded-xl text-white font-semibold text-sm cursor-pointer flex items-center justify-center gap-2 bg-naxcal-teal hover:bg-naxcal-teal-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-          {posting ? <><Loader2 size={16} className="animate-spin" /> Posting Profit...</> : <><TrendingUp size={16} /> Post Profit</>}
+        <button
+          type="button"
+          onClick={() => void load()}
+          disabled={loading}
+          aria-label="Refresh profit operations"
+          className="rounded-lg border border-white/10 p-2 text-white/60 hover:bg-white/5 disabled:opacity-50"
+        >
+          <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
         </button>
       </div>
 
-      {/* History */}
-      <div className="rounded-xl p-5 mt-6" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.06)" }}>
-        <h3 className="text-sm font-semibold text-white mb-4">Profit History</h3>
-        {history.length === 0 ? (
-          <p className="text-sm text-white/30 text-center py-4">No profit postings yet</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-white/[0.06]">
-                  <th className="text-left text-[10px] text-white/30 uppercase px-3 py-2 font-medium">Date</th>
-                  <th className="text-left text-[10px] text-white/30 uppercase px-3 py-2 font-medium">Rate</th>
-                  <th className="text-left text-[10px] text-white/30 uppercase px-3 py-2 font-medium">Notes</th>
-                  <th className="text-left text-[10px] text-white/30 uppercase px-3 py-2 font-medium">Distributed</th>
-                  <th className="text-left text-[10px] text-white/30 uppercase px-3 py-2 font-medium">Users</th>
-                </tr>
-              </thead>
-              <tbody>
-                {history.map((h) => (
-                  <tr key={h.id} className="border-b border-white/[0.03]">
-                    <td className="px-3 py-2 text-white/50 text-xs">{new Date(h.created_at).toLocaleDateString()}</td>
-                    <td className="px-3 py-2 text-emerald-400 font-semibold">+{h.profit_percentage}%</td>
-                    <td className="px-3 py-2 text-amber-400 text-xs">{h.notes || "—"}</td>
-                    <td className="px-3 py-2 text-white/80 font-semibold">{fmt(h.total_distributed)}</td>
-                    <td className="px-3 py-2 text-white/50">{h.users_credited}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {error && (
+        <div className="flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-300">
+          <AlertTriangle size={18} /> {error}
+        </div>
+      )}
 
-      {/* Confirm Modal */}
-      {confirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="w-full max-w-md rounded-xl p-6" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.1)" }}>
-            <h3 className="text-sm font-semibold text-white mb-2">Confirm Profit Posting</h3>
-            <p className="text-xs text-white/50 mb-4">
-              This will distribute <span className="text-emerald-400 font-bold">{fmt(totalNet)}</span> to <span className="text-white font-bold">{eligible.length}</span> users at <span className="text-white font-bold">+{pct}%</span>.
-            </p>
-            <p className="text-xs text-amber-400 mb-4">Your fee: {fmt(totalFee)}</p>
-            <div className="flex gap-2 justify-end">
-              <button onClick={() => setConfirmModal(false)} className="px-4 py-2 rounded-lg text-xs text-white/50 border border-white/10 cursor-pointer hover:bg-white/[0.03]">Cancel</button>
-              <button onClick={handlePost} className="px-4 py-2 rounded-lg text-xs font-semibold text-white bg-naxcal-teal hover:bg-naxcal-teal-light cursor-pointer">Confirm & Post</button>
+      {loading && !data ? (
+        <div className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] py-16 text-sm text-white/40">
+          <Loader2 size={16} className="animate-spin" /> Loading profit operations…
+        </div>
+      ) : (
+        <>
+          {activePolicies.length === 0 ? (
+            <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 p-5">
+              <div className="flex items-start gap-3">
+                <CalendarClock size={20} className="mt-0.5 shrink-0 text-amber-400" />
+                <div>
+                  <p className="font-semibold text-amber-300">Profit posting is paused safely</p>
+                  <p className="mt-1 text-sm leading-relaxed text-amber-200/65">
+                    No policy is active. Confirm the rate period, eligible days,
+                    compounding rule, basis, timezone, and effective date before
+                    enabling one in a reviewed database change.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {activePolicies.map((policy) => (
+                <div key={policy.id} className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-5">
+                  <div className="flex items-center gap-2 text-emerald-300">
+                    <CheckCircle2 size={18} />
+                    <span className="text-xs font-semibold uppercase tracking-wider">Active policy</span>
+                  </div>
+                  <h2 className="mt-3 text-lg font-semibold text-white">{policy.name}</h2>
+                  <p className="mt-1 text-xs text-white/45">
+                    {policy.effective_from} to {policy.effective_to || "open ended"} · {policy.accrual_calendar} · {policy.compounding_mode.replaceAll("_", " ")}
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {policy.profit_policy_rates.map((rate) => (
+                      <span key={rate.tier} className="rounded-full border border-emerald-500/20 bg-black/20 px-3 py-1 text-xs text-emerald-200">
+                        {rate.tier}: {Number(rate.rate_percent)}%
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+              <p className="text-xs uppercase tracking-wider text-white/30">Recent accruals</p>
+              <p className="mt-2 text-2xl font-bold text-white">{data?.recent_accruals.length || 0}</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+              <p className="text-xs uppercase tracking-wider text-white/30">Open jobs</p>
+              <p className="mt-2 text-2xl font-bold text-white">{data?.open_jobs.length || 0}</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+              <p className="text-xs uppercase tracking-wider text-white/30">Failed jobs</p>
+              <p className={failedJobs.length ? "mt-2 text-2xl font-bold text-red-400" : "mt-2 text-2xl font-bold text-emerald-400"}>
+                {failedJobs.length}
+              </p>
             </div>
           </div>
-        </div>
+
+          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
+            <h2 className="text-sm font-semibold text-white">Recent immutable accruals</h2>
+            {data?.recent_accruals.length ? (
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-full min-w-[760px] text-left text-sm">
+                  <thead className="text-[10px] uppercase tracking-wider text-white/30">
+                    <tr>
+                      <th className="px-3 py-2">Date</th>
+                      <th className="px-3 py-2">Account</th>
+                      <th className="px-3 py-2">Tier / rate</th>
+                      <th className="px-3 py-2">Basis</th>
+                      <th className="px-3 py-2">Credited</th>
+                      <th className="px-3 py-2">Source</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/[0.05]">
+                    {data.recent_accruals.map((accrual) => (
+                      <tr key={accrual.id}>
+                        <td className="px-3 py-3 text-white/60">{accrual.profit_date}</td>
+                        <td className="px-3 py-3">
+                          <p className="text-white/80">{accrual.profiles?.full_name || "Unnamed account"}</p>
+                          <p className="text-xs text-white/30">{accrual.profiles?.email}</p>
+                        </td>
+                        <td className="px-3 py-3 capitalize text-white/60">{accrual.tier} · {Number(accrual.effective_rate_percent)}%</td>
+                        <td className="px-3 py-3 text-white/60">{money(accrual.eligible_basis)}</td>
+                        <td className="px-3 py-3 font-semibold text-emerald-400">{money(accrual.profit_amount)}</td>
+                        <td className="px-3 py-3 text-xs text-white/35">{accrual.source}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="py-8 text-center text-sm text-white/30">No accruals recorded by the new ledger yet.</p>
+            )}
+          </div>
+        </>
       )}
     </div>
   );

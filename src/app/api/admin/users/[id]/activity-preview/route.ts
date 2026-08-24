@@ -1,32 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthUserWithClient } from "@/lib/auth-api";
+import { adminAuthErrorResponse, requireAdminAccess } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
-async function verifyAdmin() {
-  const { user } = await getAuthUserWithClient();
-  if (!user) return null;
-
-  const { data } = await supabaseAdmin
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .single();
-
-  if (!data?.is_admin) return null;
-  return user;
-}
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const admin = await verifyAdmin();
-
-  if (!admin) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const admin = await requireAdminAccess();
+  if (!admin.ok) return adminAuthErrorResponse(admin);
 
   const { id } = await params;
+  if (!UUID.test(id)) {
+    return NextResponse.json({ error: "Invalid user" }, { status: 400 });
+  }
 
   const [
     profileResult,
@@ -36,24 +24,28 @@ export async function GET(
     internalCountResult,
     onchainCountResult,
   ] = await Promise.all([
-    supabaseAdmin.from("profiles").select("*").eq("id", id).single(),
+    supabaseAdmin
+      .from("profiles")
+      .select("id, full_name, email, balance, total_profit, total_deposited, tier, kyc_status")
+      .eq("id", id)
+      .single(),
 
     supabaseAdmin
       .from("crypto_positions")
-      .select("*")
+      .select("id, symbol, qty, avg_price")
       .eq("user_id", id)
       .order("symbol", { ascending: true }),
 
     supabaseAdmin
       .from("transactions")
-      .select("*")
+      .select("id, type, amount, asset, status, description, created_at")
       .eq("user_id", id)
       .order("created_at", { ascending: false })
       .limit(50),
 
     supabaseAdmin
       .from("onchain_transactions")
-      .select("*")
+      .select("id, chain, native_value, tx_hash, status, timestamp, created_at")
       .eq("user_id", id)
       .order("timestamp", { ascending: false })
       .limit(50),

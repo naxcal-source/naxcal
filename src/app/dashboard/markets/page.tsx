@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { BarChart2, ArrowUpRight, ArrowDownRight, ChevronRight, RefreshCw, Search, TrendingUp, Zap, ArrowLeftRight } from "lucide-react";
+import { BarChart2, ArrowUpRight, ArrowDownRight, ChevronRight, RefreshCw, Search, TrendingUp, ArrowLeftRight } from "lucide-react";
 import StockLogo from "@/components/StockLogo";
 import { cn } from "@/lib/utils";
 
@@ -44,7 +45,11 @@ export default function MarketsPage() {
     } catch {} finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { fetchCrypto(); const id = setInterval(fetchCrypto, 60000); return () => clearInterval(id); }, [fetchCrypto]);
+  useEffect(() => {
+    void Promise.resolve().then(fetchCrypto);
+    const id = setInterval(fetchCrypto, 60000);
+    return () => clearInterval(id);
+  }, [fetchCrypto]);
 
   useEffect(() => {
     fetch("/api/stocks/popular").then((r) => r.json()).then((data) => {
@@ -59,7 +64,7 @@ export default function MarketsPage() {
   }, []);
 
   useEffect(() => {
-    if (search.length < 1 || tab !== "stocks") { setSearchResults([]); return; }
+    if (search.length < 1 || tab !== "stocks") return;
     const t = setTimeout(async () => {
       try {
         const res = await fetch(`/api/stocks/search?q=${encodeURIComponent(search)}`);
@@ -78,7 +83,7 @@ export default function MarketsPage() {
   const displayStocks = search.length > 0 ? searchResults : stocks;
   const data = tab === "crypto" ? displayCrypto : displayStocks;
   const isLoading = tab === "crypto" ? loading : stocksLoading;
-  const timeSince = lastUpdate ? `${Math.floor((Date.now() - lastUpdate.getTime()) / 1000)}s ago` : "";
+  const timeSince = lastUpdate ? `Updated at ${lastUpdate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}` : "";
 
   const fmtPrice = (p: number) => {
     if (p === 0) return "—";
@@ -250,7 +255,7 @@ export default function MarketsPage() {
                     {tab === "stocks" ? (
                       <StockLogo symbol={asset.ticker} size={36} />
                     ) : asset.icon ? (
-                      <img src={asset.icon} alt={asset.ticker} width={36} height={36} className="w-9 h-9 rounded-full object-cover shrink-0" style={{ background: "#f1f5f9" }} />
+                      <Image src={asset.icon} alt={asset.ticker} width={36} height={36} className="w-9 h-9 rounded-full object-cover shrink-0" style={{ background: "#f1f5f9" }} />
                     ) : (
                       <div className="w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
                         style={{ background: asset.color || "#6b7280" }}>

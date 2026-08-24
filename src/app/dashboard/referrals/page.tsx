@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useDashboard } from "@/contexts/DashboardContext";
-import { Users, Copy, CheckCircle2, Gift, ChevronRight, Share2, MessageCircle, Mail, Link2 } from "lucide-react";
+import { Users, Copy, CheckCircle2, Gift, ChevronRight, MessageCircle, Mail, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Referral = { id: string; referred_id: string; bonus_amount: number; status: string; created_at: string };
@@ -14,19 +14,22 @@ export default function ReferralsPage() {
   const [referrals, setReferrals] = useState<Referral[]>([]);
   const [copied, setCopied] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
-  const [code, setCode] = useState(profile?.referral_code || "");
+  const [generatedCode, setGeneratedCode] = useState("");
+  const code = generatedCode || profile?.referral_code || "";
   const referralUrl = code ? `https://naxcal.us/register?ref=${code}` : "";
 
   useEffect(() => {
     if (!profile) return;
     if (!profile.referral_code) {
-      const generated = "NXC" + Math.random().toString(36).substring(2, 8).toUpperCase();
-      fetch("/api/me", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ referral_code: generated }) }).then(() => setCode(generated));
-    } else {
-      setCode(profile.referral_code);
+      fetch("/api/me/referral-code", { method: "POST" })
+        .then(async (response) => {
+          const data = await response.json();
+          if (response.ok && typeof data.referral_code === "string") setGeneratedCode(data.referral_code);
+        })
+        .catch(() => {});
     }
     fetch("/api/me/referrals").then(r => r.json()).then(data => { if (Array.isArray(data)) setReferrals(data); }).catch(() => {});
-  }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [profile]);
 
   const copyLink = () => { navigator.clipboard.writeText(referralUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); };
   const copyCode = () => { navigator.clipboard.writeText(code); setCopiedCode(true); setTimeout(() => setCopiedCode(false), 2000); };
@@ -35,8 +38,8 @@ export default function ReferralsPage() {
   const activeReferrals = referrals.filter((r) => r.status === "active").length;
   const fmt = (n: number) => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  const shareWhatsApp = () => window.open(`https://wa.me/?text=${encodeURIComponent(`Join me on Naxcal and start earning daily returns on your capital! ${referralUrl}`)}`, "_blank");
-  const shareEmail = () => window.open(`mailto:?subject=${encodeURIComponent("Join Naxcal")}&body=${encodeURIComponent(`I've been using Naxcal for daily investment returns. Join here: ${referralUrl}`)}`, "_blank");
+  const shareWhatsApp = () => window.open(`https://wa.me/?text=${encodeURIComponent(`Review Naxcal's portfolio tools and published Monday–Friday policy: ${referralUrl}`)}`, "_blank");
+  const shareEmail = () => window.open(`mailto:?subject=${encodeURIComponent("Review Naxcal")}&body=${encodeURIComponent(`Here is my Naxcal referral link. Please review the Terms and Risk Disclosure before registering: ${referralUrl}`)}`, "_blank");
 
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl mx-auto">
@@ -127,7 +130,7 @@ export default function ReferralsPage() {
           <h3 className="text-sm font-semibold text-[#0f172a]">Referred Users</h3>
         </div>
         {referrals.length === 0 ? (
-          <div className="py-12 text-center text-[#9ca3af] text-sm">No referrals yet. Share your link to start earning.</div>
+          <div className="py-12 text-center text-[#9ca3af] text-sm">No referrals yet. Share your link when you are ready.</div>
         ) : (
           <div className="divide-y divide-[#f1f5f9]">
             {referrals.map((ref, i) => (

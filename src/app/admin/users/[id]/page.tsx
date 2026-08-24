@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ChevronRight, ArrowLeft, Loader2, Mail } from "lucide-react";
+import { ChevronRight, ArrowLeft, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Profile = {
@@ -23,6 +23,7 @@ export default function AdminUserDetail() {
   const [adjType, setAdjType] = useState<"add" | "subtract">("add");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const adjustmentKeyRef = useRef<string | null>(null);
 
   const load = async () => {
     const res = await fetch(`/api/admin/users/${id}`);
@@ -33,58 +34,65 @@ export default function AdminUserDetail() {
     }
   };
 
-  useEffect(() => { load(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { void Promise.resolve().then(load); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fmt = (n: number) => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  const post = async (body: object) => {
+  const post = async (body: object, idempotencyKey?: string) => {
     setSaving(true); setMessage("");
     const res = await fetch(`/api/admin/users/${id}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}),
+      },
       body: JSON.stringify(body),
     });
     const data = await res.json();
     setSaving(false);
+    if (!res.ok) throw new Error(data.error || "Admin action failed");
     return data;
   };
 
   const handleAdjust = async () => {
     if (!profile || !adjAmount) return;
-    const data = await post({ action: "adjust", amount: adjAmount, type: adjType, note: adjNote });
-    setMessage(`Balance updated to ${fmt(data.balance)}`);
-    setAdjAmount(""); setAdjNote("");
-    await load();
+    if (adjNote.trim().length < 3) { setMessage("Enter a specific reason for this adjustment"); return; }
+    adjustmentKeyRef.current ||= crypto.randomUUID();
+    try {
+      const data = await post({ action: "adjust", amount: adjAmount, type: adjType, note: adjNote }, adjustmentKeyRef.current);
+      adjustmentKeyRef.current = null;
+      setMessage(`Balance updated to ${fmt(data.balance)}`);
+      setAdjAmount(""); setAdjNote("");
+      await load();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Adjustment failed");
+    }
   };
 
   const handleKYC = async (status: string) => {
     if (!profile) return;
-    await post({ action: "kyc", status });
-    setMessage(`KYC ${status}`);
-    await load();
+    const reason = status === "rejected" ? window.prompt("Why is this KYC being rejected?") : "Approved after admin review";
+    if (status === "rejected" && !reason) return;
+    try {
+      await post({ action: "kyc", status, reason });
+      setMessage(`KYC ${status}; notification queued`);
+      await load();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "KYC update failed");
+    }
   };
 
   const handleFreeze = async () => {
     if (!profile) return;
-    const data = await post({ action: "freeze" });
-    setMessage(data.is_active ? "Account unfrozen" : "Account frozen");
-    await load();
-  };
-
-  const sendDepositEmail = async () => {
-    if (!profile) return;
-    const amtStr = window.prompt("Deposit amount to notify user about ($):");
-    if (!amtStr) return;
-    const amount = parseFloat(amtStr);
-    if (isNaN(amount) || amount <= 0) return;
-    setSaving(true);
-    await fetch("/api/admin/send-email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "deposit_approved", email: profile.email, name: profile.full_name || "Investor", amount, currency: "USDT" }),
-    });
-    setMessage(`Deposit confirmation email sent to ${profile.email}`);
-    setSaving(false);
+    const reason = window.prompt(profile.is_active ? "Why are you freezing this account?" : "Why are you unfreezing this account?");
+    if (!reason) return;
+    try {
+      const data = await post({ action: "freeze", is_active: !profile.is_active, reason });
+      setMessage(data.is_active ? "Account unfrozen" : "Account frozen");
+      await load();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Account state update failed");
+    }
   };
 
   if (!profile) {
@@ -182,10 +190,6 @@ export default function AdminUserDetail() {
               View Activity Preview
             </Link>
 
-            <button onClick={sendDepositEmail} disabled={saving}
-              className="w-full py-2 rounded-lg text-xs font-semibold text-blue-400 border border-blue-500/20 hover:bg-blue-500/10 transition-colors cursor-pointer disabled:opacity-30 flex items-center justify-center gap-1.5">
-              <Mail size={12} /> Send Deposit Confirmation Email
-            </button>
           </div>
         </div>
       </div>

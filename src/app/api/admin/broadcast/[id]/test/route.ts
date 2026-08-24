@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth-api";
+import { adminAuthErrorResponse, requireAdminAccess } from "@/lib/auth-api";
 import { getBroadcast, sendBroadcastTest } from "@/lib/resend-admin";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  if (!(await requireAdmin())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const admin = await requireAdminAccess();
+  if (!admin.ok) return adminAuthErrorResponse(admin);
   const { id } = await params;
 
   try {

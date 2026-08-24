@@ -8,7 +8,7 @@ export default function PrivacyPage() {
       <h2>2. How We Use Your Information</h2>
       <p>Your data is used to: provide and improve our services, verify your identity (KYC/AML compliance), process transactions, communicate with you, and comply with legal obligations.</p>
       <h2>3. Data Security</h2>
-      <p>We employ 256-bit SSL encryption, secure data centers, and strict access controls. Financial data is encrypted at rest and in transit.</p>
+      <p>We use encrypted HTTPS connections and access controls designed to protect account data. Security controls are reviewed as the platform and its providers change.</p>
       <h2>4. Data Sharing</h2>
       <p>We do not sell your personal data. We may share data with: identity verification providers (Sumsub), payment processors (NOWPayments), regulatory authorities when required by law, and service providers under strict data processing agreements.</p>
       <h2>5. Your Rights</h2>

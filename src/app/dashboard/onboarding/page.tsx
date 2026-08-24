@@ -4,22 +4,29 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDashboard } from "@/contexts/DashboardContext";
-import { createClient } from "@/lib/supabase";
 import { Shield, TrendingUp, Wallet, ArrowRight, CheckCircle2, Star, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TIER_DAILY_RATE_PERCENT } from "@/lib/profit-policy";
 
 export default function OnboardingPage() {
   const { profile, refreshProfile } = useDashboard();
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [completing, setCompleting] = useState(false);
-  const supabase = createClient();
   const firstName = profile?.full_name?.split(" ")[0] || "there";
 
   const complete = async () => {
     setCompleting(true);
     if (profile) {
-      await supabase.from("profiles").update({ onboarding_complete: true } as Record<string, unknown>).eq("id", profile.id);
+      const response = await fetch("/api/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ onboarding_complete: true }),
+      });
+      if (!response.ok) {
+        setCompleting(false);
+        return;
+      }
       await refreshProfile();
     }
     router.push("/dashboard");
@@ -43,8 +50,8 @@ export default function OnboardingPage() {
       <div className="grid sm:grid-cols-3 gap-4">
         {[
           { icon: Wallet, title: "Deposit Capital", desc: "Fund your account with crypto. 12+ currencies supported." },
-          { icon: TrendingUp, title: "Earn Daily", desc: "Our AI-driven strategies generate 1.5%–2.1% daily returns." },
-          { icon: Shield, title: "Withdraw Anytime", desc: "Your capital is never locked. Withdraw within 24 hours." },
+          { icon: TrendingUp, title: "Earn on Weekdays", desc: "Tier returns are credited Monday through Friday; weekends are excluded." },
+          { icon: Shield, title: "Controlled Withdrawals", desc: "Eligibility, security checks, and processing times are shown before you submit." },
         ].map((item, i) => (
           <div key={i} className="text-center p-5 rounded-xl" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
             <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3" style={{ background: "rgba(26,138,110,0.1)" }}>
@@ -62,15 +69,15 @@ export default function OnboardingPage() {
       <h2 className="text-xl font-bold text-[#0f172a] text-center mb-6">Investment Tiers</h2>
       <div className="grid sm:grid-cols-3 gap-4">
         {[
-          { tier: "Bronze", rate: "1.5%", min: "$0", color: "text-orange-700", bg: "linear-gradient(135deg, rgba(180,83,9,0.06), rgba(180,83,9,0.02))", border: "rgba(180,83,9,0.15)" },
-          { tier: "Silver", rate: "1.8%", min: "$5,000", color: "text-slate-600", bg: "linear-gradient(135deg, rgba(100,116,139,0.06), rgba(100,116,139,0.02))", border: "rgba(100,116,139,0.15)" },
-          { tier: "Gold", rate: "2.1%", min: "$25,000", color: "text-amber-600", bg: "linear-gradient(135deg, rgba(240,165,0,0.06), rgba(240,165,0,0.02))", border: "rgba(240,165,0,0.15)" },
+          { tier: "Bronze", rate: `${TIER_DAILY_RATE_PERCENT.bronze}%`, min: "$0", color: "text-orange-700", bg: "linear-gradient(135deg, rgba(180,83,9,0.06), rgba(180,83,9,0.02))", border: "rgba(180,83,9,0.15)" },
+          { tier: "Silver", rate: `${TIER_DAILY_RATE_PERCENT.silver}%`, min: "$5,000", color: "text-slate-600", bg: "linear-gradient(135deg, rgba(100,116,139,0.06), rgba(100,116,139,0.02))", border: "rgba(100,116,139,0.15)" },
+          { tier: "Gold", rate: `${TIER_DAILY_RATE_PERCENT.gold}%`, min: "$25,000", color: "text-amber-600", bg: "linear-gradient(135deg, rgba(240,165,0,0.06), rgba(240,165,0,0.02))", border: "rgba(240,165,0,0.15)" },
         ].map((t) => (
           <div key={t.tier} className="p-5 rounded-xl text-center" style={{ background: t.bg, border: `1px solid ${t.border}` }}>
             <Star size={20} className={cn(t.color, "mx-auto mb-2")} />
             <h3 className={cn("text-lg font-bold", t.color)}>{t.tier}</h3>
             <p className="text-2xl font-bold text-[#0f172a] my-1">{t.rate}</p>
-            <p className="text-xs text-[#6b7280]">daily · min {t.min}</p>
+            <p className="text-xs text-[#6b7280]">each weekday · min {t.min}</p>
           </div>
         ))}
       </div>
@@ -109,7 +116,7 @@ export default function OnboardingPage() {
 
         {/* Navigation */}
         <div className="flex items-center justify-between mt-8">
-          <button onClick={skip} className="text-xs text-[#9ca3af] hover:text-[#6b7280] cursor-pointer">Skip</button>
+          <button onClick={skip} disabled={completing} className="text-xs text-[#9ca3af] hover:text-[#6b7280] cursor-pointer disabled:opacity-50">Skip</button>
 
           <div className="flex items-center gap-1.5">
             {slides.map((_, i) => (
@@ -122,8 +129,8 @@ export default function OnboardingPage() {
               Next <ArrowRight size={14} />
             </button>
           ) : (
-            <button onClick={complete} className="flex items-center gap-1 px-5 py-2.5 rounded-lg text-sm font-semibold text-white btn-teal cursor-pointer">
-              Go to Dashboard <ArrowRight size={14} />
+            <button onClick={complete} disabled={completing} className="flex items-center gap-1 px-5 py-2.5 rounded-lg text-sm font-semibold text-white btn-teal cursor-pointer disabled:opacity-50">
+              {completing ? "Finishing..." : "Go to Dashboard"} <ArrowRight size={14} />
             </button>
           )}
         </div>

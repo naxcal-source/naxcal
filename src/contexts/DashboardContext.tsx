@@ -18,9 +18,10 @@ export type Profile = {
   referral_code: string | null;
   auto_compound: boolean;
   is_active: boolean;
+  onboarding_complete: boolean;
   created_at: string;
   display_currency?: string;
-  withdrawal_pin?: string | null;
+  has_withdrawal_pin?: boolean;
 };
 
 const RATES: Record<string, { rate: number; symbol: string; code: string }> = {
@@ -91,7 +92,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     return r.symbol + converted.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }, [currency]);
 
-  useEffect(() => { fetchProfile(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { void Promise.resolve().then(fetchProfile); }, []);
 
   return (
     <Ctx.Provider value={{ user, profile, loading, refreshProfile: fetchProfile, currency, setCurrency, fmt }}>

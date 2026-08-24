@@ -17,19 +17,13 @@ export default function AdminKYCPage() {
     if (Array.isArray(data)) setUsers(data as User[]);
   };
 
-  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { void Promise.resolve().then(load); }, []);
 
   const handleApprove = async (user: User) => {
     setProcessing(user.id);
-    await fetch("/api/admin/data", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "update_profile", user_id: user.id, updates: { kyc_status: "approved" } }) });
-    try {
-      await fetch("/api/admin/send-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "kyc_approved", email: user.email, name: user.full_name || "Investor" }),
-      });
-    } catch {}
-    setMessage(`KYC approved for ${user.full_name || user.email}`);
+    const response = await fetch("/api/admin/data", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "update_kyc", user_id: user.id, status: "approved" }) });
+    const result = await response.json().catch(() => ({}));
+    setMessage(response.ok ? `KYC approved for ${user.full_name || user.email}; email queued` : result.error || "KYC approval failed");
     setProcessing(null);
     load();
   };
@@ -39,15 +33,9 @@ export default function AdminKYCPage() {
     const user = users.find((u) => u.id === rejectModal);
     if (!user) return;
     setProcessing(user.id);
-    await fetch("/api/admin/data", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "update_profile", user_id: user.id, updates: { kyc_status: "rejected" } }) });
-    try {
-      await fetch("/api/admin/send-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "kyc_rejected", email: user.email, name: user.full_name || "Investor", reason: rejectReason }),
-      });
-    } catch {}
-    setMessage(`KYC rejected for ${user.full_name || user.email}`);
+    const response = await fetch("/api/admin/data", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "update_kyc", user_id: user.id, status: "rejected", reason: rejectReason }) });
+    const result = await response.json().catch(() => ({}));
+    setMessage(response.ok ? `KYC rejected for ${user.full_name || user.email}; email queued` : result.error || "KYC rejection failed");
     setRejectModal(null); setRejectReason(""); setProcessing(null);
     load();
   };

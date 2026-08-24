@@ -21,7 +21,7 @@ export default function AdminRedirectsPage() {
     if (Array.isArray(data)) setRedirects(data as Redirect[]);
   };
 
-  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { void Promise.resolve().then(load); }, []);
 
   const handleCreate = async () => {
     const cleanSlug = slug.trim().replace(/^\/+/, "");

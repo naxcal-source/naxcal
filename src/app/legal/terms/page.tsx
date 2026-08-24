@@ -10,11 +10,11 @@ export default function TermsPage() {
       <h2>3. Account Registration</h2>
       <p>You agree to provide accurate, complete, and current information during registration. You are responsible for maintaining the confidentiality of your account credentials and for all activities under your account.</p>
       <h2>4. Investment Services</h2>
-      <p>Naxcal provides managed investment services across multiple asset classes. Past performance is not indicative of future results. Your capital is at risk. We do not guarantee any specific level of return.</p>
+      <p>Naxcal provides account, portfolio, and transaction tools across multiple asset classes. Product availability depends on eligibility and the applicable terms. Past performance is not indicative of future results, and no specific level of return is guaranteed.</p>
       <h2>5. Deposits and Withdrawals</h2>
-      <p>Deposits are processed via cryptocurrency transfers. Minimum deposit is $50 USD. Withdrawals are subject to KYC verification and are processed within 24 hours. Minimum withdrawal is $100 USD.</p>
+      <p>Deposits are processed via cryptocurrency transfers. Minimum deposit is $50 USD. Withdrawals are subject to identity, balance, security, and eligibility checks. Any displayed processing time is a target rather than a guarantee. Minimum withdrawal is $100 USD.</p>
       <h2>6. Fees</h2>
-      <p>A performance fee may be applied to daily returns as disclosed in your account dashboard. No deposit fees are charged by Naxcal; standard blockchain network fees apply.</p>
+      <p>A performance fee may be applied to weekday returns as disclosed in your account dashboard. Returns are credited Monday through Friday only; Saturdays and Sundays are excluded. No deposit fees are charged by Naxcal; standard blockchain network fees apply.</p>
       <h2>7. Risk Disclosure</h2>
       <p>Trading and investing involves significant risk. You may lose some or all of your invested capital. See our full Risk Disclosure document for details.</p>
       <h2>8. Limitation of Liability</h2>

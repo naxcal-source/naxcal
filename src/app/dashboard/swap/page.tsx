@@ -1,11 +1,18 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type RefObject } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { ArrowLeftRight, ChevronRight, ChevronDown, ArrowDown, Clock, Info, Loader2, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  clearIdempotentRequest,
+  getOrCreateIdempotentRequest,
+  shouldResetIdempotencyKey,
+  TRADE_IDEMPOTENCY_STORAGE_KEYS,
+  type PendingIdempotentRequest,
+} from "@/lib/idempotency";
 
 const tokens = [
   { symbol: "USDC", name: "USD Coin", color: "#2775ca", geckoId: "usd-coin" },
@@ -17,6 +24,46 @@ const tokens = [
 
 type CryptoPos = { symbol: string; qty: number; avg_price: number; current_price: number; market_value: number };
 type SwapResult = { from_token: string; to_token: string; from_amount: number; to_amount: number; fee: number; rate: number };
+
+function TokenDropdown({ selected, onSelect, show, setShow, exclude, containerRef, getBalance }: {
+  selected: string;
+  onSelect: (symbol: string) => void;
+  show: boolean;
+  setShow: (show: boolean) => void;
+  exclude: string;
+  containerRef: RefObject<HTMLDivElement | null>;
+  getBalance: (symbol: string) => number;
+}) {
+  const token = tokens.find((item) => item.symbol === selected)!;
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <button onClick={() => setShow(!show)} className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#f1f5f9] transition-colors cursor-pointer" style={{ border: "1px solid #e2e8f0" }}>
+        <div className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{ background: token.color }}>{token.symbol.slice(0, 2)}</div>
+        <span className="text-sm font-semibold text-[#0f172a]">{token.symbol}</span>
+        <ChevronDown size={14} className={cn("text-[#9ca3af] transition-transform", show && "rotate-180")} />
+      </button>
+      {show && (
+        <div className="absolute top-full mt-1 left-0 w-56 rounded-xl shadow-xl z-20 max-h-64 overflow-y-auto" style={{ background: "#ffffff", border: "1px solid #e2e8f0" }}>
+          {tokens.filter((item) => item.symbol !== exclude).map((item) => {
+            const balance = getBalance(item.symbol);
+            return (
+              <button key={item.symbol} onClick={() => { onSelect(item.symbol); setShow(false); }}
+                className="flex items-center gap-3 w-full px-3 py-2.5 hover:bg-[#f8fafc] transition-colors cursor-pointer text-left">
+                <div className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{ background: item.color }}>{item.symbol.slice(0, 2)}</div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-[#0f172a]">{item.symbol}</p>
+                  <p className="text-[10px] text-[#9ca3af]">{item.name}</p>
+                </div>
+                <span className="text-[10px] text-[#6b7280]">{balance > 0 ? balance.toFixed(item.symbol === "USDC" ? 2 : 6) : "0"}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function SwapPage() {
   const { profile, refreshProfile } = useDashboard();
@@ -34,6 +81,7 @@ export default function SwapPage() {
   const [error, setError] = useState("");
   const fromRef = useRef<HTMLDivElement>(null);
   const toRef = useRef<HTMLDivElement>(null);
+  const swapRequestRef = useRef<PendingIdempotentRequest | null>(null);
 
 
   useEffect(() => {
@@ -88,58 +136,53 @@ export default function SwapPage() {
     setError("");
     setResult(null);
 
+    const requestBody = {
+      from_token: fromToken,
+      to_token: toToken,
+      from_amount: parseFloat(fromAmount),
+    };
+    const pendingRequest = getOrCreateIdempotentRequest(
+      swapRequestRef.current,
+      JSON.stringify(requestBody),
+      TRADE_IDEMPOTENCY_STORAGE_KEYS.cryptoSwap,
+    );
+    swapRequestRef.current = pendingRequest;
+
     try {
       const res = await fetch("/api/swap", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ from_token: fromToken, to_token: toToken, from_amount: parseFloat(fromAmount) }),
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": pendingRequest.key,
+        },
+        body: JSON.stringify(requestBody),
       });
+
       const data = await res.json();
+
+      if (
+        shouldResetIdempotencyKey(res.status) &&
+        swapRequestRef.current?.key === pendingRequest.key
+      ) {
+        clearIdempotentRequest(
+          TRADE_IDEMPOTENCY_STORAGE_KEYS.cryptoSwap,
+          pendingRequest.key,
+        );
+        swapRequestRef.current = null;
+      }
+
       if (!res.ok) { setError(data.error || "Swap failed"); setSwapping(false); return; }
       setResult(data);
       refreshProfile();
       // Refresh crypto balances
       fetch("/api/crypto/portfolio").then((r) => r.json()).then((d) => { if (Array.isArray(d)) setCryptoBalances(d); }).catch(() => {});
     } catch {
-      setError("Network error");
+      setError("Network error. Retrying will not duplicate the swap.");
     }
     setSwapping(false);
   };
 
   const fmt = (n: number) => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-  const TokenDropdown = ({ selected, onSelect, show, setShow, exclude, containerRef }: {
-    selected: string; onSelect: (s: string) => void; show: boolean; setShow: (b: boolean) => void; exclude: string; containerRef: React.RefObject<HTMLDivElement | null>;
-  }) => {
-    const token = tokens.find((t) => t.symbol === selected)!;
-    return (
-      <div className="relative" ref={containerRef}>
-        <button onClick={() => setShow(!show)} className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-[#f1f5f9] transition-colors cursor-pointer" style={{ border: "1px solid #e2e8f0" }}>
-          <div className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{ background: token.color }}>{token.symbol.slice(0, 2)}</div>
-          <span className="text-sm font-semibold text-[#0f172a]">{token.symbol}</span>
-          <ChevronDown size={14} className={cn("text-[#9ca3af] transition-transform", show && "rotate-180")} />
-        </button>
-        {show && (
-          <div className="absolute top-full mt-1 left-0 w-56 rounded-xl shadow-xl z-20 max-h-64 overflow-y-auto" style={{ background: "#ffffff", border: "1px solid #e2e8f0" }}>
-            {tokens.filter((t) => t.symbol !== exclude).map((t) => {
-              const bal = getBalance(t.symbol);
-              return (
-                <button key={t.symbol} onClick={() => { onSelect(t.symbol); setShow(false); setResult(null); setError(""); }}
-                  className="flex items-center gap-3 w-full px-3 py-2.5 hover:bg-[#f8fafc] transition-colors cursor-pointer text-left">
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{ background: t.color }}>{t.symbol.slice(0, 2)}</div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-[#0f172a]">{t.symbol}</p>
-                    <p className="text-[10px] text-[#9ca3af]">{t.name}</p>
-                  </div>
-                  <span className="text-[10px] text-[#6b7280]">{bal > 0 ? bal.toFixed(t.symbol === "USDC" ? 2 : 6) : "0"}</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const fromBal = getBalance(fromToken);
 
@@ -179,7 +222,7 @@ export default function SwapPage() {
                 </button>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-                <TokenDropdown selected={fromToken} onSelect={setFromToken} show={showFromList} setShow={setShowFromList} exclude={toToken} containerRef={fromRef} />
+                <TokenDropdown selected={fromToken} onSelect={(symbol) => { setFromToken(symbol); setResult(null); setError(""); }} show={showFromList} setShow={setShowFromList} exclude={toToken} containerRef={fromRef} getBalance={getBalance} />
                 <input type="number" value={fromAmount} onChange={(e) => { setFromAmount(e.target.value); setError(""); }} placeholder="0.00"
                   className="flex-1 text-right text-xl font-bold text-[#0f172a] placeholder:text-[#d1d5db] bg-transparent outline-none min-w-0" />
               </div>
@@ -206,7 +249,7 @@ export default function SwapPage() {
                 </span>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-                <TokenDropdown selected={toToken} onSelect={setToToken} show={showToList} setShow={setShowToList} exclude={fromToken} containerRef={toRef} />
+                <TokenDropdown selected={toToken} onSelect={(symbol) => { setToToken(symbol); setResult(null); setError(""); }} show={showToList} setShow={setShowToList} exclude={fromToken} containerRef={toRef} getBalance={getBalance} />
                 <div className="flex-1 text-right text-xl font-bold text-[#0f172a] min-w-0">
                   {toAmount > 0 ? toAmount.toFixed(toPrice >= 100 ? 6 : toPrice >= 1 ? 4 : 2) : "0.00"}
                 </div>

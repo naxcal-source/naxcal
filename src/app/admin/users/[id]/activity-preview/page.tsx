@@ -5,6 +5,25 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Activity, Wallet, Repeat2, TrendingUp } from "lucide-react";
 
+type InternalTransaction = {
+  id: string;
+  type: string;
+  amount: number | string | null;
+  asset?: string | null;
+  description?: string | null;
+  created_at: string;
+};
+
+type OnchainTransaction = {
+  id: string;
+  chain: string;
+  native_value: number | string | null;
+  tx_hash?: string | null;
+  status?: string | null;
+  timestamp?: string | null;
+  created_at: string;
+};
+
 type PreviewData = {
   profile: {
     id: string;
@@ -23,10 +42,10 @@ type PreviewData = {
     avg_price: number;
   }>;
   cryptoValue: number;
-  internalTransactions: Array<any>;
-  onchainTransactions: Array<any>;
-  swaps: Array<any>;
-  profits: Array<any>;
+  internalTransactions: InternalTransaction[];
+  onchainTransactions: OnchainTransaction[];
+  swaps: Array<Record<string, unknown>>;
+  profits: InternalTransaction[];
   counts: {
     internalTransactions: number;
     onchainTransactions: number;

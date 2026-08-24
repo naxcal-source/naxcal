@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -9,9 +9,9 @@ import { createClient } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, History, ArrowDownCircle, ArrowUpCircle,
-  Users, Settings, LogOut, Menu, Bell, AlertTriangle,
+  Users, Settings, Menu, Bell, AlertTriangle,
   Search, BarChart2, ArrowLeftRight, TrendingUp, ShieldCheck,
-  HelpCircle, ChevronRight, Briefcase,
+  HelpCircle, Briefcase,
 } from "lucide-react";
 import { ToastProvider } from "@/components/Toast";
 import CrispChat from "@/components/CrispChat";
@@ -89,16 +89,11 @@ function NotificationDropdown() {
     }).catch(() => {});
   };
 
-  const timeAgo = (value?: string) => {
+  const formatNotificationTime = (value?: string) => {
     if (!value) return "";
-    const diff = Date.now() - new Date(value).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "Just now";
-    if (mins < 60) return `${mins}m ago`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    return `${days}d ago`;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
   };
 
   const unread = notifications.filter((n) => !n.is_read);
@@ -144,7 +139,7 @@ function NotificationDropdown() {
                     <div className="min-w-0">
                       <p className="text-sm text-[#0f172a] font-medium">{n.title}</p>
                       <p className="text-xs text-[#6b7280]">{n.description}</p>
-                      <p className="text-[10px] text-[#9ca3af] mt-0.5">{timeAgo(n.created_at)}</p>
+                      <p className="text-[10px] text-[#9ca3af] mt-0.5">{formatNotificationTime(n.created_at)}</p>
                     </div>
                   </div>
                 </Link>
@@ -190,7 +185,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
     router.refresh();
   };
 
-  const SidebarContent = () => (
+  const renderSidebar = () => (
     <div className="flex flex-col h-full relative overflow-hidden">
       <div
         className="absolute inset-0 pointer-events-none"
@@ -333,14 +328,14 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex overflow-x-hidden" style={{ background: "#f1f5f9", minHeight: "100dvh" }}>
       <aside className="hidden lg:block w-[280px] shrink-0 border-r border-white/[0.06]" style={{ background: "#080f0c" }}>
-        <SidebarContent />
+        {renderSidebar()}
       </aside>
 
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setSidebarOpen(false)} />
           <aside className="absolute left-0 top-0 bottom-0 w-[280px]" style={{ background: "#080f0c" }}>
-            <SidebarContent />
+            {renderSidebar()}
           </aside>
         </div>
       )}

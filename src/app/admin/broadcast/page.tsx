@@ -194,7 +194,9 @@ export default function BroadcastPage() {
         <h1 className="text-xl font-bold text-white">Resend Broadcast</h1>
       </div>
       <p className="text-xs text-white/30 mb-8">
-        Sends via Resend&apos;s native Broadcast feature to an Audience — no daily send cap, unlike the Email Campaign tool.
+        Draft creation and test sends remain available. Live audience sending is
+        paused until Resend audiences are synchronized with saved marketing
+        preferences and suppression records.
       </p>
 
       <div className="max-w-3xl">
@@ -267,10 +269,11 @@ export default function BroadcastPage() {
             />
             <button
               onClick={handleAddContacts}
-              disabled={!pastedEmails.trim() || addingContacts}
+              disabled
+              title="Audience synchronization is paused"
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-white/10 hover:bg-white/15 cursor-pointer disabled:opacity-50"
             >
-              {addingContacts ? <><Loader2 size={13} className="animate-spin" /> Adding...</> : "Add to audience"}
+              {addingContacts ? <><Loader2 size={13} className="animate-spin" /> Adding...</> : "Audience sync paused"}
             </button>
           </div>
         )}
@@ -358,10 +361,11 @@ export default function BroadcastPage() {
 
           <button
             onClick={handleSend}
-            disabled={sending}
+            disabled
+            title="Live audience sending is paused until consent synchronization is available"
             className="w-full py-3.5 rounded-xl text-white font-semibold text-sm cursor-pointer flex items-center justify-center gap-2 bg-naxcal-teal hover:bg-naxcal-teal-light transition-colors disabled:opacity-50"
           >
-            {sending ? <><Loader2 size={16} className="animate-spin" /> Sending...</> : <><Send size={16} /> Send broadcast to audience</>}
+            {sending ? <><Loader2 size={16} className="animate-spin" /> Sending...</> : <><Send size={16} /> Live audience sending paused</>}
           </button>
         </>
       )}

@@ -14,6 +14,25 @@ function nativeAssetFromChainId(chainId: number | null | undefined) {
   return "ETH";
 }
 
+type OnchainRow = {
+  id: string;
+  type: "onchain_activity";
+  amount: number;
+  asset: string;
+  status: string;
+  description: string;
+  created_at: string;
+  balance_before: null;
+  balance_after: null;
+  tx_hash: string | null;
+  wallet_address: string | null;
+  source: "onchain";
+  chain: string;
+  chain_id: number | null;
+  from_address: string | null;
+  to_address: string | null;
+};
+
 export async function GET(request: Request) {
   const user = await getAuthUser();
 
@@ -23,12 +42,15 @@ export async function GET(request: Request) {
 
   try {
     const { searchParams } = new URL(request.url);
-    const limit = Math.min(Number(searchParams.get("limit") || 200), 500);
+    const requestedLimit = Number(searchParams.get("limit") || 200);
+    const limit = Number.isInteger(requestedLimit)
+      ? Math.min(Math.max(requestedLimit, 1), 500)
+      : 200;
     const type = searchParams.get("type");
 
     let internalQuery = supabaseAdmin
       .from("transactions")
-      .select("*")
+      .select("id, type, amount, asset, status, description, created_at, balance_before, balance_after, tx_hash, wallet_address")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(limit);
@@ -42,19 +64,19 @@ export async function GET(request: Request) {
     if (internalError) {
       console.error("Internal transactions error:", internalError);
       return NextResponse.json(
-        { error: "Failed to load internal transactions", details: internalError.message },
+        { error: "Failed to load internal transactions" },
         { status: 500 },
       );
     }
 
     const shouldIncludeOnchain = !type || type === "all" || type === "onchain";
 
-    let onchainRows: any[] = [];
+    let onchainRows: OnchainRow[] = [];
 
     if (shouldIncludeOnchain) {
       const { data: transactions, error: onchainError } = await supabaseAdmin
         .from("onchain_transactions")
-        .select("*")
+        .select("id, native_value, chain_id, status, timestamp, created_at, tx_hash, chain, to_address, from_address")
         .eq("user_id", user.id)
         .order("timestamp", { ascending: false })
         .limit(limit);
@@ -71,18 +93,18 @@ export async function GET(request: Request) {
           type: "onchain_activity",
           amount,
           asset: nativeAssetFromChainId(tx.chain_id),
-          status: tx.status || "completed",
+          status: String(tx.status || "completed"),
           description: `On-chain transaction on ${tx.chain}`,
-          created_at: tx.timestamp || tx.created_at,
+          created_at: String(tx.timestamp || tx.created_at),
           balance_before: null,
           balance_after: null,
-          tx_hash: tx.tx_hash,
-          wallet_address: tx.to_address || tx.from_address,
+          tx_hash: tx.tx_hash || null,
+          wallet_address: tx.to_address || tx.from_address || null,
           source: "onchain",
-          chain: tx.chain,
-          chain_id: tx.chain_id,
-          from_address: tx.from_address,
-          to_address: tx.to_address,
+          chain: String(tx.chain || "Unknown"),
+          chain_id: tx.chain_id == null ? null : Number(tx.chain_id),
+          from_address: tx.from_address || null,
+          to_address: tx.to_address || null,
         };
       });
     }
@@ -103,7 +125,6 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error: "Failed to load transactions",
-        details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 },
     );

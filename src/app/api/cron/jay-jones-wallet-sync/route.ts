@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { SUPPORTED_EVM_CHAINS } from "@/lib/blockchain/evm-chains";
-import { runJayJonesWalletMigration } from "@/lib/migrations/jay-jones-wallet-migration";
-import { syncJayJonesCryptoPositions } from "@/lib/migrations/sync-jay-crypto-positions";
+import { runConfiguredWalletMigration } from "@/lib/migrations/jay-jones-wallet-migration";
 
 export const maxDuration = 300;
 
@@ -26,7 +25,7 @@ export async function GET(request: Request) {
     const results = [];
 
     for (const chain of SUPPORTED_EVM_CHAINS) {
-      const result = await runJayJonesWalletMigration(
+      const result = await runConfiguredWalletMigration(
         undefined,
         chain.moralisChain,
         { includeTransactions: true },
@@ -41,13 +40,11 @@ export async function GET(request: Request) {
       });
     }
 
-    const cryptoSync = await syncJayJonesCryptoPositions();
-
     return NextResponse.json({
       success: true,
       syncedAt: new Date().toISOString(),
       chainResults: results,
-      cryptoSync,
+      internalPositionsChanged: false,
     });
   } catch (error) {
     return NextResponse.json(

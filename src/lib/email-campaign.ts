@@ -2,7 +2,6 @@ import { Resend } from "resend";
 import { supabaseAdmin } from "./supabase-admin";
 import { unsubscribeUrl } from "./unsubscribe-token";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = "Naxcal <noreply@naxcal.us>";
 const REPLY_TO = "support@naxcal.us";
 
@@ -13,6 +12,29 @@ export const CAMPAIGN_BATCH_SIZE = 100;
 const BATCH_DELAY_MS = 400;
 
 export type CampaignContact = { email: string; name?: string };
+
+function getResend() {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) throw new Error("RESEND_API_KEY is not configured");
+  return new Resend(apiKey);
+}
+
+function safeName(value: string) {
+  return value
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .trim()
+    .slice(0, 120) || "there";
+}
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[character] || character);
+}
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -29,30 +51,88 @@ export function dedupeContacts(contacts: CampaignContact[]): CampaignContact[] {
   const out: CampaignContact[] = [];
   for (const c of contacts) {
     const email = c.email.trim().toLowerCase();
-    if (!email || seen.has(email)) continue;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 320 || seen.has(email)) continue;
     seen.add(email);
     out.push({ email, name: c.name?.trim() });
   }
   return out;
 }
 
-// Anyone who previously hit /unsubscribe gets dropped before we ever build a send.
+// Suppressions apply to every marketing contact. Registered users must also
+// have explicitly enabled marketing email; absence of a preference row is the
+// privacy-preserving default and excludes them.
 export async function filterSuppressed(contacts: CampaignContact[]): Promise<CampaignContact[]> {
   if (contacts.length === 0) return contacts;
   const emails = contacts.map((c) => c.email);
-  const { data } = await supabaseAdmin.from("email_suppressions").select("email").in("email", emails);
-  const suppressed = new Set((data ?? []).map((r) => r.email));
-  return contacts.filter((c) => !suppressed.has(c.email));
+  const suppressed = new Set<string>();
+  const registeredUserByEmail = new Map<string, string>();
+
+  for (const emailBatch of chunk(emails, 100)) {
+    const [suppressionResult, profileResult] = await Promise.all([
+      supabaseAdmin
+        .from("email_suppressions")
+        .select("email")
+        .in("email", emailBatch),
+      supabaseAdmin
+        .from("profiles")
+        .select("id, email")
+        .in("email", emailBatch),
+    ]);
+    if (suppressionResult.error) {
+      throw new Error(
+        `Could not verify email suppressions: ${suppressionResult.error.message}`,
+      );
+    }
+    if (profileResult.error) {
+      throw new Error(
+        `Could not verify marketing preferences: ${profileResult.error.message}`,
+      );
+    }
+    for (const row of suppressionResult.data || []) {
+      suppressed.add(String(row.email).trim().toLowerCase());
+    }
+    for (const row of profileResult.data || []) {
+      registeredUserByEmail.set(
+        String(row.email).trim().toLowerCase(),
+        String(row.id),
+      );
+    }
+  }
+
+  const registeredUserIds = [...new Set(registeredUserByEmail.values())];
+  const marketingEnabledUsers = new Set<string>();
+  for (const userBatch of chunk(registeredUserIds, 100)) {
+    const { data, error } = await supabaseAdmin
+      .from("notification_preferences")
+      .select("user_id, marketing_email")
+      .in("user_id", userBatch);
+    if (error) {
+      throw new Error(`Could not verify marketing preferences: ${error.message}`);
+    }
+    for (const row of data || []) {
+      if (row.marketing_email === true) {
+        marketingEnabledUsers.add(String(row.user_id));
+      }
+    }
+  }
+
+  return contacts.filter((contact) => {
+    const email = contact.email.trim().toLowerCase();
+    if (suppressed.has(email)) return false;
+    const registeredUserId = registeredUserByEmail.get(email);
+    return !registeredUserId || marketingEnabledUsers.has(registeredUserId);
+  });
 }
 
 function personalize(subject: string, html: string, contact: CampaignContact) {
-  const name = contact.name || "there";
+  const name = safeName(contact.name || "there");
+  const htmlName = escapeHtml(name);
   const unsubUrl = unsubscribeUrl(contact.email);
 
   // Support both our own placeholder and Resend Broadcast's reserved merge
   // tag, so the same template file works unmodified through either tool.
   let body = html
-    .replaceAll("{{name}}", name)
+    .replaceAll("{{name}}", htmlName)
     .replaceAll("{{unsubscribe_url}}", unsubUrl)
     .replaceAll("{{{RESEND_UNSUBSCRIBE_URL}}}", unsubUrl);
   // If the pasted HTML didn't include an unsubscribe link, add one — every
@@ -79,6 +159,7 @@ export type ChunkSendResult = { sent: number; failed: number; failedEmails: stri
 
 export async function sendCampaignChunk(subject: string, html: string, contacts: CampaignContact[]): Promise<ChunkSendResult> {
   const payload = contacts.map((c) => personalize(subject, html, c));
+  const resend = getResend();
 
   for (let attempt = 0; attempt <= 3; attempt++) {
     const { error } = await resend.batch.send(payload);

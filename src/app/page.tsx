@@ -4,10 +4,10 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import {
-  Shield, TrendingUp, ChevronDown, Star, ArrowRight, Menu, X,
+  Shield, TrendingUp, ChevronDown, ArrowRight, Menu, X,
   Lock, Eye, CheckCircle2, UserPlus, ScanFace, Wallet, BarChart3,
-  CircleDollarSign, Globe, LineChart, Gem, Cpu, Landmark, Flame,
-  Phone, MessageCircle, Link2, Send, Activity, Zap,
+  CircleDollarSign, Globe, LineChart, Gem, Cpu, Landmark,
+  Send, Activity, Zap,
   LayoutDashboard, PieChart, Settings, CreditCard, ArrowUpRight,
 } from "lucide-react";
 import {
@@ -15,17 +15,28 @@ import {
   BarChart, Bar, CartesianGrid,
 } from "recharts";
 import { cn } from "@/lib/utils";
+import {
+  AVERAGE_WEEKDAYS_PER_MONTH,
+  getTierDailyRate,
+  TIER_DAILY_RATE_PERCENT,
+  WEEKDAYS_PER_WEEK,
+  WEEKDAYS_PER_YEAR,
+} from "@/lib/profit-policy";
 
 /* ═══ DATA ═══ */
 
-const performanceData = [
-  { month: "Jan", naxcal: 10000, bank: 10000 }, { month: "Feb", naxcal: 11800, bank: 10033 },
-  { month: "Mar", naxcal: 14200, bank: 10067 }, { month: "Apr", naxcal: 16800, bank: 10100 },
-  { month: "May", naxcal: 20100, bank: 10133 }, { month: "Jun", naxcal: 23500, bank: 10167 },
-  { month: "Jul", naxcal: 27800, bank: 10200 }, { month: "Aug", naxcal: 32400, bank: 10233 },
-  { month: "Sep", naxcal: 38100, bank: 10267 }, { month: "Oct", naxcal: 44500, bank: 10300 },
-  { month: "Nov", naxcal: 52000, bank: 10333 }, { month: "Dec", naxcal: 61200, bank: 10367 },
-];
+const performanceData = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map(
+  (month, index) => ({
+    month,
+    scenario: Math.round(
+      10_000 *
+        (1 +
+          (TIER_DAILY_RATE_PERCENT.silver / 100) *
+            AVERAGE_WEEKDAYS_PER_MONTH *
+            (index + 1)),
+    ),
+  }),
+);
 
 const sparklineData = [
   { v: 20 }, { v: 35 }, { v: 28 }, { v: 45 }, { v: 42 },
@@ -34,39 +45,8 @@ const sparklineData = [
 
 const dashboardChartData = [
   { d: "Mon", v: 22400 }, { d: "Tue", v: 23100 }, { d: "Wed", v: 22800 },
-  { d: "Thu", v: 23800 }, { d: "Fri", v: 24200 }, { d: "Sat", v: 24500 }, { d: "Sun", v: 24847 },
+  { d: "Thu", v: 23800 }, { d: "Fri", v: 24200 }, { d: "Sat", v: 24200 }, { d: "Sun", v: 24200 },
 ];
-
-const testimonials = [
-  { name: "James Whitfield", initials: "JW", color: "bg-naxcal-teal", profit: "$4,820", quote: "The risk-adjusted returns have been extraordinary. Naxcal's algorithmic strategies outperform every traditional fund I've held.", tier: "Gold", since: "Jan 2024" },
-  { name: "Sarah Mitchell", initials: "SM", color: "bg-naxcal-gold", profit: "$12,400", quote: "Full transparency on every trade, every position. The institutional-grade reporting gives me absolute confidence in my capital.", tier: "Gold", since: "Nov 2023" },
-  { name: "David Chen", initials: "DC", color: "bg-emerald-600", profit: "$2,180", quote: "Started at Bronze three months ago. The consistency convinced me to scale up. Exceptional platform.", tier: "Silver", since: "Mar 2024" },
-  { name: "Emma Richardson", initials: "ER", color: "bg-naxcal-teal", profit: "$28,600", quote: "As a Gold investor, the VIP service is unmatched. My dedicated strategist keeps me informed on every adjustment.", tier: "Gold", since: "Sep 2023" },
-  { name: "Oliver Thompson", initials: "OT", color: "bg-naxcal-gold", profit: "$6,750", quote: "Withdrew profits within 24 hours. The speed and reliability is exactly what institutional investors demand.", tier: "Silver", since: "Feb 2024" },
-  { name: "Priya Patel", initials: "PP", color: "bg-emerald-600", profit: "$8,920", quote: "FCA oversight gave me the confidence to commit serious capital. Returns have exceeded every expectation.", tier: "Silver", since: "Dec 2023" },
-  { name: "Marcus Williams", initials: "MW", color: "bg-naxcal-teal", profit: "$1,450", quote: "Diversification across six asset classes means I'm not exposed to a single market. The approach I needed.", tier: "Bronze", since: "Apr 2024" },
-  { name: "Charlotte Evans", initials: "CE", color: "bg-naxcal-gold", profit: "$15,200", quote: "200+ algorithmic trades daily, all transparent. Returns arrive like clockwork every 24 hours.", tier: "Gold", since: "Oct 2023" },
-];
-
-const activityFeed = [
-  { name: "James W.", asset: "EUR/USD", amount: "+$142.50", time: "2 min ago", initials: "JW", tag: "teal" },
-  { name: "Sarah M.", asset: "Gold", amount: "+$380.00", time: "3 min ago", initials: "SM", tag: "gold" },
-  { name: "David C.", asset: "S&P 500", amount: "+$67.20", time: "5 min ago", initials: "DC", tag: "blue" },
-  { name: "Emma R.", asset: "BTC/USD", amount: "+$520.00", time: "6 min ago", initials: "ER", tag: "purple" },
-  { name: "Oliver T.", asset: "GBP/USD", amount: "+$195.80", time: "8 min ago", initials: "OT", tag: "teal" },
-  { name: "Priya P.", asset: "NASDAQ", amount: "+$310.40", time: "10 min ago", initials: "PP", tag: "blue" },
-  { name: "Marcus W.", asset: "ETH/USD", amount: "+$88.60", time: "12 min ago", initials: "MW", tag: "purple" },
-  { name: "Charlotte E.", asset: "Crude Oil", amount: "+$245.00", time: "14 min ago", initials: "CE", tag: "gold" },
-  { name: "Alex K.", asset: "USD/JPY", amount: "+$178.30", time: "16 min ago", initials: "AK", tag: "teal" },
-  { name: "Rebecca L.", asset: "Silver", amount: "+$92.10", time: "18 min ago", initials: "RL", tag: "gold" },
-];
-
-const tagColorsLight: Record<string, string> = {
-  teal: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-  gold: "bg-amber-50 text-amber-700 border border-amber-200",
-  blue: "bg-blue-50 text-blue-700 border border-blue-200",
-  purple: "bg-purple-50 text-purple-700 border border-purple-200",
-};
 
 const footerLinks: Record<string, { label: string; href: string }[]> = {
   Platform: [
@@ -153,34 +133,6 @@ function LiveDot() {
   );
 }
 
-function TestimonialCardLight({ t }: { t: typeof testimonials[number] }) {
-  return (
-    <div className="card-light-lift p-6 w-[380px] shrink-0 flex flex-col relative overflow-hidden">
-      <div className="flex items-center gap-3 mb-4">
-        <div className={cn("w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white", t.color)}>{t.initials}</div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="font-semibold text-sm text-[#0f172a]">{t.name}</p>
-            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200">
-              <CheckCircle2 size={10} className="text-emerald-600" />
-              <span className="text-[9px] text-emerald-700 font-medium">Verified</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 mt-0.5">
-            <div className="flex gap-0.5">{Array.from({ length: 5 }).map((_, j) => <Star key={j} size={10} className="fill-[#f59e0b] text-[#f59e0b]" />)}</div>
-            <span className="text-[10px] text-[#9ca3af]">&bull; {t.tier} &bull; Since {t.since}</span>
-          </div>
-        </div>
-      </div>
-      <p className="text-sm text-[#374151] leading-relaxed flex-1">&ldquo;{t.quote}&rdquo;</p>
-      <div className="mt-4 pt-3 border-t border-[#e5e7eb] flex items-center justify-between">
-        <span className="text-[10px] text-[#9ca3af] uppercase tracking-wider">Total Earned</span>
-        <span className="text-sm font-bold px-2 py-0.5 rounded-full bg-[#dcfce7] text-[#16a34a]">{t.profit}</span>
-      </div>
-    </div>
-  );
-}
-
 /* ═══ MAIN PAGE ═══ */
 
 function PriceTicker() {
@@ -223,27 +175,27 @@ export default function Home() {
   const [sliderValue, setSliderValue] = useState(10000);
 
   const tierForAmount = (amount: number) => {
-    if (amount >= 25000) return { name: "Gold", rate: 0.021 };
-    if (amount >= 5000) return { name: "Silver", rate: 0.018 };
-    return { name: "Bronze", rate: 0.015 };
+    if (amount >= 25000) return { name: "Gold", rate: getTierDailyRate("gold") };
+    if (amount >= 5000) return { name: "Silver", rate: getTierDailyRate("silver") };
+    return { name: "Bronze", rate: getTierDailyRate("bronze") };
   };
   const currentTier = tierForAmount(deposit);
   const daily = deposit * currentTier.rate;
-  const weekly = daily * 7;
-  const monthly = daily * 30;
-  const annual = daily * 365;
+  const weekly = daily * WEEKDAYS_PER_WEEK;
+  const monthly = daily * AVERAGE_WEEKDAYS_PER_MONTH;
+  const annual = daily * WEEKDAYS_PER_YEAR;
   const projectionData = useMemo(() => {
     const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    return months.map((m, i) => ({ month: m, returns: Math.round(daily * 30 * (i + 1)) }));
+    return months.map((m, i) => ({ month: m, returns: Math.round(daily * AVERAGE_WEEKDAYS_PER_MONTH * (i + 1)) }));
   }, [daily]);
   const handleSlider = (val: number) => { setSliderValue(val); setDeposit(val); };
 
   return (
     <div className="relative min-h-screen overflow-x-hidden">
-      {/* ═══ FCA BANNER ═══ */}
+      {/* ═══ RISK BANNER ═══ */}
       <div className="fixed top-0 left-0 right-0 z-[60] bg-[#0a0a0a] border-b border-white/[0.04]">
         <div className="mx-auto max-w-7xl px-6 flex items-center justify-center h-8">
-          <p className="text-[10px] text-white/35 tracking-wide"><Lock size={10} className="inline mr-1.5 text-naxcal-teal" />FCA Authorised &amp; Regulated · Naxcal Capital Ltd · Your capital is at risk</p>
+          <p className="text-[10px] text-white/35 tracking-wide"><Lock size={10} className="inline mr-1.5 text-naxcal-teal" />Investment products involve risk · Past performance does not predict future results</p>
         </div>
       </div>
 
@@ -260,7 +212,7 @@ export default function Home() {
               <Image src="/Naxcal_Primary_Logo.png" alt="Naxcal" width={180} height={50} className="w-auto" style={{ height: 48, filter: "brightness(1.4) drop-shadow(0 0 20px rgba(26,138,110,0.6))" }} priority />
               <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/12 border border-emerald-500/25">
                 <LiveDot />
-                <span className="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider">FCA Regulated</span>
+                <span className="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider">Secure Platform</span>
               </div>
             </div>
             <div className="hidden lg:flex items-center gap-8">
@@ -310,7 +262,7 @@ export default function Home() {
             <FadeUp>
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.06] border border-white/[0.1] mb-7">
                 <Zap size={13} className="text-naxcal-gold" />
-                <span className="text-[11px] text-white/60 tracking-wide">Institutional-Grade Capital Management</span>
+                <span className="text-[11px] text-white/60 tracking-wide">Unified Portfolio and Account Records</span>
               </div>
             </FadeUp>
             <FadeUp delay={0.08}>
@@ -318,14 +270,14 @@ export default function Home() {
                 Your Capital.
                 <br />
                 <span className="bg-gradient-to-r from-naxcal-teal via-naxcal-teal-light to-naxcal-teal bg-clip-text text-transparent text-glow-heading">
-                  Working Around the Clock.
+                  Working Through the Week.
                 </span>
               </h1>
             </FadeUp>
             <FadeUp delay={0.16}>
               <p className="mt-6 text-[15px] sm:text-base text-white/50 leading-[1.7]" style={{ maxWidth: 480 }}>
-                Naxcal deploys your capital across six institutional asset classes &mdash; forex, global equities,
-                commodities, crypto, algorithmic strategies, and fixed income. Professional management. Daily returns. Full transparency.
+                Review account activity across forex, global equities, commodities, crypto, algorithmic strategies,
+                and fixed income. Clear records, weekday policy details, and security controls in one dashboard.
               </p>
             </FadeUp>
             <FadeUp delay={0.24}>
@@ -340,7 +292,7 @@ export default function Home() {
             </FadeUp>
             <FadeUp delay={0.35}>
               <div className="mt-10 flex items-center justify-center lg:justify-start">
-                {[{ icon: Lock, text: "256-bit SSL" }, { icon: Shield, text: "FCA Authorised" }, { icon: Wallet, text: "Cold Storage" }, { icon: Eye, text: "24/7 Active" }].map((item, i) => (
+                {[{ icon: Lock, text: "Encrypted Access" }, { icon: Shield, text: "Identity Checks" }, { icon: Wallet, text: "Account Statements" }, { icon: Eye, text: "Mon–Fri Policy" }].map((item, i) => (
                   <div key={i} className="flex items-center gap-1.5">
                     <item.icon size={12} className="text-naxcal-teal" />
                     <span className="text-[11px] text-white/35 uppercase tracking-wider">{item.text}</span>
@@ -369,7 +321,7 @@ export default function Home() {
                     <p className="mt-0.5 leading-tight text-white" style={{ fontSize: 32, fontWeight: 800 }}>$24,847.50</p>
                     <div className="mt-1.5 inline-flex self-start items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/25">
                       <ArrowUpRight size={12} className="text-emerald-400" />
-                      <span className="text-[12px]" style={{ color: "#22c55e", fontWeight: 700 }}>+$523.80 today (+2.1%)</span>
+                      <span className="text-[12px]" style={{ color: "#22c55e", fontWeight: 700 }}>+$523.80 weekday return (+2.1%)</span>
                     </div>
                     <div className="h-[80px] mt-4 rounded-lg p-2" style={{ background: "rgba(255,255,255,0.05)" }}>
                       <ResponsiveContainer width="100%" height={220} minWidth={0} minHeight={220}>
@@ -412,14 +364,14 @@ export default function Home() {
           <div className="mx-auto max-w-6xl px-6">
             <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-[#e5e7eb]">
               {[
-                { value: 127, prefix: "$", suffix: "M+", label: "Assets Under Management", decimals: 0 },
-                { value: 4200, suffix: "+", label: "Active Investors", decimals: 0 },
-                { value: 8.4, prefix: "$", suffix: "M+", label: "Returns Distributed", decimals: 1 },
-                { value: 99.7, suffix: "%", label: "Platform Uptime", decimals: 1 },
+                { value: 3, label: "Tier Options", decimals: 0 },
+                { value: WEEKDAYS_PER_WEEK, label: "Eligible Days per Week", decimals: 0 },
+                { value: 24, suffix: "/7", label: "Account Access", decimals: 0 },
+                { value: 2, suffix: "FA", label: "Optional Account Security", decimals: 0 },
               ].map((stat, i) => (
                 <div key={i} className="text-center py-10 px-4">
                   <div className="text-3xl sm:text-4xl font-bold text-naxcal-teal">
-                    <AnimatedCounter target={stat.value} prefix={stat.prefix} suffix={stat.suffix} decimals={stat.decimals} />
+                    <AnimatedCounter target={stat.value} suffix={stat.suffix} decimals={stat.decimals} />
                   </div>
                   <p className="mt-2 text-[11px] text-[#6b7280] uppercase tracking-[0.15em]">{stat.label}</p>
                 </div>
@@ -438,7 +390,7 @@ export default function Home() {
               Begin in <span className="text-naxcal-teal">Five Simple Steps</span>
             </h2>
             <p className="text-center text-[#475569] mt-4 max-w-2xl mx-auto text-sm">
-              From account creation to daily returns &mdash; your capital is deployed within minutes.
+              From account creation to weekday returns &mdash; your capital is deployed within minutes.
             </p>
           </FadeUp>
           <div className="mt-16 relative">
@@ -449,7 +401,7 @@ export default function Home() {
                 { icon: ScanFace, title: "Verify Identity", desc: "Streamlined KYC — complete in minutes, not days.", step: "02", time: "~3 MIN" },
                 { icon: Wallet, title: "Deposit Capital", desc: "USDT, BTC, ETH, USDC with instant confirmation.", step: "03", time: "INSTANT" },
                 { icon: BarChart3, title: "Capital Deployed", desc: "Allocated across 6+ asset classes by our algorithms.", step: "04", time: "<1 HR" },
-                { icon: CircleDollarSign, title: "Collect Returns", desc: "Profits distributed to your account every 24 hours.", step: "05", time: "DAILY" },
+                { icon: CircleDollarSign, title: "Collect Returns", desc: "Profits are distributed Monday through Friday; weekends are excluded.", step: "05", time: "WEEKDAYS" },
               ].map((item, i) => (
                 <FadeUp key={i} delay={i * 0.08}>
                   <div className="card-light-lift p-5 h-full">
@@ -537,7 +489,7 @@ export default function Home() {
                   <div className="flex-1 p-5" style={{ background: "#131f1a" }}>
                     <div className="flex items-center justify-between mb-4">
                       <div><h3 className="text-sm font-semibold text-white/90">Portfolio Overview</h3><p className="text-[26px] font-bold text-white mt-0.5">$127,482.50</p></div>
-                      <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/25"><ArrowUpRight size={13} className="text-emerald-400" /><span className="text-[12px] font-semibold text-[#22c55e]">+2.1% today</span></div>
+                      <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/25"><ArrowUpRight size={13} className="text-emerald-400" /><span className="text-[12px] font-semibold text-[#22c55e]">+2.1% weekday</span></div>
                     </div>
                     <div className="grid grid-cols-4 gap-2 mb-4">
                       {[{ label: "Forex", value: "$42,840" }, { label: "Equities", value: "$38,200" }, { label: "Crypto", value: "$28,150" }, { label: "Other", value: "$18,292" }].map((s, i) => (
@@ -571,24 +523,24 @@ export default function Home() {
       <section id="returns" className="py-[100px] px-6 grain" style={{ background: "#020408" }}>
         <div className="mx-auto max-w-6xl">
           <FadeUp>
-            <SectionLabelDark>Performance</SectionLabelDark>
-            <h2 className="text-center text-4xl sm:text-5xl font-bold mb-3 text-white">Performance That <span className="text-naxcal-teal text-glow-heading">Speaks for Itself</span></h2>
-            <p className="text-center text-white/40 max-w-2xl mx-auto text-sm">Risk-adjusted returns consistently outperforming traditional markets.</p>
+            <SectionLabelDark>Illustration</SectionLabelDark>
+            <h2 className="text-center text-4xl sm:text-5xl font-bold mb-3 text-white">Understand the <span className="text-naxcal-teal text-glow-heading">Published Policy</span></h2>
+            <p className="text-center text-white/40 max-w-2xl mx-auto text-sm">This simple-rate scenario explains the weekday calculation. It is not historical performance or a promise of future results.</p>
           </FadeUp>
           <div className="mt-16 grid lg:grid-cols-2 gap-10 items-center">
             <FadeUp>
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  { icon: TrendingUp, value: 1.8, suffix: "%", label: "Avg Daily Return", decimals: 1 },
-                  { icon: CircleDollarSign, value: 8.4, prefix: "$", suffix: "M+", label: "Returns Paid Out", decimals: 1 },
-                  { icon: BarChart3, value: 4200, suffix: "+", label: "Active Investors", decimals: 0 },
-                  { icon: Flame, value: 18, suffix: "+", label: "Months Operating", decimals: 0 },
+                  { icon: TrendingUp, value: TIER_DAILY_RATE_PERCENT.silver, suffix: "%", label: "Silver Weekday Rate", decimals: 1 },
+                  { icon: CircleDollarSign, value: WEEKDAYS_PER_WEEK, label: "Eligible Days per Week", decimals: 0 },
+                  { icon: BarChart3, value: AVERAGE_WEEKDAYS_PER_MONTH, label: "Average Weekdays per Month", decimals: 0 },
+                  { icon: Shield, value: 0, label: "Weekend Accrual Days", decimals: 0 },
                 ].map((stat, i) => (
                   <div key={i} className="rounded-xl p-5" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }}>
                     <div className="w-9 h-9 rounded-lg flex items-center justify-center mb-3" style={{ background: "rgba(26,138,110,0.15)", boxShadow: "0 0 16px rgba(26,138,110,0.2)" }}>
                       <stat.icon size={18} className="text-naxcal-teal" />
                     </div>
-                    <div className="text-2xl font-bold text-white text-glow-teal"><AnimatedCounter target={stat.value} prefix={stat.prefix} suffix={stat.suffix} decimals={stat.decimals} /></div>
+                    <div className="text-2xl font-bold text-white text-glow-teal"><AnimatedCounter target={stat.value} suffix={stat.suffix} decimals={stat.decimals} /></div>
                     <p className="text-[11px] text-white/35 mt-1">{stat.label}</p>
                   </div>
                 ))}
@@ -597,14 +549,12 @@ export default function Home() {
             <FadeUp delay={0.12}>
               <div className="rounded-2xl p-6" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }}>
                 <div className="flex items-center justify-between mb-1">
-                  <h3 className="text-sm font-semibold text-white/90">Portfolio Growth</h3>
+                  <h3 className="text-sm font-semibold text-white/90">Illustrative Simple-Rate Scenario</h3>
                   <div className="flex items-center gap-4 text-[11px]">
-                    <div className="flex items-center gap-1.5"><div className="w-3 h-0.5 rounded bg-naxcal-teal" /><span className="text-white/50">Naxcal</span></div>
-                    <div className="flex items-center gap-1.5"><div className="w-3 h-0.5 rounded bg-white/20" /><span className="text-white/30">Bank Savings</span></div>
+                    <div className="flex items-center gap-1.5"><div className="w-3 h-0.5 rounded bg-naxcal-teal" /><span className="text-white/50">Silver policy illustration</span></div>
                   </div>
                 </div>
-                <p className="text-[11px] text-white/25 mb-1">$10,000 initial capital &mdash; 12-month comparison</p>
-                <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-naxcal-gold/15 border border-naxcal-gold/25 mb-4"><span className="text-[11px] font-bold text-naxcal-gold">127x better than savings account</span></div>
+                <p className="text-[11px] text-white/25 mb-4">$10,000 example &mdash; 22 weekdays per month &mdash; no compounding</p>
                 <div className="h-[260px]">
                   <ResponsiveContainer width="100%" height={220} minWidth={0} minHeight={220}>
                     <AreaChart data={performanceData}>
@@ -613,8 +563,7 @@ export default function Home() {
                       <XAxis dataKey="month" tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }} axisLine={false} tickLine={false} />
                       <YAxis tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} />
                       <Tooltip contentStyle={{ backgroundColor: "#0a1628", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "#fff", fontSize: "11px" }} formatter={(value) => [`$${Number(value).toLocaleString()}`, ""]} />
-                      <Area type="monotone" dataKey="bank" stroke="rgba(255,255,255,0.15)" strokeWidth={1.5} fill="none" strokeDasharray="4 4" />
-                      <Area type="monotone" dataKey="naxcal" stroke="#1a8a6e" strokeWidth={2} fill="url(#perfGrad)" />
+                      <Area type="monotone" dataKey="scenario" stroke="#1a8a6e" strokeWidth={2} fill="url(#perfGrad)" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
@@ -630,22 +579,22 @@ export default function Home() {
           <FadeUp>
             <SectionLabelLight>Tiers</SectionLabelLight>
             <h2 className="text-center text-4xl sm:text-5xl font-bold mb-3 text-[#0f172a]">Select Your <span className="text-naxcal-teal">Investment Tier</span></h2>
-            <p className="text-center text-[#475569] max-w-2xl mx-auto text-sm">Higher tiers unlock superior returns and premium capital management services.</p>
+            <p className="text-center text-[#475569] max-w-2xl mx-auto text-sm">Compare the published weekday rates and account features. Eligibility and risk checks apply to every tier.</p>
           </FadeUp>
           <div className="mt-16 grid md:grid-cols-3 gap-6">
             {[
-              { name: "Bronze", rate: "1.5", min: "$500", monthly: "~45%", annual: "~547%", borderColor: "#b45309", badge: null, nameColor: "text-amber-700", btnStyle: "border border-naxcal-teal text-naxcal-teal hover:bg-naxcal-teal hover:text-white",
-                features: ["1.5% daily risk-adjusted returns", "Standard withdrawal processing", "Priority email support", "Real-time portfolio dashboard", "Monthly performance reports"] },
-              { name: "Silver", rate: "1.8", min: "$5,000", monthly: "~54%", annual: "~657%", borderColor: "#64748b", badge: null, nameColor: "text-slate-600", btnStyle: "border border-naxcal-teal text-naxcal-teal hover:bg-naxcal-teal hover:text-white",
-                features: ["1.8% daily risk-adjusted returns", "Expedited withdrawals (< 4 hours)", "Dedicated account strategist", "Advanced analytics & insights", "Weekly strategy briefings"] },
-              { name: "Gold", rate: "2.1", min: "$25,000", monthly: "~63%", annual: "~766%", borderColor: "#f0a500", badge: "MOST POPULAR", nameColor: "text-naxcal-gold", btnStyle: "btn-teal",
-                features: ["2.1% daily risk-adjusted returns", "Instant withdrawals (< 30 min)", "VIP portfolio strategist", "Institutional-grade reporting", "Direct line to trading desk"] },
+              { name: "Bronze", rate: String(TIER_DAILY_RATE_PERCENT.bronze), min: "$500", monthly: `~${TIER_DAILY_RATE_PERCENT.bronze * AVERAGE_WEEKDAYS_PER_MONTH}%`, annual: `~${TIER_DAILY_RATE_PERCENT.bronze * WEEKDAYS_PER_YEAR}%`, borderColor: "#b45309", badge: null, nameColor: "text-amber-700", btnStyle: "border border-naxcal-teal text-naxcal-teal hover:bg-naxcal-teal hover:text-white",
+                features: [`${TIER_DAILY_RATE_PERCENT.bronze}% each weekday (Monday–Friday)`, "Withdrawal eligibility review", "Email support", "Portfolio dashboard", "Downloadable account statements"] },
+              { name: "Silver", rate: String(TIER_DAILY_RATE_PERCENT.silver), min: "$5,000", monthly: `~${TIER_DAILY_RATE_PERCENT.silver * AVERAGE_WEEKDAYS_PER_MONTH}%`, annual: `~${TIER_DAILY_RATE_PERCENT.silver * WEEKDAYS_PER_YEAR}%`, borderColor: "#64748b", badge: null, nameColor: "text-slate-600", btnStyle: "border border-naxcal-teal text-naxcal-teal hover:bg-naxcal-teal hover:text-white",
+                features: [`${TIER_DAILY_RATE_PERCENT.silver}% each weekday (Monday–Friday)`, "Withdrawal eligibility review", "Portfolio analytics", "Account notifications", "Downloadable account statements"] },
+              { name: "Gold", rate: String(TIER_DAILY_RATE_PERCENT.gold), min: "$25,000", monthly: `~${TIER_DAILY_RATE_PERCENT.gold * AVERAGE_WEEKDAYS_PER_MONTH}%`, annual: `~${TIER_DAILY_RATE_PERCENT.gold * WEEKDAYS_PER_YEAR}%`, borderColor: "#f0a500", badge: "MOST POPULAR", nameColor: "text-naxcal-gold", btnStyle: "btn-teal",
+                features: [`${TIER_DAILY_RATE_PERCENT.gold}% each weekday (Monday–Friday)`, "Withdrawal eligibility review", "Portfolio analytics", "Account notifications", "Priority support routing"] },
             ].map((tier, i) => (
               <FadeUp key={i} delay={i * 0.1}>
                 <div className="card-light-lift p-7 relative h-full flex flex-col" style={{ borderLeft: `4px solid ${tier.borderColor}` }}>
                   {tier.badge && <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-naxcal-gold text-black text-[10px] font-bold uppercase tracking-wider z-10 shadow-md">{tier.badge}</div>}
                   <span className={cn("text-xs font-semibold uppercase tracking-wider mb-5", tier.nameColor)}>{tier.name}</span>
-                  <div className="mb-1"><span className="text-6xl font-black text-[#0f172a] leading-none">{tier.rate}%</span><span className="text-sm text-[#6b7280] ml-2">daily</span></div>
+                  <div className="mb-1"><span className="text-6xl font-black text-[#0f172a] leading-none">{tier.rate}%</span><span className="text-sm text-[#6b7280] ml-2">per weekday</span></div>
                   <div className="text-xs text-[#9ca3af] mb-1">{tier.monthly} monthly &bull; {tier.annual} annually</div>
                   <div className="h-px bg-[#e5e7eb] my-5" />
                   <ul className="space-y-3 flex-1">
@@ -677,7 +626,7 @@ export default function Home() {
                 <span className={cn("text-[11px] font-semibold px-2.5 py-1 rounded-full",
                   currentTier.name === "Gold" ? "bg-amber-50 text-amber-700 border border-amber-200" :
                   currentTier.name === "Silver" ? "bg-slate-50 text-slate-600 border border-slate-200" : "bg-orange-50 text-orange-700 border border-orange-200"
-                )}>{currentTier.name} Tier &bull; {(currentTier.rate * 100).toFixed(1)}% daily</span>
+                )}>{currentTier.name} Tier &bull; {(currentTier.rate * 100).toFixed(1)}% per weekday</span>
               </div>
               <div className="relative mb-4">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6b7280] text-xl font-bold">$</span>
@@ -688,7 +637,7 @@ export default function Home() {
               <div className="flex justify-between text-[10px] text-[#9ca3af] mb-8"><span>$500</span><span>$500,000</span></div>
               <div className="space-y-0">
                 {[
-                  { label: "Daily Return", value: daily, highlight: false },
+                  { label: "Weekday Return", value: daily, highlight: false },
                   { label: "Weekly Return", value: weekly, highlight: false },
                   { label: "Monthly Return", value: monthly, highlight: false },
                   { label: "Annual Return", value: annual, highlight: true },
@@ -701,6 +650,7 @@ export default function Home() {
                   </div>
                 ))}
               </div>
+              <p className="mt-4 text-[10px] text-[#9ca3af]">Projections use Monday–Friday only: 5 weekdays per week, 22 per month, and 260 per year. Saturdays and Sundays earn no return.</p>
               <div className="mt-6 pt-6 border-t border-[#e5e7eb]">
                 <p className="text-[10px] text-[#9ca3af] mb-3">12-month cumulative return projection</p>
                 <div className="h-[140px]">
@@ -714,69 +664,7 @@ export default function Home() {
                   </ResponsiveContainer>
                 </div>
               </div>
-              <p className="mt-4 text-[9px] text-[#9ca3af] text-center leading-relaxed">Projections based on historical performance. Past performance does not guarantee future results. Capital is at risk.</p>
-            </div>
-          </FadeUp>
-        </div>
-      </section>
-
-      {/* ═══ TESTIMONIALS — LIGHT ═══ */}
-      <section className="py-[100px] overflow-hidden" style={{ background: "#f8fafc" }}>
-        <div className="px-6">
-          <FadeUp>
-            <SectionLabelLight>Investors</SectionLabelLight>
-            <h2 className="text-center text-4xl sm:text-5xl font-bold mb-3 text-[#0f172a]">Trusted by <span className="text-naxcal-teal">Thousands</span></h2>
-            <div className="flex items-center justify-center gap-2 mt-3 mb-14">
-              <div className="flex gap-0.5">{Array.from({ length: 5 }).map((_, i) => <Star key={i} size={16} className="fill-[#f59e0b] text-[#f59e0b]" />)}</div>
-              <span className="text-sm text-[#6b7280]">4.9/5 from 2,400+ verified investors</span>
-            </div>
-          </FadeUp>
-        </div>
-        <div className="relative mb-5">
-          <div className="marquee-left flex gap-5" style={{ width: "max-content" }}>
-            {[...testimonials.slice(0, 4), ...testimonials.slice(0, 4)].map((t, i) => <TestimonialCardLight key={`a-${i}`} t={t} />)}
-          </div>
-        </div>
-        <div className="relative">
-          <div className="marquee-right flex gap-5" style={{ width: "max-content" }}>
-            {[...testimonials.slice(4), ...testimonials.slice(4)].map((t, i) => <TestimonialCardLight key={`b-${i}`} t={t} />)}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ LIVE ACTIVITY — WHITE ═══ */}
-      <section className="py-[100px] px-6" style={{ background: "#ffffff" }}>
-        <div className="mx-auto max-w-3xl">
-          <FadeUp>
-            <SectionLabelLight>Activity</SectionLabelLight>
-            <h2 className="text-center text-4xl sm:text-5xl font-bold mb-3 text-[#0f172a]">Live Investor <span className="text-naxcal-teal">Activity</span></h2>
-            <div className="flex items-center justify-center gap-2 mb-12">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-50 border border-red-200">
-                <span className="relative flex h-2 w-2"><span className="pulse-live absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" /><span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" /></span>
-                <span className="text-[11px] font-semibold text-red-600">LIVE</span>
-              </div>
-              <span className="text-sm text-[#6b7280]">Real-time profit distributions</span>
-            </div>
-          </FadeUp>
-          <FadeUp delay={0.1}>
-            <div className="card-light-lift overflow-hidden h-[420px] relative" style={{ boxShadow: "0 8px 40px rgba(0,0,0,0.06)" }}>
-              <div className="absolute top-0 left-0 right-0 h-16 z-10 pointer-events-none" style={{ background: "linear-gradient(to bottom, #ffffff, transparent)" }} />
-              <div className="absolute bottom-0 left-0 right-0 h-16 z-10 pointer-events-none" style={{ background: "linear-gradient(to top, #ffffff, transparent)" }} />
-              <div className="feed-scroll py-6">
-                {[...activityFeed, ...activityFeed].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3 px-5 py-3 mx-4 mb-2 rounded-lg hover:bg-[#f8fafc] transition-colors border-l-2 border-naxcal-teal/20">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-naxcal-teal shrink-0" style={{ background: "rgba(26,138,110,0.1)" }}>{item.initials}</div>
-                    <div className="flex-1 min-w-0 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                      <span className="text-sm text-[#374151] font-medium">{item.name}</span>
-                      <span className="text-sm text-[#9ca3af]">earned</span>
-                      <span className="text-sm font-semibold text-[#16a34a]">{item.amount}</span>
-                      <span className="text-sm text-[#9ca3af]">on</span>
-                      <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded", tagColorsLight[item.tag])}>{item.asset}</span>
-                    </div>
-                    <span className="text-[11px] text-[#9ca3af] shrink-0">{item.time}</span>
-                  </div>
-                ))}
-              </div>
+              <p className="mt-4 text-[9px] text-[#9ca3af] text-center leading-relaxed">Illustrative calculation only. It is not historical performance, a guarantee, or personalised financial advice. Investment value can rise or fall.</p>
             </div>
           </FadeUp>
         </div>
@@ -791,14 +679,14 @@ export default function Home() {
         ))}
         <div className="relative z-10 text-center mx-auto max-w-3xl">
           <FadeUp><h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight text-white">Deploy Your Capital<br /><span className="text-naxcal-teal text-glow-heading">Today.</span></h2></FadeUp>
-          <FadeUp delay={0.1}><p className="mt-6 text-base text-white/50 max-w-xl mx-auto">Join 4,200+ investors accessing institutional-grade strategies. Start in minutes. Collect daily returns.</p></FadeUp>
+          <FadeUp delay={0.1}><p className="mt-6 text-base text-white/50 max-w-xl mx-auto">Create a secure account, review the published weekday policy, and track portfolio and transaction records in one place.</p></FadeUp>
           <FadeUp delay={0.2}>
             <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
               <a href="/register" className="group btn-teal px-10 py-4 rounded-xl text-white font-semibold text-lg cursor-pointer inline-flex items-center justify-center gap-2">Start Investing <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" /></a>
               <a href="https://t.me/naxcal" target="_blank" rel="noopener noreferrer" className="px-10 py-4 rounded-xl border border-white/20 text-white/70 font-semibold text-lg hover:border-white/30 transition-all cursor-pointer inline-flex items-center justify-center gap-2"><Send size={18} /> Contact Us on Telegram</a>
             </div>
           </FadeUp>
-          <FadeUp delay={0.3}><p className="mt-8 text-[11px] text-white/30">No lock-in periods &bull; Withdraw anytime &bull; FCA regulated</p></FadeUp>
+          <FadeUp delay={0.3}><p className="mt-8 text-[11px] text-white/30">Eligibility and processing checks apply &bull; Review the Terms and Risk Disclosure</p></FadeUp>
         </div>
       </section>
 
@@ -808,7 +696,7 @@ export default function Home() {
           <div className="grid grid-cols-2 md:grid-cols-6 gap-8">
             <div className="col-span-2">
               <Image src="/Naxcal_Primary_Logo.png" alt="Naxcal" width={160} height={44} className="h-10 w-auto mb-4" style={{ filter: "brightness(1.4) drop-shadow(0 0 16px rgba(26,138,110,0.5))" }} />
-              <p className="text-sm text-white/30 mb-5 max-w-[280px] leading-relaxed">Institutional-grade capital management. Regulated, transparent, and built for performance.</p>
+              <p className="text-sm text-white/30 mb-5 max-w-[280px] leading-relaxed">Portfolio records, account controls, and clear transaction history in one place.</p>
               <div className="flex items-center gap-2.5">
                 {[{ icon: Globe, label: "X", href: "https://x.com/_naxcal" }, { icon: Send, label: "Telegram", href: "https://t.me/naxcal" }].map((s) => (
                   <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-naxcal-teal/15 transition-all" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }} aria-label={s.label}><s.icon size={15} className="text-white/40" /></a>
@@ -824,11 +712,11 @@ export default function Home() {
           </div>
           <div className="mt-14 pt-8 border-t border-white/[0.06]">
             <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mb-6">
-              {["256-bit SSL Encrypted", "FCA Authorised", "Cold Storage Custody", "End-to-End Encrypted"].map((badge) => (
+              {["Encrypted Connection", "Identity Verification", "Withdrawal Controls", "Account Statements"].map((badge) => (
                 <div key={badge} className="flex items-center gap-1.5"><Shield size={10} className="text-naxcal-teal/50" /><span className="text-[9px] text-white/20 uppercase tracking-[0.15em]">{badge}</span></div>
               ))}
             </div>
-            <p className="text-[10px] text-white/20 text-center leading-relaxed max-w-3xl mx-auto">Naxcal Ltd is authorised and regulated by the Financial Conduct Authority (FCA). Capital at risk. Past performance is not indicative of future results.</p>
+            <p className="text-[10px] text-white/20 text-center leading-relaxed max-w-3xl mx-auto">Investment products involve risk and values can rise or fall. Past performance is not indicative of future results. Review the Terms and Risk Disclosure before depositing.</p>
             <p className="text-[9px] text-white/10 text-center mt-3">&copy; {new Date().getFullYear()} Naxcal Capital Ltd. All rights reserved.</p>
           </div>
         </div>

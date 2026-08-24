@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export async function GET() {
   const user = await getAuthUser();
 
@@ -11,7 +13,7 @@ export async function GET() {
 
   const { data, error } = await supabaseAdmin
     .from("notifications")
-    .select("*")
+    .select("id, type, title, description, body, link, metadata, is_read, read_at, created_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(100);
@@ -32,7 +34,7 @@ export async function PATCH(request: Request) {
 
   const body = await request.json();
 
-  if (!body.id) {
+  if (!UUID.test(String(body?.id || ""))) {
     return NextResponse.json({ error: "Notification id is required" }, { status: 400 });
   }
 

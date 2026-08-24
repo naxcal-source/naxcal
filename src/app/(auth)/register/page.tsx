@@ -18,7 +18,6 @@ export default function RegisterPage() {
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const isInvited = searchParams.get("invited") === "true";
   const [form, setForm] = useState({
     fullName: searchParams.get("name") || "",
     email: searchParams.get("email") || "",
@@ -78,17 +77,12 @@ function RegisterForm() {
       }
 
       if (data.user) {
-        await supabase.from("profiles").upsert({
-          id: data.user.id,
-          email: form.email,
-          full_name: form.fullName,
-        });
-        // Send welcome email
-        fetch("/api/auth/welcome", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: form.email, name: form.fullName }),
-        }).catch(() => {});
+        // The database signup trigger creates the profile from trusted auth
+        // metadata. Only request a welcome email when signup also created a
+        // session; unverified accounts cannot call the protected endpoint.
+        if (data.session) {
+          fetch("/api/auth/welcome", { method: "POST" }).catch(() => {});
+        }
       }
 
       if (data.session) {
@@ -120,15 +114,15 @@ function RegisterForm() {
         <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 30% 50%, rgba(26,138,110,0.15) 0%, transparent 70%)" }} />
         <div className="relative z-10">
           <Image src="/Naxcal_Primary_Logo.png" alt="Naxcal" width={180} height={48} className="h-11 w-auto mb-6" style={{ filter: "brightness(1.4) drop-shadow(0 0 16px rgba(26,138,110,0.5))" }} />
-          <h2 className="text-2xl font-bold text-white mt-12 mb-3">Deploy Capital. <span className="text-naxcal-teal">Earn Daily.</span></h2>
+          <h2 className="text-2xl font-bold text-white mt-12 mb-3">Deploy Capital. <span className="text-naxcal-teal">Earn on Weekdays.</span></h2>
           <p className="text-white/40 text-sm leading-relaxed max-w-xs">
-            Join 4,200+ investors accessing institutional-grade strategies across forex, equities, and crypto markets.
+            Create one secure account for portfolio records across forex, equities, and crypto markets.
           </p>
           <div className="mt-10 space-y-4">
             {[
-              { icon: Shield, text: "FCA Authorised & Regulated" },
+              { icon: Shield, text: "Identity Verification Controls" },
               { icon: Lock, text: "256-bit SSL Encryption" },
-              { icon: TrendingUp, text: "1.5% – 2.1% Daily Returns" },
+              { icon: TrendingUp, text: "1.5% – 2.1% Weekday Returns" },
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "rgba(26,138,110,0.12)", border: "1px solid rgba(26,138,110,0.25)" }}>
@@ -140,8 +134,8 @@ function RegisterForm() {
           </div>
         </div>
         <div className="relative z-10 p-5 rounded-xl" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-          <p className="text-sm text-white/50 italic leading-relaxed">&ldquo;Naxcal has genuinely transformed how I think about passive income. Consistent, transparent, professional.&rdquo;</p>
-          <p className="text-xs text-naxcal-teal mt-3 font-medium">— James W., Gold Tier Investor</p>
+          <p className="text-sm text-white/50 leading-relaxed">Investment products involve risk and returns are not guaranteed. Read the product terms before creating an account.</p>
+          <Link href="/legal/risk" className="text-xs text-naxcal-teal mt-3 font-medium inline-block hover:underline">Read the Risk Disclosure</Link>
         </div>
       </div>
 

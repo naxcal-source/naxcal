@@ -3,29 +3,38 @@ import { unsubscribeUrl } from "./unsubscribe-token";
 
 // Requires a Full-access Resend API key (not the send-only one) — audience
 // and broadcast management aren't available to restricted keys.
-const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = "Naxcal <noreply@naxcal.us>";
 const REPLY_TO = "support@naxcal.us";
 
+function getResend() {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) throw new Error("RESEND_API_KEY is not configured");
+  return new Resend(apiKey);
+}
+
 export async function listAudiences() {
+  const resend = getResend();
   const { data, error } = await resend.audiences.list();
   if (error) throw new Error(error.message);
   return data?.data ?? [];
 }
 
 export async function listBroadcasts() {
+  const resend = getResend();
   const { data, error } = await resend.broadcasts.list();
   if (error) throw new Error(error.message);
   return data?.data ?? [];
 }
 
 export async function getBroadcast(id: string) {
+  const resend = getResend();
   const { data, error } = await resend.broadcasts.get(id);
   if (error) throw new Error(error.message);
   return data;
 }
 
 export async function createDraftBroadcast(opts: { audienceId: string; name: string; subject: string; html: string }) {
+  const resend = getResend();
   const { data, error } = await resend.broadcasts.create({
     audienceId: opts.audienceId,
     name: opts.name,
@@ -39,18 +48,21 @@ export async function createDraftBroadcast(opts: { audienceId: string; name: str
 }
 
 export async function updateDraftBroadcast(id: string, opts: { subject?: string; html?: string; name?: string }) {
+  const resend = getResend();
   const { data, error } = await resend.broadcasts.update(id, opts);
   if (error) throw new Error(error.message);
   return data;
 }
 
 export async function sendBroadcastNow(id: string) {
+  const resend = getResend();
   const { data, error } = await resend.broadcasts.send(id);
   if (error) throw new Error(error.message);
   return data;
 }
 
 export async function deleteBroadcast(id: string) {
+  const resend = getResend();
   const { data, error } = await resend.broadcasts.remove(id);
   if (error) throw new Error(error.message);
   return data;
@@ -61,6 +73,7 @@ export type AddContactsResult = { added: number; failed: number; failedEmails: s
 // Adds pasted emails to an audience one at a time — Resend's contacts API
 // has no batch-create endpoint, unlike email sending.
 export async function addContactsToAudience(audienceId: string, emails: string[]): Promise<AddContactsResult> {
+  const resend = getResend();
   let added = 0;
   const failedEmails: string[] = [];
   for (const email of emails) {
@@ -76,6 +89,7 @@ export async function addContactsToAudience(audienceId: string, emails: string[]
 // bypasses Resend's own merge-tag resolution, so {{{RESEND_UNSUBSCRIBE_URL}}}
 // would otherwise show up as literal broken text — swap in a real link.
 export async function sendBroadcastTest(subject: string, html: string, testEmail: string) {
+  const resend = getResend();
   const resolvedHtml = html.replaceAll("{{{RESEND_UNSUBSCRIBE_URL}}}", unsubscribeUrl(testEmail));
   const { error } = await resend.emails.send({
     from: FROM,

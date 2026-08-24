@@ -1,25 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthUser } from "@/lib/auth-api";
+import crypto from "crypto";
+import { adminAuthErrorResponse, requireAdminAccess } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await getAuthUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    const { data: adminCheck } = await supabaseAdmin.from("profiles").select("is_admin").eq("id", user.id).single();
-    if (!adminCheck?.is_admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const admin = await requireAdminAccess();
+    if (!admin.ok) return adminAuthErrorResponse(admin);
 
     const type = req.nextUrl.searchParams.get("type");
 
     if (type === "profiles") {
-      const { data } = await supabaseAdmin.from("profiles").select("*").order("created_at", { ascending: false });
+      const { data } = await supabaseAdmin.from("profiles")
+        .select("id, email, full_name, kyc_status, tier, balance, total_deposited, total_withdrawn, total_profit, is_active, created_at")
+        .order("created_at", { ascending: false });
       return NextResponse.json(data || []);
     }
 
     if (type === "transactions") {
       const userId = req.nextUrl.searchParams.get("user_id");
-      let q = supabaseAdmin.from("transactions").select("*").order("created_at", { ascending: false }).limit(50);
+      let q = supabaseAdmin.from("transactions")
+        .select("id, user_id, type, amount, asset, status, description, tx_hash, wallet_address, admin_note, balance_before, balance_after, created_at, updated_at")
+        .order("created_at", { ascending: false }).limit(50);
       if (userId) q = q.eq("user_id", userId);
       const { data } = await q;
       return NextResponse.json(data || []);
@@ -31,14 +33,18 @@ export async function GET(req: NextRequest) {
     }
 
     if (type === "withdrawals") {
-      const { data } = await supabaseAdmin.from("transactions").select("*, profiles(full_name, email)").eq("type", "withdrawal").order("created_at", { ascending: false });
+      const { data } = await supabaseAdmin.from("transactions")
+        .select("id, user_id, amount, asset, wallet_address, status, admin_note, created_at, profiles(full_name, email)")
+        .eq("type", "withdrawal").order("created_at", { ascending: false });
       return NextResponse.json(data || []);
     }
 
     if (type === "profile") {
       const userId = req.nextUrl.searchParams.get("user_id");
       if (!userId) return NextResponse.json({ error: "Missing user_id" }, { status: 400 });
-      const { data } = await supabaseAdmin.from("profiles").select("*").eq("id", userId).single();
+      const { data } = await supabaseAdmin.from("profiles")
+        .select("id, email, full_name, phone, date_of_birth, nationality, address, city, country, postal_code, kyc_status, kyc_rejection_reason, tier, balance, total_deposited, total_withdrawn, total_profit, referral_code, referred_by, auto_compound, two_factor_enabled, is_active, onboarding_complete, created_at, updated_at, display_currency")
+        .eq("id", userId).single();
       return NextResponse.json(data);
     }
 
@@ -75,31 +81,39 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await getAuthUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    const { data: adminCheck } = await supabaseAdmin.from("profiles").select("is_admin").eq("id", user.id).single();
-    if (!adminCheck?.is_admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const admin = await requireAdminAccess();
+    if (!admin.ok) return adminAuthErrorResponse(admin);
 
     const body = await req.json();
     const { action } = body;
 
-    if (action === "update_profile") {
-      const { user_id, updates } = body;
-      await supabaseAdmin.from("profiles").update(updates).eq("id", user_id);
-      return NextResponse.json({ status: "ok" });
+    if (["update_profile", "update_transaction", "insert_transaction"].includes(action)) {
+      return NextResponse.json({ error: "Generic financial mutations are disabled" }, { status: 410 });
     }
 
-    if (action === "update_transaction") {
-      const { tx_id, updates } = body;
-      await supabaseAdmin.from("transactions").update(updates).eq("id", tx_id);
-      return NextResponse.json({ status: "ok" });
-    }
-
-    if (action === "insert_transaction") {
-      const { transaction } = body;
-      await supabaseAdmin.from("transactions").insert(transaction);
-      return NextResponse.json({ status: "ok" });
+    if (action === "update_kyc") {
+      const userId = typeof body.user_id === "string" ? body.user_id : "";
+      const decision = body.status;
+      const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, 500) : "";
+      if (!/^[0-9a-f-]{36}$/i.test(userId) || !["approved", "rejected"].includes(decision)) {
+        return NextResponse.json({ error: "Invalid KYC review" }, { status: 400 });
+      }
+      if (decision === "rejected" && reason.length < 3) {
+        return NextResponse.json({ error: "A rejection reason is required" }, { status: 400 });
+      }
+      const eventKey = `admin-${crypto.randomUUID()}`;
+      const { data, error } = await supabaseAdmin.rpc("apply_kyc_review", {
+        p_event_key: eventKey,
+        p_user_id: userId,
+        p_decision: decision,
+        p_reason: reason || null,
+        p_occurred_at: new Date().toISOString(),
+        p_source: "admin",
+        p_actor_id: admin.userId,
+        p_payload: {},
+      });
+      if (error) return NextResponse.json({ error: error.message }, { status: 409 });
+      return NextResponse.json(data || { status: "applied" });
     }
 
     if (action === "manage_announcement") {

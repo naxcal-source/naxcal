@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -13,10 +15,13 @@ export async function GET(
   }
 
   const { id } = await params;
+  if (!UUID.test(id)) {
+    return NextResponse.json({ error: "Notification not found" }, { status: 404 });
+  }
 
   const { data, error } = await supabaseAdmin
     .from("notifications")
-    .select("*")
+    .select("id, type, title, description, body, link, metadata, is_read, read_at, created_at")
     .eq("id", id)
     .eq("user_id", user.id)
     .single();

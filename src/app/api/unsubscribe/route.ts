@@ -9,9 +9,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid or expired unsubscribe link" }, { status: 400 });
   }
 
-  const { error } = await supabaseAdmin
-    .from("email_suppressions")
-    .upsert({ email: email.trim().toLowerCase() }, { onConflict: "email" });
+  const { error } = await supabaseAdmin.rpc("suppress_marketing_email", {
+    p_email: email.trim().toLowerCase(),
+  });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

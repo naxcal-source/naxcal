@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { createClient } from "@/lib/supabase";
-import { Settings, Loader2, CheckCircle2, User, Shield, Bell, Sliders, ChevronRight, Lock, Eye, EyeOff } from "lucide-react";
+import { Settings, Loader2, CheckCircle2, User, Shield, Bell, Sliders, ChevronRight, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
@@ -92,7 +93,7 @@ function TwoFactorSection() {
         <div>
           <p className="text-xs text-[#374151] mb-3">Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.):</p>
           <div className="flex justify-center mb-4 p-4 rounded-xl bg-white" style={{ border: "1px solid #e2e8f0" }}>
-            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUri)}`} alt="2FA QR Code" width={200} height={200} />
+            <QRCodeSVG value={qrUri} size={200} level="M" aria-label="Two-factor authentication QR code" />
           </div>
           <p className="text-xs text-[#6b7280] mb-3">Then enter the 6-digit code from your app:</p>
           <div className="flex gap-2">
@@ -125,20 +126,37 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState("");
   const [error, setError] = useState("");
-  const [notifications, setNotifications] = useState({ daily_profit: true, deposit: true, withdrawal: true, security: true, marketing: false, announcements: true });
+  const [notifications, setNotifications] = useState({ daily_profit: true, deposit: true, withdrawal: true, security: true, marketing: false });
   const [prefs, setPrefs] = useState({ auto_compound: true });
 
   useEffect(() => {
     if (profile) {
       const p = profile as Record<string, unknown>;
+      // The editable draft resets when the asynchronously loaded profile changes.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm({
         full_name: (p.full_name as string) || "", phone: (p.phone as string) || "",
-        dob: "", nationality: "", address: "", city: "", country: "", postal_code: "",
+        dob: (p.date_of_birth as string) || "",
+        nationality: (p.nationality as string) || "",
+        address: (p.address as string) || "",
+        city: (p.city as string) || "",
+        country: (p.country as string) || "",
+        postal_code: (p.postal_code as string) || "",
       });
       setPrefs({ auto_compound: !!p.auto_compound });
-      setHasPin(!!(p.withdrawal_pin as string));
+      setHasPin(Boolean(p.has_withdrawal_pin));
     }
   }, [profile]);
+
+  useEffect(() => {
+    fetch("/api/me/notification-preferences")
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Could not load notification preferences");
+        return response.json();
+      })
+      .then((data) => setNotifications(data))
+      .catch(() => setError("Could not load notification preferences"));
+  }, []);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault(); setError(""); setSaved("");
@@ -150,6 +168,8 @@ export default function SettingsPage() {
       body: JSON.stringify({
         full_name: form.full_name,
         phone: form.phone || null,
+        date_of_birth: form.dob || null,
+        nationality: form.nationality || null,
         address: form.address || null,
         city: form.city || null,
         country: form.country || null,
@@ -172,6 +192,23 @@ export default function SettingsPage() {
     });
     setLoading(false);
     setSaved("Preferences saved"); setTimeout(() => setSaved(""), 3000);
+  };
+
+  const handleSaveNotifications = async () => {
+    setLoading(true);
+    setError("");
+    const response = await fetch("/api/me/notification-preferences", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(notifications),
+    });
+    setLoading(false);
+    if (!response.ok) {
+      setError("Could not save notification preferences");
+      return;
+    }
+    setSaved("Notification preferences saved");
+    setTimeout(() => setSaved(""), 3000);
   };
 
   const update = (field: string, value: string) => setForm((p) => ({ ...p, [field]: value }));
@@ -306,13 +343,15 @@ export default function SettingsPage() {
               if (pinForm.newPin.length !== 6 || !/^\d{6}$/.test(pinForm.newPin)) { setError("PIN must be exactly 6 digits."); return; }
               if (pinForm.newPin !== pinForm.confirmPin) { setError("PINs do not match."); return; }
               if (hasPin && pinForm.current.length !== 6) { setError("Enter your current PIN."); return; }
-              if (hasPin) {
-                const check = await fetch("/api/me").then(r => r.json());
-                if (check?.withdrawal_pin !== pinForm.current) { setError("Current PIN is incorrect."); return; }
-              }
               setLoading(true);
-              await fetch("/api/me", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ withdrawal_pin: pinForm.newPin }) });
+              const pinRes = await fetch("/api/me/withdrawal-pin", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ currentPin: pinForm.current, newPin: pinForm.newPin }),
+              });
+              const pinData = await pinRes.json();
               setLoading(false);
+              if (!pinRes.ok) { setError(pinData.error || "Failed to update PIN"); return; }
               setHasPin(true);
               setPinForm({ current: "", newPin: "", confirmPin: "" });
               setSaved("Withdrawal PIN updated successfully");
@@ -363,19 +402,23 @@ export default function SettingsPage() {
           <h3 className="text-sm font-semibold text-[#0f172a] mb-5">Email Notifications</h3>
           <div className="space-y-4">
             {[
-              { key: "daily_profit", label: "Daily profit emails", desc: "Receive your daily return summary" },
+              { key: "daily_profit", label: "Weekday profit emails", desc: "Receive return summaries Monday through Friday" },
               { key: "deposit", label: "Deposit confirmations", desc: "When a deposit is confirmed" },
               { key: "withdrawal", label: "Withdrawal updates", desc: "When a withdrawal is processed" },
               { key: "security", label: "Security alerts", desc: "New login and security events" },
               { key: "marketing", label: "Marketing emails", desc: "Product updates and promotions" },
-              { key: "announcements", label: "Platform announcements", desc: "Important platform updates" },
             ].map((item) => (
               <div key={item.key} className="flex items-center justify-between py-2">
                 <div>
                   <p className="text-sm text-[#374151] font-medium">{item.label}</p>
                   <p className="text-xs text-[#9ca3af]">{item.desc}</p>
                 </div>
-                <button onClick={() => setNotifications((p) => ({ ...p, [item.key]: !p[item.key as keyof typeof p] }))}
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={notifications[item.key as keyof typeof notifications]}
+                  aria-label={item.label}
+                  onClick={() => setNotifications((p) => ({ ...p, [item.key]: !p[item.key as keyof typeof p] }))}
                   className={cn("w-11 h-6 rounded-full transition-all cursor-pointer relative", notifications[item.key as keyof typeof notifications] ? "bg-naxcal-teal" : "bg-[#d1d5db]")}>
                   <span className={cn("absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-all", notifications[item.key as keyof typeof notifications] ? "left-5.5" : "left-0.5")}
                     style={{ left: notifications[item.key as keyof typeof notifications] ? "22px" : "2px" }} />
@@ -383,6 +426,14 @@ export default function SettingsPage() {
               </div>
             ))}
           </div>
+          <button
+            type="button"
+            onClick={handleSaveNotifications}
+            disabled={loading}
+            className="w-full mt-6 py-3 rounded-lg font-semibold text-sm cursor-pointer btn-teal text-white disabled:opacity-50"
+          >
+            {loading ? "Saving..." : "Save Email Preferences"}
+          </button>
         </div>
       )}
 
@@ -407,7 +458,7 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-[#0f172a]">Auto-Compound</h3>
-                <p className="text-xs text-[#6b7280] mt-0.5">Automatically reinvest daily profits</p>
+                <p className="text-xs text-[#6b7280] mt-0.5">Automatically reinvest Monday–Friday profits</p>
               </div>
               <button onClick={() => setPrefs({ ...prefs, auto_compound: !prefs.auto_compound })}
                 className={cn("w-11 h-6 rounded-full transition-all cursor-pointer relative", prefs.auto_compound ? "bg-naxcal-teal" : "bg-[#d1d5db]")}>

@@ -88,7 +88,7 @@ async function fetchTrustedStablecoinBalances(walletId: string) {
 
     const { data, error } = await supabaseAdmin
       .from("onchain_token_balances")
-      .select("*")
+      .select("chain, chain_id, token_contract_address, normalized_balance")
       .eq("wallet_id", walletId)
       .eq("chain_id", Number(chainId))
       .ilike("token_contract_address", address);
@@ -113,7 +113,7 @@ export async function GET() {
 
     const { data: wallets, error: walletError } = await supabaseAdmin
       .from("wallets")
-      .select("*")
+      .select("id, address, ownership_status")
       .eq("user_id", user.id)
       .eq("wallet_type", "evm")
       .order("created_at", { ascending: false })
@@ -139,7 +139,7 @@ export async function GET() {
 
     const { data: nativeBalances, error: nativeError } = await supabaseAdmin
       .from("onchain_native_balances")
-      .select("*")
+      .select("chain, chain_id, asset_symbol, normalized_balance")
       .eq("wallet_id", wallet.id);
 
     if (nativeError) {

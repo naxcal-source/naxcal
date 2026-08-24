@@ -1,4 +1,4 @@
--- Jay Jones / EVM wallet migration architecture
+-- Configured account / EVM wallet migration architecture
 -- This keeps on-chain wallet data separate from the internal investment ledger.
 
 CREATE TABLE IF NOT EXISTS wallets (

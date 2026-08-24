@@ -1,80 +1,71 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthUser } from "@/lib/auth-api";
+import { mfaAuthErrorResponse, requireMfaAuth } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getStockPrice } from "@/lib/yahoo-finance";
-import { createNotification } from "@/lib/notifications";
+import { durableRateLimit } from "@/lib/durable-rate-limit";
+import { readIdempotencyKey, tradingRpcErrorStatus } from "@/lib/idempotency";
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await getAuthUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireMfaAuth();
+    if (!auth.ok) return mfaAuthErrorResponse(auth);
+    const { user } = auth;
 
-    const { symbol, amount_usd } = await req.json();
-    if (!symbol || !amount_usd) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
-    if (amount_usd < 50) return NextResponse.json({ error: "Minimum investment is $50" }, { status: 400 });
-
-    const { data: profile } = await supabaseAdmin.from("profiles").select("balance, kyc_status").eq("id", user.id).single();
-    if (!profile) return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-    if (profile.kyc_status !== "approved") return NextResponse.json({ error: "Complete KYC verification first" }, { status: 403 });
-    if (Number(profile.balance) < amount_usd) return NextResponse.json({ error: "Insufficient balance" }, { status: 400 });
-
-    const quote = await getStockPrice(symbol);
-    if (!quote || quote.price <= 0) return NextResponse.json({ error: "Could not fetch current price" }, { status: 502 });
-
-    const shares = amount_usd / quote.price;
-    const oldBalance = Number(profile.balance);
-    const newBalance = oldBalance - amount_usd;
-
-    // Check if user already has a position in this stock
-    const { data: existing } = await supabaseAdmin
-      .from("stock_positions")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("symbol", symbol)
-      .single();
-
-    if (existing) {
-      const oldQty = Number(existing.qty);
-      const oldCost = Number(existing.avg_price) * oldQty;
-      const newQty = oldQty + shares;
-      const newAvg = (oldCost + amount_usd) / newQty;
-      await supabaseAdmin.from("stock_positions").update({ qty: newQty, avg_price: newAvg }).eq("id", existing.id);
-    } else {
-      await supabaseAdmin.from("stock_positions").insert({
-        user_id: user.id, symbol, qty: shares, avg_price: quote.price,
-      });
+    const idempotencyKey = readIdempotencyKey(req.headers);
+    if (!idempotencyKey) {
+      return NextResponse.json(
+        { error: "Missing or invalid Idempotency-Key header" },
+        { status: 400 },
+      );
     }
 
-    await supabaseAdmin.from("profiles").update({ balance: newBalance }).eq("id", user.id);
-    await supabaseAdmin.from("transactions").insert({
-      user_id: user.id, type: "stock_buy", amount: amount_usd, asset: symbol, status: "completed",
-      description: `Bought ${shares.toFixed(4)} shares of ${symbol} @ $${quote.price.toFixed(2)}`,
-      balance_before: oldBalance, balance_after: newBalance,
+    const limit = await durableRateLimit(`stock-buy:${user.id}`, 10, 60_000);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: "Too many buy requests. Please wait." },
+        { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
+      );
+    }
+
+    const body = await req.json();
+    const symbol = String(body.symbol || "").trim().toUpperCase();
+    const amountUsd = Number(body.amount_usd);
+
+    if (!/^[A-Z0-9^][A-Z0-9.^-]{0,19}$/.test(symbol)) {
+      return NextResponse.json({ error: "Invalid stock symbol" }, { status: 400 });
+    }
+    if (!Number.isFinite(amountUsd) || amountUsd < 50) {
+      return NextResponse.json({ error: "Minimum investment is $50" }, { status: 400 });
+    }
+
+    const quote = await getStockPrice(symbol);
+    if (!quote || !Number.isFinite(quote.price) || quote.price <= 0) {
+      return NextResponse.json({ error: "Could not fetch current price" }, { status: 502 });
+    }
+
+    const { data, error } = await supabaseAdmin.rpc("execute_stock_buy", {
+      p_user_id: user.id,
+      p_symbol: symbol,
+      p_amount_usd: amountUsd,
+      p_price_usd: quote.price,
+      p_idempotency_key: idempotencyKey,
     });
 
-    await createNotification({
-      userId: user.id,
-      type: "stock_buy",
-      title: "Stock purchase completed",
-      description: `${symbol} was added to your portfolio.`,
-      body: `Your stock purchase was completed successfully. You invested $${Number(amount_usd).toFixed(2)} into ${symbol}, receiving ${shares.toFixed(4)} shares at $${quote.price.toFixed(2)} per share. Your holding value will move up or down with the live market price.`,
-      link: "/dashboard/portfolio",
-      metadata: {
-        symbol,
-        amount_usd: Number(amount_usd),
-        shares: Number(shares.toFixed(6)),
-        price: Number(quote.price.toFixed(2)),
-        balance_before: oldBalance,
-        balance_after: newBalance,
-      },
-    });
+    if (error) {
+      const status = tradingRpcErrorStatus(error.message);
+      if (status === 500) console.error("Stock buy RPC error:", error);
+      return NextResponse.json(
+        { error: status === 500 ? "Internal server error" : error.message },
+        { status },
+      );
+    }
 
-    return NextResponse.json({
-      symbol, shares: parseFloat(shares.toFixed(4)), price: quote.price,
-      amount: amount_usd, new_balance: newBalance,
-    });
+    return NextResponse.json(data);
   } catch (err) {
     console.error("Stock buy error:", err);
+    if (err instanceof SyntaxError) {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

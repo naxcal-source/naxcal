@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth-api";
+import { adminAuthErrorResponse, requireAdminAccess } from "@/lib/auth-api";
 import { deleteBroadcast, getBroadcast, updateDraftBroadcast } from "@/lib/resend-admin";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  if (!(await requireAdmin())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const admin = await requireAdminAccess();
+  if (!admin.ok) return adminAuthErrorResponse(admin);
   const { id } = await params;
   try {
     const broadcast = await getBroadcast(id);
@@ -15,7 +16,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  if (!(await requireAdmin())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const admin = await requireAdminAccess();
+  if (!admin.ok) return adminAuthErrorResponse(admin);
   const { id } = await params;
   try {
     const { subject, html, name } = await req.json();
@@ -28,7 +30,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  if (!(await requireAdmin())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const admin = await requireAdminAccess();
+  if (!admin.ok) return adminAuthErrorResponse(admin);
   const { id } = await params;
   try {
     await deleteBroadcast(id);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useDashboard } from "@/contexts/DashboardContext";
 
 type Tx = { id: string; type: string; amount: number; asset: string | null; status: string; description: string | null; balance_after: number | null; created_at: string };
@@ -11,14 +12,13 @@ export default function StatementPage() {
   useEffect(() => {
     if (!profile) return;
     fetch("/api/me/transactions").then(r => r.json()).then(data => { if (Array.isArray(data)) setTxs(data as Tx[]); }).catch(() => {});
-  }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [profile]);
 
   if (!profile) return null;
 
   const name = profile.full_name || "Investor";
   const email = profile.email;
   const balance = Number(profile.balance);
-  const totalDeposited = Number(profile.total_deposited);
   const totalProfit = Number(profile.total_profit);
   const tier = (profile.tier || "bronze").charAt(0).toUpperCase() + (profile.tier || "bronze").slice(1);
   const now = new Date();
@@ -42,8 +42,8 @@ export default function StatementPage() {
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 40, borderBottom: "2px solid #0a0a0a", paddingBottom: 24 }}>
         <div>
-          <img src="/Naxcal_Primary_Logo.png" alt="Naxcal" style={{ height: 48, width: "auto", marginBottom: 8 }} />
-          <p style={{ margin: 0, fontSize: 11, color: "#9ca3af" }}>Naxcal Capital Ltd · FCA Authorised</p>
+          <Image src="/Naxcal_Primary_Logo.png" alt="Naxcal" width={180} height={48} style={{ height: 48, width: "auto", marginBottom: 8 }} />
+          <p style={{ margin: 0, fontSize: 11, color: "#9ca3af" }}>Naxcal Capital Ltd · Account Services</p>
         </div>
         <div style={{ textAlign: "right" }}>
           <h1 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 700, color: "#0a0a0a" }}>Account Statement</h1>
@@ -117,8 +117,8 @@ export default function StatementPage() {
 
       {/* Footer */}
       <div style={{ marginTop: 40, paddingTop: 20, borderTop: "1px solid #e5e7eb" }}>
-        <p style={{ margin: "0 0 4px", fontSize: 11, color: "#9ca3af" }}>Naxcal Capital Ltd is authorised and regulated by the Financial Conduct Authority.</p>
-        <p style={{ margin: 0, fontSize: 11, color: "#c0c0c0" }}>This statement is generated automatically. Your capital is at risk. Past performance is not indicative of future results.</p>
+        <p style={{ margin: "0 0 4px", fontSize: 11, color: "#9ca3af" }}>This statement is generated automatically from the account ledger.</p>
+        <p style={{ margin: 0, fontSize: 11, color: "#c0c0c0" }}>Investment products involve risk. Past performance is not indicative of future results.</p>
       </div>
     </div>
   );

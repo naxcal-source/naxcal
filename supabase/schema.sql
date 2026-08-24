@@ -22,7 +22,10 @@ CREATE TABLE IF NOT EXISTS profiles (
   auto_compound BOOLEAN DEFAULT false,
   withdrawal_pin TEXT,
   two_factor_enabled BOOLEAN DEFAULT false,
+  is_admin BOOLEAN NOT NULL DEFAULT false,
   is_active BOOLEAN DEFAULT true,
+  onboarding_complete BOOLEAN DEFAULT false,
+  display_currency TEXT DEFAULT 'USD' CHECK (display_currency IN ('USD', 'GBP', 'EUR')),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -31,7 +34,11 @@ CREATE TABLE IF NOT EXISTS profiles (
 CREATE TABLE IF NOT EXISTS transactions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) NOT NULL,
-  type TEXT NOT NULL CHECK (type IN ('deposit', 'withdrawal', 'profit', 'bonus', 'referral', 'fee')),
+  type TEXT NOT NULL CHECK (type IN (
+    'deposit', 'withdrawal', 'profit', 'bonus', 'referral', 'fee',
+    'adjustment_credit', 'adjustment_debit', 'stock_buy', 'stock_sell',
+    'crypto_sell', 'swap'
+  )),
   amount NUMERIC(20,8) NOT NULL,
   asset TEXT DEFAULT 'USDT',
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'cancelled')),
@@ -41,9 +48,16 @@ CREATE TABLE IF NOT EXISTS transactions (
   admin_note TEXT,
   balance_before NUMERIC(20,8),
   balance_after NUMERIC(20,8),
+  idempotency_key TEXT,
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  profit_date DATE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS transactions_user_idempotency_key_unique
+  ON transactions (user_id, idempotency_key)
+  WHERE idempotency_key IS NOT NULL;
 
 -- Daily profits table
 CREATE TABLE IF NOT EXISTS daily_profits (
@@ -55,6 +69,42 @@ CREATE TABLE IF NOT EXISTS daily_profits (
   posted_by TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Profit posting fails closed until an authorised owner creates one versioned
+-- policy after confirming the rate, calendar, basis, and compounding contract.
+CREATE TABLE IF NOT EXISTS profit_policies (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  effective_from DATE NOT NULL,
+  effective_to DATE,
+  rate_period TEXT NOT NULL DEFAULT 'daily' CHECK (rate_period = 'daily'),
+  accrual_calendar TEXT NOT NULL DEFAULT 'weekdays' CHECK (accrual_calendar = 'weekdays'),
+  compounding_mode TEXT NOT NULL
+    CHECK (compounding_mode IN ('always', 'never', 'user_preference')),
+  basis_method TEXT NOT NULL DEFAULT 'cash_plus_position_cost'
+    CHECK (basis_method = 'cash_plus_position_cost'),
+  enabled BOOLEAN NOT NULL DEFAULT false,
+  created_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CHECK (effective_to IS NULL OR effective_to >= effective_from)
+);
+
+CREATE TABLE IF NOT EXISTS profit_policy_rates (
+  policy_id UUID NOT NULL REFERENCES profit_policies(id) ON DELETE CASCADE,
+  tier TEXT NOT NULL CHECK (tier IN ('bronze', 'silver', 'gold')),
+  rate_percent NUMERIC(10,6) NOT NULL CHECK (rate_percent > 0 AND rate_percent <= 100),
+  PRIMARY KEY (policy_id, tier)
+);
+
+ALTER TABLE transactions DROP CONSTRAINT IF EXISTS transactions_profit_weekdays_only;
+ALTER TABLE transactions DROP CONSTRAINT IF EXISTS transactions_profit_date_required;
+ALTER TABLE transactions ADD CONSTRAINT transactions_profit_date_required CHECK (
+  type <> 'profit' OR profit_date IS NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS transactions_user_profit_date_unique
+  ON transactions (user_id, profit_date)
+  WHERE type = 'profit' AND profit_date IS NOT NULL;
 
 -- Announcements table
 CREATE TABLE IF NOT EXISTS announcements (
@@ -94,14 +144,21 @@ CREATE TABLE IF NOT EXISTS referrals (
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE daily_profits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profit_policies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profit_policy_rates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE testimonials ENABLE ROW LEVEL SECURITY;
 ALTER TABLE referrals ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies
-CREATE POLICY "Users can view own profile" ON profiles FOR SELECT USING (auth.uid() = id);
-CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
-CREATE POLICY "Users can view own transactions" ON transactions FOR SELECT USING (auth.uid() = user_id);
+-- Financial profile and ledger access is server-mediated.
+REVOKE ALL PRIVILEGES ON TABLE profiles FROM anon, authenticated;
+REVOKE ALL PRIVILEGES ON TABLE transactions FROM anon, authenticated;
+GRANT ALL PRIVILEGES ON TABLE profiles TO service_role;
+GRANT ALL PRIVILEGES ON TABLE transactions TO service_role;
+REVOKE ALL PRIVILEGES ON TABLE profit_policies FROM PUBLIC, anon, authenticated;
+REVOKE ALL PRIVILEGES ON TABLE profit_policy_rates FROM PUBLIC, anon, authenticated;
+GRANT ALL PRIVILEGES ON TABLE profit_policies TO service_role;
+GRANT ALL PRIVILEGES ON TABLE profit_policy_rates TO service_role;
 CREATE POLICY "Anyone can view active announcements" ON announcements FOR SELECT USING (is_active = true);
 CREATE POLICY "Anyone can view active testimonials" ON testimonials FOR SELECT USING (is_active = true);
 CREATE POLICY "Users can view own referrals" ON referrals FOR SELECT USING (auth.uid() = referrer_id);
@@ -110,20 +167,22 @@ CREATE POLICY "Users can view own referrals" ON referrals FOR SELECT USING (auth
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO profiles (id, email, referral_code)
+  INSERT INTO public.profiles (id, email, full_name, referred_by, referral_code)
   VALUES (
     NEW.id,
     NEW.email,
+    NULLIF(BTRIM(COALESCE(NEW.raw_user_meta_data ->> 'full_name', NEW.raw_user_meta_data ->> 'name')), ''),
+    NULLIF(UPPER(BTRIM(NEW.raw_user_meta_data ->> 'referred_by')), ''),
     upper(substring(replace(gen_random_uuid()::text, '-', ''), 1, 8))
-  );
+  ) ON CONFLICT (id) DO NOTHING;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
--- Jay Jones / EVM wallet migration architecture
+-- Configured account / EVM wallet migration architecture
 -- This keeps on-chain wallet data separate from the internal investment ledger.
 
 CREATE TABLE IF NOT EXISTS wallets (

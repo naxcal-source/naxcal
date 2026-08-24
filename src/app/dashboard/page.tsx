@@ -7,15 +7,25 @@ import { motion } from "framer-motion";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { createClient } from "@/lib/supabase";
 import {
-  Wallet, TrendingUp, CircleDollarSign, ArrowDownCircle, ArrowUpCircle,
-  Users, FileText, AlertTriangle, ArrowRight, ArrowUpRight, ArrowDownRight,
-  Megaphone, Info, AlertCircle, CheckCircle2, Star, BarChart2, MessageCircle,
-  Inbox,
+  Wallet, TrendingUp, CircleDollarSign, ArrowDownCircle,
+  AlertTriangle, ArrowRight, ArrowUpRight,
+  Megaphone, Info, AlertCircle, CheckCircle2,
 } from "lucide-react";
 import { AreaChart, Area, PieChart, Pie, Cell, Tooltip } from "recharts";
 import { cn } from "@/lib/utils";
+import { getTierDailyRatePercent, isProfitDate } from "@/lib/profit-policy";
 
-type Transaction = { id: string; type: string; amount: number; status: string; created_at: string; description: string | null };
+type Transaction = {
+  id: string;
+  type: string;
+  amount: number;
+  status: string;
+  created_at: string;
+  description: string | null;
+  source?: string;
+  balance_before?: number | null;
+  balance_after?: number | null;
+};
 type Announcement = { id: string; title: string; content: string; type: string; created_at: string };
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
@@ -85,7 +95,7 @@ const getAllocationData = (cash: number, crypto: number, stocks: number) => {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { profile, refreshProfile, fmt } = useDashboard();
+  const { profile, fmt } = useDashboard();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [cryptoPortfolioValue, setCryptoPortfolioValue] = useState(0);
   const [stockPortfolioValue, setStockPortfolioValue] = useState(0);
@@ -96,7 +106,7 @@ export default function DashboardPage() {
     if (profile && (profile as Record<string, unknown>).onboarding_complete === false) {
       router.push("/dashboard/onboarding");
     }
-  }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [profile, router]);
 
   useEffect(() => {
     if (!profile) return;
@@ -104,7 +114,7 @@ export default function DashboardPage() {
     // Announcements are public — anon key works fine
     const supabase = createClient();
     supabase.from("announcements").select("*").eq("is_active", true).order("created_at", { ascending: false }).limit(2).then(({ data }) => { if (data) setAnnouncements(data); });
-  }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [profile]);
 
   // Removed realtime subscription — was causing balance flickering
 
@@ -138,8 +148,8 @@ export default function DashboardPage() {
   const [selectedPerformanceIndex, setSelectedPerformanceIndex] = useState<number | null>(null);
 
   const accountEvents = transactions
-    .filter((tx) => (tx as any).source !== "onchain")
-    .filter((tx) => (tx as any).balance_before !== null || (tx as any).balance_after !== null)
+    .filter((tx) => tx.source !== "onchain")
+    .filter((tx) => tx.balance_before !== null || tx.balance_after !== null)
     .slice()
     .reverse();
 
@@ -153,7 +163,7 @@ export default function DashboardPage() {
 
   const startingBalance =
     visibleEvents.length > 0
-      ? Number((visibleEvents[0] as any).balance_before ?? 0)
+      ? Number(visibleEvents[0].balance_before ?? 0)
       : 0;
 
   let runningValue = Number.isFinite(startingBalance) ? startingBalance : 0;
@@ -161,22 +171,19 @@ export default function DashboardPage() {
   const performanceChart = displayPortfolioValue > 0
     ? [
         { name: "Start", v: Math.max(runningValue, 0) },
-        ...visibleEvents.map((tx, index) => {
-          const type = String((tx as any).type || "").toLowerCase();
-          const amount = Number((tx as any).amount || 0);
-          const balanceAfter = Number((tx as any).balance_after);
+        ...visibleEvents.map((tx) => {
+          const type = String(tx.type || "").toLowerCase();
+          const amount = Number(tx.amount || 0);
+          const balanceAfter = Number(tx.balance_after);
 
-          if (type === "stock_buy" || type === "swap") {
-            // These move value between cash/holdings, so total account value should not drop.
-            runningValue = runningValue;
-          } else if (Number.isFinite(balanceAfter) && balanceAfter >= 0) {
+          if (type !== "stock_buy" && type !== "swap" && Number.isFinite(balanceAfter) && balanceAfter >= 0) {
             runningValue = balanceAfter;
-          } else if (Number.isFinite(amount)) {
+          } else if (type !== "stock_buy" && type !== "swap" && Number.isFinite(amount)) {
             runningValue += amount;
           }
 
           return {
-            name: formatChartDateTime((tx as any).created_at),
+            name: formatChartDateTime(tx.created_at),
             v: Math.max(runningValue, 0),
           };
         }),
@@ -198,8 +205,9 @@ export default function DashboardPage() {
 
   const totalProfit = Number(profile?.total_profit ?? 0);
   const totalDeposited = Number(profile?.total_deposited ?? 0);
-  const tierRate = profile?.tier === "gold" ? 2.1 : profile?.tier === "silver" ? 1.8 : 1.5;
-  const todayReturn = availablePortfolioBalance * (tierRate / 100);
+  const tierRate = getTierDailyRatePercent(profile?.tier);
+  const todayIsProfitDay = isProfitDate(new Date());
+  const todayReturn = todayIsProfitDay ? availablePortfolioBalance * (tierRate / 100) : 0;
   const tierThresholds = { bronze: { next: "Silver", target: 5000 }, silver: { next: "Gold", target: 25000 }, gold: { next: null, target: 0 } };
   const currentTierInfo = tierThresholds[(profile?.tier as keyof typeof tierThresholds) || "bronze"];
   const progress = currentTierInfo.target > 0 ? Math.min(100, (availablePortfolioBalance / currentTierInfo.target) * 100) : 100;
@@ -212,9 +220,9 @@ export default function DashboardPage() {
   const currentTierColors = tierColors[(profile?.tier as string) || "bronze"] || tierColors.bronze;
 
   const tierPerks: Record<string, string[]> = {
-    bronze: ["1.5% daily returns", "Standard support", "Basic analytics"],
-    silver: ["1.8% daily returns", "Priority support", "Advanced analytics"],
-    gold: ["2.1% daily returns", "Dedicated manager", "Premium analytics"],
+    bronze: ["1.5% weekday returns", "Standard support", "Basic analytics"],
+    silver: ["1.8% weekday returns", "Priority support", "Advanced analytics"],
+    gold: ["2.1% weekday returns", "Dedicated manager", "Premium analytics"],
   };
   const currentPerks = tierPerks[(profile?.tier as string) || "bronze"] || tierPerks.bronze;
 
@@ -262,36 +270,13 @@ export default function DashboardPage() {
     loadPortfolioValues();
   }, []);
 
-  const chartPoints = chartRange === "1W" ? 7 : chartRange === "1M" ? 30 : chartRange === "3M" ? 90 : 365;
-  const visibleChartPoints = Math.min(chartPoints, 60);
-
-  const sampleChart = Array.from({ length: visibleChartPoints }, (_, i) => {
-    const progress = i / Math.max(visibleChartPoints - 1, 1);
-    const date = new Date();
-    date.setDate(date.getDate() - Math.round((1 - progress) * chartPoints));
-
-    const wave = Math.sin(i * 1.65) * displayPortfolioValue * 0.018;
-    const startValue = Math.max(displayPortfolioValue * 0.86, 0);
-    const value = startValue + (displayPortfolioValue - startValue) * progress + wave;
-
-    return {
-      d: date.toLocaleString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      v: i === visibleChartPoints - 1 ? Math.max(displayPortfolioValue, 0) : Math.max(value, 0),
-    };
-  });
-
   const [dailyReturns, setDailyReturns] = useState<{ date: string; rate: string; earnings: string; status: string }[]>([]);
   useEffect(() => {
     if (!profile) return;
     fetch("/api/me/transactions?type=profit&limit=7").then(r => r.json()).then(data => {
       if (Array.isArray(data) && data.length > 0) {
-        setDailyReturns(data.map((tx: { amount: number; created_at: string }) => ({
-          date: new Date(tx.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        setDailyReturns(data.map((tx: { amount: number; created_at: string; profit_date?: string | null }) => ({
+          date: new Date(`${tx.profit_date || tx.created_at.slice(0, 10)}T12:00:00.000Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" }),
           rate: (Number(tx.amount) / Math.max(balance, 1) * 100).toFixed(2),
           earnings: Number(tx.amount).toFixed(2),
           status: "Paid",
@@ -369,7 +354,7 @@ export default function DashboardPage() {
                 <div className="mt-4 flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-400/12 text-emerald-100 border border-emerald-300/20 text-xs font-semibold">
                     <ArrowUpRight size={14} />
-                    {displayPortfolioValue > 0 ? `+${tierRate}% daily rate` : "Ready to fund"}
+                    {displayPortfolioValue > 0 ? `+${tierRate}% weekday rate` : "Ready to fund"}
                   </span>
 
                   <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-white/8 text-white/70 border border-white/10 text-xs font-semibold capitalize">
@@ -383,11 +368,11 @@ export default function DashboardPage() {
               </div>
 
               <div className="rounded-2xl bg-white/10 border border-white/10 p-4 min-w-[180px] backdrop-blur">
-                <p className="text-[11px] uppercase tracking-wider text-white/45">Today's Return</p>
+                <p className="text-[11px] uppercase tracking-wider text-white/45">{todayIsProfitDay ? "Today's Return" : "Weekend Return"}</p>
                 <p className="mt-2 text-2xl font-bold text-emerald-200">
                   <AnimatedNumber value={todayReturn} formatter={fmt} />
                 </p>
-                <p className="mt-1 text-xs text-white/50">Next profit cycle: daily</p>
+                <p className="mt-1 text-xs text-white/50">Returns post Monday–Friday only</p>
               </div>
             </div>
 
@@ -426,7 +411,7 @@ export default function DashboardPage() {
 
               <div>
                 <p className="text-white/35 uppercase tracking-wider text-[10px]">Next profit cycle</p>
-                <p className="mt-1 font-semibold text-white/80">Daily payout</p>
+                <p className="mt-1 font-semibold text-white/80">Weekday payout</p>
               </div>
 
               <div>
@@ -540,14 +525,14 @@ export default function DashboardPage() {
                   height={280}
                   data={performanceChart}
                   margin={{ top: 30, right: 20, left: 0, bottom: 10 }}
-                  onMouseMove={(state: any) => {
-                    if (state?.activeTooltipIndex !== undefined) {
+                  onMouseMove={(state) => {
+                    if (typeof state?.activeTooltipIndex === "number") {
                       setSelectedPerformanceIndex(state.activeTooltipIndex);
                     }
                   }}
                   onMouseLeave={() => setSelectedPerformanceIndex(null)}
-                  onClick={(state: any) => {
-                    if (state?.activeTooltipIndex !== undefined) {
+                  onClick={(state) => {
+                    if (typeof state?.activeTooltipIndex === "number") {
                       setSelectedPerformanceIndex(state.activeTooltipIndex);
                     }
                   }}
@@ -697,7 +682,7 @@ export default function DashboardPage() {
               </h3>
 
               <p className="text-sm text-[#64748b] mt-1 max-w-xl">
-                Your dashboard is ready. Add funds to activate portfolio tracking, daily returns and account activity.
+                Your dashboard is ready. Add funds to activate portfolio tracking, weekday returns and account activity.
               </p>
             </div>
 
@@ -725,12 +710,12 @@ export default function DashboardPage() {
               },
               {
                 title: "Choose your tier",
-                desc: "Your tier controls daily return percentage.",
+                desc: "Your tier controls the Monday–Friday return percentage.",
                 done: displayPortfolioValue > 0,
                 href: "/dashboard/deposit",
               },
               {
-                title: "Track daily returns",
+                title: "Track weekday returns",
                 desc: "Profit history appears after your first payout.",
                 done: transactions.some((tx) => tx.type === "profit"),
                 href: "/dashboard/transactions",
@@ -950,7 +935,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-5">
             <div>
               <h3 className="text-base font-bold text-[#0f172a]">Recent Returns</h3>
-              <p className="text-xs text-[#94a3b8] mt-1">Daily profit history and payout status.</p>
+              <p className="text-xs text-[#94a3b8] mt-1">Monday–Friday profit history and payout status.</p>
             </div>
             <span className="px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[10px] font-semibold text-emerald-700">
               {profile?.tier || "Bronze"} rate
@@ -963,7 +948,7 @@ export default function DashboardPage() {
                 <TrendingUp size={22} className="text-naxcal-teal" />
               </div>
               <p className="text-sm font-semibold text-[#0f172a]">No returns posted yet</p>
-              <p className="text-xs text-[#64748b] mt-2">Your daily return history will appear once your first profit is credited.</p>
+              <p className="text-xs text-[#64748b] mt-2">Your weekday return history will appear once your first profit is credited.</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -971,7 +956,7 @@ export default function DashboardPage() {
                 <div key={i} className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-[#f8fafc] border border-[#eef2f7]">
                   <div>
                     <p className="text-sm font-semibold text-[#0f172a]">{day.date}</p>
-                    <p className="text-xs text-[#94a3b8]">Daily return +{day.rate}%</p>
+                    <p className="text-xs text-[#94a3b8]">Weekday return +{day.rate}%</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-bold text-emerald-600">{fmt(Number(day.earnings))}</p>

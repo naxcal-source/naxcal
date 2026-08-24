@@ -1,19 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { adminAuthErrorResponse, requireAdminAccess } from "@/lib/auth-api";
+import { durableRateLimit } from "@/lib/durable-rate-limit";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://naxcal.us";
 
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[character] || character);
+}
+
 export async function POST(req: NextRequest) {
+  const admin = await requireAdminAccess();
+  if (!admin.ok) return adminAuthErrorResponse(admin);
+  const limit = await durableRateLimit(`admin-invite:${admin.userId}`, 20, 60 * 60 * 1000);
+  if (!limit.allowed) return NextResponse.json({ error: "Invitation limit reached" }, { status: 429 });
+
   try {
     const { email, name } = await req.json();
-    if (!email || !name) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    if (typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || typeof name !== "string" || !name.trim() || name.length > 120) {
+      return NextResponse.json({ error: "Missing or invalid fields" }, { status: 400 });
+    }
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) return NextResponse.json({ error: "Email is not configured" }, { status: 503 });
+    const resend = new Resend(apiKey);
 
-    const firstName = name.split(" ")[0];
+    const safeName = escapeHtml(name.trim());
+    const firstName = safeName.split(" ")[0];
     const capFirst = firstName.charAt(0).toUpperCase() + firstName.slice(1);
-    const capName = name.split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+    const capName = safeName.split(" ").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 
-    await resend.emails.send({
+    const { error } = await resend.emails.send({
       from: "Naxcal <noreply@naxcal.us>",
       replyTo: "support@naxcal.us",
       to: email,
@@ -37,7 +59,7 @@ export async function POST(req: NextRequest) {
 <div style="background:#f9fafb;border-radius:12px;padding:20px 24px;margin:0 0 24px">
 <p style="margin:0 0 12px;font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;font-weight:600">What You'll Find</p>
 <div style="margin:0 0 10px"><span style="color:#16a34a;font-size:16px">&#10003;</span> <span style="color:#374151;font-size:14px">Complete deposit history since May 2025</span></div>
-<div style="margin:0 0 10px"><span style="color:#16a34a;font-size:16px">&#10003;</span> <span style="color:#374151;font-size:14px">All daily returns and profit records</span></div>
+<div style="margin:0 0 10px"><span style="color:#16a34a;font-size:16px">&#10003;</span> <span style="color:#374151;font-size:14px">All Monday–Friday returns and profit records</span></div>
 <div style="margin:0 0 10px"><span style="color:#16a34a;font-size:16px">&#10003;</span> <span style="color:#374151;font-size:14px">Stock & crypto portfolio with live prices</span></div>
 <div><span style="color:#16a34a;font-size:16px">&#10003;</span> <span style="color:#374151;font-size:14px">Real-time portfolio tracking & market data</span></div>
 </div>
@@ -52,7 +74,7 @@ export async function POST(req: NextRequest) {
 
 </div>
 <div style="background:#f9fafb;padding:24px 32px;border-radius:0 0 12px 12px;border:1px solid #e5e7eb;border-top:none;text-align:center">
-<p style="margin:0 0 8px;font-size:11px;color:#9ca3af;line-height:1.6">Naxcal Capital Ltd is authorised and regulated by the Financial Conduct Authority.<br>Your capital is at risk. Past performance is not indicative of future results.</p>
+<p style="margin:0 0 8px;font-size:11px;color:#9ca3af;line-height:1.6">Investment products involve risk and values can rise or fall.<br>Past performance is not indicative of future results.</p>
 <p style="margin:0;font-size:11px;color:#d1d5db">
 <a href="${SITE}/legal/privacy" style="color:#9ca3af;text-decoration:underline">Privacy</a> &middot;
 <a href="${SITE}/legal/terms" style="color:#9ca3af;text-decoration:underline">Terms</a> &middot;
@@ -62,6 +84,8 @@ export async function POST(req: NextRequest) {
 </div>
 </div></body></html>`,
     });
+
+    if (error) throw new Error(`Resend invite failed: ${error.message}`);
 
     return NextResponse.json({ status: "sent" });
   } catch (err) {

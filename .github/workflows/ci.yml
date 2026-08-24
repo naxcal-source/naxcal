@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
+      SUPABASE_SERVICE_ROLE_KEY: ci-placeholder
+      RESEND_API_KEY: re_ci_placeholder
+      RESEND_WEBHOOK_SECRET: whsec_ci_placeholder
+      UNSUBSCRIBE_SECRET: ci-placeholder-value-with-at-least-32-characters
+      CRON_SECRET: ci-placeholder
+      NOWPAYMENTS_API_KEY: ci-placeholder
+      NOWPAYMENTS_IPN_SECRET: ci-placeholder
+      SUMSUB_APP_TOKEN: ci-placeholder
+      SUMSUB_SECRET_KEY: ci-placeholder
+      SUMSUB_WEBHOOK_SECRET: ci-placeholder
+      MIGRATION_TARGET_USER_ID: 00000000-0000-4000-8000-000000000001
+      MIGRATION_TARGET_EVM_WALLET: 0x0000000000000000000000000000000000000001
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build -- --webpack

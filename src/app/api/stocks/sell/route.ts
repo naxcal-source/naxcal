@@ -1,53 +1,71 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthUser } from "@/lib/auth-api";
+import { mfaAuthErrorResponse, requireMfaAuth } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getStockPrice } from "@/lib/yahoo-finance";
+import { durableRateLimit } from "@/lib/durable-rate-limit";
+import { readIdempotencyKey, tradingRpcErrorStatus } from "@/lib/idempotency";
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await getAuthUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireMfaAuth();
+    if (!auth.ok) return mfaAuthErrorResponse(auth);
+    const { user } = auth;
 
-    const { symbol, qty } = await req.json();
-    if (!symbol || !qty || qty <= 0) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    const idempotencyKey = readIdempotencyKey(req.headers);
+    if (!idempotencyKey) {
+      return NextResponse.json(
+        { error: "Missing or invalid Idempotency-Key header" },
+        { status: 400 },
+      );
+    }
 
-    const { data: position } = await supabaseAdmin
-      .from("stock_positions")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("symbol", symbol)
-      .single();
+    const limit = await durableRateLimit(`stock-sell:${user.id}`, 10, 60_000);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: "Too many sell requests. Please wait." },
+        { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
+      );
+    }
 
-    if (!position || Number(position.qty) < qty) {
-      return NextResponse.json({ error: "Insufficient shares" }, { status: 400 });
+    const body = await req.json();
+    const symbol = String(body.symbol || "").trim().toUpperCase();
+    const qty = Number(body.qty);
+
+    if (!/^[A-Z0-9^][A-Z0-9.^-]{0,19}$/.test(symbol)) {
+      return NextResponse.json({ error: "Invalid stock symbol" }, { status: 400 });
+    }
+    if (!Number.isFinite(qty) || qty <= 0) {
+      return NextResponse.json({ error: "Invalid sell quantity" }, { status: 400 });
     }
 
     const quote = await getStockPrice(symbol);
-    if (!quote || quote.price <= 0) return NextResponse.json({ error: "Could not fetch current price" }, { status: 502 });
-
-    const saleValue = qty * quote.price;
-    const remainingQty = Number(position.qty) - qty;
-
-    if (remainingQty < 0.0001) {
-      await supabaseAdmin.from("stock_positions").delete().eq("id", position.id);
-    } else {
-      await supabaseAdmin.from("stock_positions").update({ qty: remainingQty }).eq("id", position.id);
+    if (!quote || !Number.isFinite(quote.price) || quote.price <= 0) {
+      return NextResponse.json({ error: "Could not fetch current price" }, { status: 502 });
     }
 
-    const { data: profile } = await supabaseAdmin.from("profiles").select("balance").eq("id", user.id).single();
-    const oldBal = Number(profile?.balance || 0);
-    const newBal = oldBal + saleValue;
-
-    await supabaseAdmin.from("profiles").update({ balance: newBal }).eq("id", user.id);
-    await supabaseAdmin.from("transactions").insert({
-      user_id: user.id, type: "stock_sell", amount: saleValue, asset: symbol, status: "completed",
-      description: `Sold ${qty.toFixed(4)} shares of ${symbol} @ $${quote.price.toFixed(2)}`,
-      balance_before: oldBal, balance_after: newBal,
+    const { data, error } = await supabaseAdmin.rpc("execute_stock_sell", {
+      p_user_id: user.id,
+      p_symbol: symbol,
+      p_qty: qty,
+      p_price_usd: quote.price,
+      p_idempotency_key: idempotencyKey,
     });
 
-    return NextResponse.json({ symbol, qty, price: quote.price, value: parseFloat(saleValue.toFixed(2)), new_balance: newBal });
+    if (error) {
+      const status = tradingRpcErrorStatus(error.message);
+      if (status === 500) console.error("Stock sell RPC error:", error);
+      return NextResponse.json(
+        { error: status === 500 ? "Internal server error" : error.message },
+        { status },
+      );
+    }
+
+    return NextResponse.json(data);
   } catch (err) {
     console.error("Stock sell error:", err);
+    if (err instanceof SyntaxError) {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -6,10 +6,17 @@ import { motion } from "framer-motion";
 import { useDashboard } from "@/contexts/DashboardContext";
 import {
   TrendingUp, ArrowUpRight, ArrowDownRight, ChevronRight, Loader2,
-  CheckCircle2, X, Search, Star, Zap, BarChart2, Briefcase,
+  CheckCircle2, Search, Star, Briefcase,
 } from "lucide-react";
 import StockLogo from "@/components/StockLogo";
 import { cn } from "@/lib/utils";
+import {
+  clearIdempotentRequest,
+  getOrCreateIdempotentRequest,
+  shouldResetIdempotencyKey,
+  TRADE_IDEMPOTENCY_STORAGE_KEYS,
+  type PendingIdempotentRequest,
+} from "@/lib/idempotency";
 
 type Stock = { symbol: string; name: string; price: number; change: number; sector?: string; type?: string; chart?: number[] };
 type StockDetail = {
@@ -26,19 +33,13 @@ const TABS = [
 
 const SECTORS = ["All", "Technology", "Finance", "Healthcare", "Energy", "Consumer", "Industrial", "ETFs"];
 
-const SECTOR_COLORS: Record<string, string> = {
-  Technology: "#3b82f6", Finance: "#16a34a", Healthcare: "#ef4444", Energy: "#f59e0b",
-  Consumer: "#8b5cf6", Industrial: "#6b7280", ETFs: "#1a8a6e", Other: "#9ca3af",
-};
-
 export default function InvestPage() {
   const { profile, refreshProfile } = useDashboard();
   const [stocks, setStocks] = useState<Stock[]>([]);
   const [gainers, setGainers] = useState<Stock[]>([]);
   const [losers, setLosers] = useState<Stock[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
-  const [cryptoPortfolioValue, setCryptoPortfolioValue] = useState(0);
-  const availableInvestBalance = Number(profile?.balance ?? 0) + cryptoPortfolioValue;
+  const availableInvestBalance = Number(profile?.balance ?? 0);
   const [searchResults, setSearchResults] = useState<Stock[]>([]);
   const [detail, setDetail] = useState<StockDetail | null>(null);
   const [selected, setSelected] = useState<Stock | null>(null);
@@ -59,6 +60,8 @@ export default function InvestPage() {
   const [stockSellError, setStockSellError] = useState("");
   const [stockSellLoading, setStockSellLoading] = useState(false);
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const buyRequestRef = useRef<PendingIdempotentRequest | null>(null);
+  const stockSellRequestRef = useRef<PendingIdempotentRequest | null>(null);
 
   const fmt = (n: number) => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -120,18 +123,46 @@ export default function InvestPage() {
 
     setBuying(true);
     setBuyResult(null);
+
+    const requestBody = { symbol: selected.symbol, amount_usd: numAmount };
+    const pendingRequest = getOrCreateIdempotentRequest(
+      buyRequestRef.current,
+      JSON.stringify(requestBody),
+      TRADE_IDEMPOTENCY_STORAGE_KEYS.stockBuy,
+    );
+    buyRequestRef.current = pendingRequest;
+
     try {
       const res = await fetch("/api/stocks/buy", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ symbol: selected.symbol, amount_usd: numAmount, user_id: profile.id }),
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": pendingRequest.key,
+        },
+        body: JSON.stringify(requestBody),
       });
+
       const data = await res.json();
+
+      if (
+        shouldResetIdempotencyKey(res.status) &&
+        buyRequestRef.current?.key === pendingRequest.key
+      ) {
+        clearIdempotentRequest(
+          TRADE_IDEMPOTENCY_STORAGE_KEYS.stockBuy,
+          pendingRequest.key,
+        );
+        buyRequestRef.current = null;
+      }
+
       if (res.ok) {
         setBuyResult({ success: true, message: `Invested ${fmt(numAmount)} in ${selected.symbol}` });
         refreshProfile();
         const posRes = await fetch("/api/stocks/portfolio").catch(() => null);
-        if (posRes?.ok) { const d = await posRes.json(); if (Array.isArray(d)) setPositions(d); }
+        if (posRes?.ok) {
+          const d = await posRes.json().catch(() => null);
+          if (Array.isArray(d)) setPositions(d);
+        }
       } else {
         setBuyResult({ success: false, message: data.error || "Order failed" });
       }
@@ -170,17 +201,40 @@ export default function InvestPage() {
     setStockSellLoading(true);
     setStockSellError("");
 
+    const requestBody = { symbol: selectedStockToSell.symbol, qty };
+    const pendingRequest = getOrCreateIdempotentRequest(
+      stockSellRequestRef.current,
+      JSON.stringify(requestBody),
+      TRADE_IDEMPOTENCY_STORAGE_KEYS.stockSell,
+    );
+    stockSellRequestRef.current = pendingRequest;
+
     try {
       const res = await fetch("/api/stocks/sell", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ symbol: selectedStockToSell.symbol, qty }),
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": pendingRequest.key,
+        },
+        body: JSON.stringify(requestBody),
       });
 
       const data = await res.json();
 
+      if (
+        shouldResetIdempotencyKey(res.status) &&
+        stockSellRequestRef.current?.key === pendingRequest.key
+      ) {
+        clearIdempotentRequest(
+          TRADE_IDEMPOTENCY_STORAGE_KEYS.stockSell,
+          pendingRequest.key,
+        );
+        stockSellRequestRef.current = null;
+      }
+
       if (!res.ok) {
-        throw new Error(data?.error || "Unable to sell shares.");
+        setStockSellError(data?.error || "Unable to sell shares.");
+        return;
       }
 
       setStockSellingSymbol(null);
@@ -189,11 +243,11 @@ export default function InvestPage() {
 
       const posRes = await fetch("/api/stocks/portfolio").catch(() => null);
       if (posRes?.ok) {
-        const d = await posRes.json();
+        const d = await posRes.json().catch(() => null);
         if (Array.isArray(d)) setPositions(d);
       }
-    } catch (error: any) {
-      setStockSellError(error?.message || "Unable to sell shares.");
+    } catch {
+      setStockSellError("Network error. Retrying will not duplicate the sale.");
     } finally {
       setSelling(null);
       setStockSellLoading(false);
@@ -454,11 +508,6 @@ export default function InvestPage() {
                         selectedInvestChartIndex !== null && points[selectedInvestChartIndex]
                           ? points[selectedInvestChartIndex]
                           : latest;
-                      const selectedLabel =
-                        selectedInvestChartIndex !== null
-                          ? `${investChartRange} · point ${selectedInvestChartIndex + 1}`
-                          : `${investChartRange} · latest`;
-
                       return (
                         <>
                           <svg viewBox="0 0 320 240" className="absolute left-4 right-4 bottom-10 w-[calc(100%-2rem)] h-[220px] z-10 overflow-visible">

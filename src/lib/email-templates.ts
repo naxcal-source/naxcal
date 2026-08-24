@@ -1,3 +1,5 @@
+import { TIER_DAILY_RATE_PERCENT } from "./profit-policy";
+
 const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 
 function layout(content: string) {
@@ -11,7 +13,7 @@ function layout(content: string) {
 ${content}
 </div>
 <div style="background:#f9fafb;padding:24px 32px;border-radius:0 0 12px 12px;border:1px solid #e5e7eb;border-top:none;text-align:center">
-<p style="margin:0 0 8px;font-size:11px;color:#9ca3af;line-height:1.6">Naxcal Capital Ltd is authorised and regulated by the Financial Conduct Authority.<br>Your capital is at risk. Past performance is not indicative of future results.</p>
+<p style="margin:0 0 8px;font-size:11px;color:#9ca3af;line-height:1.6">Investment products involve risk and values can rise or fall.<br>Past performance is not indicative of future results.</p>
 <p style="margin:0;font-size:11px;color:#d1d5db">
 <a href="https://naxcal.us/unsubscribe" style="color:#9ca3af;text-decoration:underline">Unsubscribe</a> &middot; <a href="https://naxcal.us/dashboard/support" style="color:#9ca3af;text-decoration:underline">Help Centre</a> &middot; <a href="https://naxcal.us/legal/privacy" style="color:#9ca3af;text-decoration:underline">Privacy</a>
 </p>
@@ -37,13 +39,13 @@ export function welcomeEmail(name: string) {
 </div>
 <h2 style="margin:0 0 8px;font-size:24px;color:#0a0a0a;font-weight:700;text-align:center">Welcome to Naxcal</h2>
 <p style="margin:0 0 24px;font-size:14px;color:#9ca3af;text-align:center">Your account is ready</p>
-<p style="color:#374151;font-size:16px;line-height:1.6;margin:0 0 24px">Hi ${name}, your Naxcal account has been created successfully. You're now part of a community of 4,200+ investors accessing institutional-grade returns.</p>
+<p style="color:#374151;font-size:16px;line-height:1.6;margin:0 0 24px">Hi ${name}, your Naxcal account has been created successfully. You can now complete identity verification and review your account securely online.</p>
 <div style="background:#f9fafb;border-radius:12px;padding:20px 24px;margin:0 0 24px">
 <p style="margin:0 0 12px;font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;font-weight:600">Next Steps</p>
 <div style="display:flex;align-items:center;gap:12px;margin:0 0 12px"><span style="color:#16a34a;font-size:16px">✓</span><span style="color:#374151;font-size:14px">Account Created</span></div>
 <div style="display:flex;align-items:center;gap:12px;margin:0 0 12px"><span style="color:#1a8a6e;font-size:16px">→</span><span style="color:#374151;font-size:14px">Complete Identity Verification</span></div>
 <div style="display:flex;align-items:center;gap:12px;margin:0 0 12px"><span style="color:#1a8a6e;font-size:16px">→</span><span style="color:#374151;font-size:14px">Make Your First Deposit</span></div>
-<div style="display:flex;align-items:center;gap:12px"><span style="color:#1a8a6e;font-size:16px">→</span><span style="color:#374151;font-size:14px">Start Earning Daily Returns</span></div>
+<div style="display:flex;align-items:center;gap:12px"><span style="color:#1a8a6e;font-size:16px">→</span><span style="color:#374151;font-size:14px">Review the Monday–Friday Return Policy</span></div>
 </div>
 ${btn("Complete Verification →", "https://naxcal.us/dashboard/kyc")}
 ${divider}
@@ -69,32 +71,43 @@ ${row("Currency", currency.toUpperCase())}
 ${row("Transaction ID", txHash || "—")}
 ${row("Status", "✅ Confirmed")}
 ${row("Date", date)}
-${row("Processing Time", "Within 30 minutes")}
+${row("Processing Target", "Typically within 30 minutes")}
 </table>
 <div style="background:#eff6ff;border-radius:12px;padding:16px 20px;margin:24px 0">
-<p style="margin:0;font-size:14px;color:#1e40af;line-height:1.6">💡 Your balance will be updated within 30 minutes. You'll receive another notification once your funds are available to invest.</p>
+<p style="margin:0;font-size:14px;color:#1e40af;line-height:1.6">💡 Balance updates are typically completed within 30 minutes, but provider and network delays can take longer. You'll receive another notification when the funds are available.</p>
 </div>
 ${btn("View Dashboard →", "https://naxcal.us/dashboard")}
 `),
   };
 }
 
-export function dailyProfitEmail(name: string, amount: number, percentage: number, totalEarned: number, balance: number) {
+export function dailyProfitEmail(
+  name: string,
+  amount: number,
+  percentage: number,
+  totalEarned: number,
+  balance: number,
+  details?: { profitDate?: string; compoundingApplied?: boolean; policyName?: string },
+) {
   const fmt = (n: number) => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const date = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  const parsedDate = details?.profitDate ? new Date(`${details.profitDate}T00:00:00Z`) : new Date();
+  const date = parsedDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
+  const compoundingText = details?.compoundingApplied
+    ? "This return is included in the basis for future accruals."
+    : "This return is kept separate from the basis for future accruals.";
   return {
-    subject: `💰 Your daily return: +${fmt(amount)} (${percentage}%)`,
+    subject: `Profit credited: +${fmt(amount)} (${percentage}%)`,
     html: layout(`
 <div style="text-align:center;margin-bottom:8px">
 <p style="margin:0;font-size:36px;font-weight:700;color:#1a8a6e">+${fmt(amount)}</p>
-<p style="margin:4px 0 0;font-size:16px;color:#374151;font-weight:600">Daily Return Posted</p>
-<p style="margin:4px 0 0;font-size:13px;color:#9ca3af">${percentage}% return for ${date}</p>
+<p style="margin:4px 0 0;font-size:16px;color:#374151;font-weight:600">Weekday Profit Posted</p>
+<p style="margin:4px 0 0;font-size:13px;color:#9ca3af">${percentage}% effective rate for ${date}</p>
 </div>
 ${divider}
 <table style="width:100%;border-collapse:collapse;margin:0 0 24px">
 <tr>
 <td style="text-align:center;padding:16px;width:33%">
-<p style="margin:0;font-size:12px;color:#9ca3af;text-transform:uppercase">Today's Return</p>
+<p style="margin:0;font-size:12px;color:#9ca3af;text-transform:uppercase">Return</p>
 <p style="margin:4px 0 0;font-size:20px;font-weight:700;color:#16a34a">+${fmt(amount)}</p>
 </td>
 <td style="text-align:center;padding:16px;width:33%;border-left:1px solid #f3f4f6;border-right:1px solid #f3f4f6">
@@ -107,13 +120,58 @@ ${divider}
 </td>
 </tr>
 </table>
-<p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 16px">Hi ${name}, your capital continues to work hard across our diversified trading strategies. Today's return has been added to your portfolio balance.</p>
+<p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 16px">Hi ${name}, the weekday profit accrual shown above has been added to your cash balance. Returns are credited Monday through Friday only; weekends are excluded.</p>
+${details?.policyName ? `<p style="color:#6b7280;font-size:13px;line-height:1.6;margin:0 0 16px">Policy: ${details.policyName}</p>` : ""}
 <div style="background:#f9fafb;border-radius:8px;padding:12px 16px;margin:0 0 24px">
-<p style="margin:0;font-size:13px;color:#6b7280">⚙️ Returns are set to <strong>auto-reinvest</strong>. <a href="https://naxcal.us/dashboard/settings" style="color:#1a8a6e;text-decoration:none">Manage in Settings</a></p>
+<p style="margin:0;font-size:13px;color:#6b7280">⚙️ ${compoundingText} <a href="https://naxcal.us/dashboard/settings" style="color:#1a8a6e;text-decoration:none">Manage in Settings</a></p>
 </div>
 ${btn("View Portfolio →", "https://naxcal.us/dashboard")}
 ${divider}
 <p style="color:#9ca3af;font-size:12px;line-height:1.5;margin:0;text-align:center">Past performance is not indicative of future results. Capital at risk.</p>
+`),
+  };
+}
+
+export function profitReconciliationEmail(
+  name: string,
+  totalAmount: number,
+  startDate: string,
+  endDate: string,
+  dayCount: number,
+  cashBalance: number,
+  details?: {
+    overcreditRemoved?: number;
+    historicalTotalOnlyRemoved?: number;
+    netChange?: number;
+  },
+) {
+  const fmt = (value: number) => "$" + value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const hasLedgerAdjustment = Number.isFinite(details?.overcreditRemoved);
+  const overcreditRemoved = hasLedgerAdjustment ? Math.max(details?.overcreditRemoved || 0, 0) : 0;
+  const historicalTotalOnlyRemoved = Number.isFinite(details?.historicalTotalOnlyRemoved)
+    ? Math.max(details?.historicalTotalOnlyRemoved || 0, 0)
+    : 0;
+  const netChange = Number.isFinite(details?.netChange)
+    ? details?.netChange || 0
+    : totalAmount - overcreditRemoved;
+  return {
+    subject: hasLedgerAdjustment
+      ? "Account profit reconciliation completed"
+      : `Profit correction completed: +${fmt(totalAmount)}`,
+    html: layout(`
+<h2 style="margin:0 0 12px;font-size:24px;color:#0a0a0a">Profit correction completed</h2>
+<p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 20px">Hi ${name}, we reviewed your account, posted the missing weekday profit accruals, and reconciled the automated ledger calculations.</p>
+<table style="width:100%;border-collapse:collapse;margin:0 0 24px">
+${row("Correction period", `${startDate} to ${endDate}`)}
+${row("Accrual weekdays posted", String(dayCount))}
+${row("Missing weekday profit credited", `+${fmt(totalAmount)}`)}
+${hasLedgerAdjustment ? row("Prior automated over-credit removed", `-${fmt(overcreditRemoved)}`) : ""}
+${historicalTotalOnlyRemoved > 0 ? row("Historical profit statistic corrected (no cash impact)", `-${fmt(historicalTotalOnlyRemoved)}`) : ""}
+${hasLedgerAdjustment ? row("Net cash-balance change", `${netChange >= 0 ? "+" : "-"}${fmt(Math.abs(netChange))}`) : ""}
+${row("Current cash balance", fmt(cashBalance))}
+</table>
+<p style="color:#6b7280;font-size:13px;line-height:1.6;margin:0 0 20px">Each Monday–Friday accrual and any compensating adjustment has its own immutable ledger entry. Saturdays and Sundays are excluded, compounding is not applied, and duplicate protection prevents the same date from being credited twice.</p>
+${btn("Review Transactions →", "https://naxcal.us/dashboard/transactions")}
 `),
   };
 }
@@ -130,7 +188,7 @@ export function kycApprovedEmail(name: string) {
 <div style="background:#f9fafb;border-radius:12px;padding:20px 24px;margin:0 0 24px">
 <p style="margin:0 0 12px;font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;font-weight:600">Features Unlocked</p>
 <div style="margin:0 0 10px"><span style="color:#16a34a">✓</span> <span style="color:#374151;font-size:14px">Crypto deposits (BTC, ETH, USDT + 300 more)</span></div>
-<div style="margin:0 0 10px"><span style="color:#16a34a">✓</span> <span style="color:#374151;font-size:14px">Daily returns on your investment</span></div>
+<div style="margin:0 0 10px"><span style="color:#16a34a">✓</span> <span style="color:#374151;font-size:14px">Monday–Friday returns on your investment</span></div>
 <div style="margin:0 0 10px"><span style="color:#16a34a">✓</span> <span style="color:#374151;font-size:14px">Withdrawal requests</span></div>
 <div><span style="color:#16a34a">✓</span> <span style="color:#374151;font-size:14px">Stock investing (coming soon)</span></div>
 </div>
@@ -207,7 +265,7 @@ export function withdrawalUnlockedEmail(name: string, balance: number) {
 ${row("Account Status", "✅ Withdrawals Active")}
 ${row("Available Balance", fmt)}
 ${row("Minimum Withdrawal", "$100")}
-${row("Processing Time", "Within 24 hours")}
+${row("Processing Target", "Typically within 24 hours")}
 </table>
 <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 24px">To make a withdrawal, log in to your dashboard, navigate to <strong>Withdraw</strong>, and enter your wallet address and PIN.</p>
 ${btn("Withdraw Now →", "https://naxcal.us/dashboard/withdraw")}
@@ -233,12 +291,108 @@ ${row("Amount", fmt)}
 ${row("Currency", (currency || "USDT").toUpperCase())}
 ${row("Wallet Address", truncAddr)}
 ${row("Status", "⏳ Processing")}
-${row("Expected", "Within 24 hours")}
+${row("Processing Target", "Typically within 24 hours")}
 </table>
 <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:16px 20px;margin:0 0 24px">
 <p style="margin:0;font-size:14px;color:#dc2626;line-height:1.6">🔐 <strong>Security Notice:</strong> If you did not request this withdrawal, contact us immediately at <a href="mailto:security@naxcal.us" style="color:#dc2626">security@naxcal.us</a></p>
 </div>
 ${btn("View Dashboard →", "https://naxcal.us/dashboard")}
+`),
+  };
+}
+
+export function withdrawalCompletedEmail(
+  name: string,
+  amount: number,
+  currency: string,
+  settlementNetwork: string,
+  settlementAmount: string,
+  walletAddress: string,
+  payoutReference: string,
+  fee: number,
+  referenceType: string,
+  provider?: string,
+  outputIndex?: number,
+) {
+  const fmt = (value: number) => "$" + value.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const netAmount = Math.max(amount - fee, 0);
+  const decimalMatch = settlementAmount.match(/^(\d+)(?:\.(\d{1,18}))?$/);
+  const whole = (decimalMatch?.[1] || "0").replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  const fraction = (decimalMatch?.[2] || "").replace(/0+$/, "");
+  const assetAmount = `${whole}${fraction ? `.${fraction}` : ""}`;
+  const truncatedWallet = walletAddress.length > 18
+    ? `${walletAddress.slice(0, 10)}...${walletAddress.slice(-8)}`
+    : walletAddress || "—";
+  const truncatedReference = payoutReference.length > 28
+    ? `${payoutReference.slice(0, 14)}...${payoutReference.slice(-10)}`
+    : payoutReference;
+
+  return {
+    subject: `Withdrawal completed — ${assetAmount} ${currency.toUpperCase()} sent`,
+    html: layout(`
+<div style="text-align:center;margin-bottom:24px">
+<p style="margin:0;font-size:14px;color:#16a34a;font-weight:600">✓ Withdrawal Completed</p>
+<p style="margin:6px 0 0;font-size:36px;font-weight:700;color:#0a0a0a">${assetAmount} ${currency.toUpperCase()}</p>
+<p style="margin:4px 0 0;font-size:13px;color:#6b7280">Amount sent</p>
+</div>
+${divider}
+<p style="color:#374151;font-size:16px;line-height:1.6;margin:0 0 20px">Hi ${name}, your withdrawal payout has been completed.</p>
+<table style="width:100%;border-collapse:collapse;margin:0 0 24px">
+${row("Requested Cash Amount", fmt(amount))}
+${row("Agreed Payout Fee (USD)", fmt(fee))}
+${row("Net Payout Value (USD)", fmt(netAmount))}
+${row("Amount Sent", `${assetAmount} ${(currency || "USDT").toUpperCase()}`)}
+${row("Network", settlementNetwork)}
+${row("Destination", truncatedWallet)}
+${row("Proof Type", referenceType === "blockchain" ? "Blockchain transaction" : `Provider payout (${provider || "provider"})`)}
+${row("Payout Reference", truncatedReference)}
+${referenceType === "blockchain" ? row("Transfer / Output Index", String(outputIndex ?? 0)) : ""}
+${row("Status", "✅ Completed")}
+</table>
+<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:16px 20px;margin:0 0 24px">
+<p style="margin:0;font-size:13px;color:#166534;line-height:1.6">Keep the payout reference above for your records. You can also review the completed transaction in your dashboard.</p>
+</div>
+${btn("Review Transaction →", "https://naxcal.us/dashboard/transactions")}
+${divider}
+<p style="color:#9ca3af;font-size:14px;line-height:1.6;margin:0;text-align:center">Questions? Contact <a href="mailto:support@naxcal.us" style="color:#1a8a6e;text-decoration:none">support@naxcal.us</a></p>
+`),
+  };
+}
+
+export function withdrawalProcessingFailedEmail(
+  name: string,
+  amount: number,
+  reason: string,
+  cashBalance: number,
+) {
+  const fmt = (value: number) => "$" + value.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  return {
+    subject: `Withdrawal payout unsuccessful — ${fmt(amount)} restored`,
+    html: layout(`
+<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px">
+<p style="margin:0;font-size:28px">↩</p>
+<p style="margin:8px 0 0;font-size:20px;font-weight:700;color:#b91c1c">Payout Unsuccessful</p>
+</div>
+<p style="color:#374151;font-size:16px;line-height:1.6;margin:0 0 20px">Hi ${name}, the approved withdrawal payout could not be completed. No payout was recorded, and the full reserved amount has been returned to your Naxcal cash balance.</p>
+<table style="width:100%;border-collapse:collapse;margin:0 0 24px">
+${row("Amount Restored", fmt(amount))}
+${row("Current Cash Balance", fmt(cashBalance))}
+${row("Status", "❌ Payout unsuccessful — refunded")}
+</table>
+<div style="background:#f9fafb;border-radius:12px;padding:16px 20px;margin:0 0 24px">
+<p style="margin:0 0 4px;font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase">Reason</p>
+<p style="margin:0;font-size:14px;color:#374151;line-height:1.6">${reason}</p>
+</div>
+${btn("Review Transactions →", "https://naxcal.us/dashboard/transactions")}
+${divider}
+<p style="color:#9ca3af;font-size:14px;line-height:1.6;margin:0;text-align:center">Questions? Contact <a href="mailto:support@naxcal.us" style="color:#1a8a6e;text-decoration:none">support@naxcal.us</a></p>
 `),
   };
 }
@@ -256,7 +410,7 @@ export function investorOutreachEmail(name: string, unsubscribeUrl: string) {
 <title>Private Invitation — Naxcal Capital</title>
 </head>
 <body style="margin:0;padding:0;background:#0a0a0a;font-family:${F};-webkit-font-smoothing:antialiased">
-<div style="display:none;max-height:0;overflow:hidden;font-size:1px;color:#0a0a0a">Daily returns of 1.5–2.1% on your capital. Regulated. Withdraw anytime. &#8203;&nbsp;</div>
+<div style="display:none;max-height:0;overflow:hidden;font-size:1px;color:#0a0a0a">Review the published ${TIER_DAILY_RATE_PERCENT.bronze}–${TIER_DAILY_RATE_PERCENT.gold}% weekday policy. Weekends are excluded and returns are not guaranteed. &#8203;&nbsp;</div>
 
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0a0a0a;min-height:100vh">
 <tr><td align="center" style="padding:40px 16px">
@@ -273,10 +427,10 @@ export function investorOutreachEmail(name: string, unsubscribeUrl: string) {
   <!-- HERO -->
   <tr><td style="background:linear-gradient(160deg,#0d1f1a 0%,#060d10 60%,#0a0a0a 100%);padding:52px 40px 44px;text-align:center">
     <h1 style="margin:0 0 16px;font-size:36px;font-weight:800;color:#ffffff;line-height:1.15;letter-spacing:-0.5px">
-      Your capital.<br>Working every single day.
+      Your capital.<br>Working every weekday.
     </h1>
     <p style="margin:0 auto;max-width:420px;font-size:16px;color:rgba(255,255,255,0.75);line-height:1.7">
-      Naxcal is a regulated investment platform generating consistent daily returns for a select group of private investors. We'd like to invite you in.
+      Naxcal is an investment platform generating returns Monday through Friday for a select group of private investors. Saturdays and Sundays are excluded.
     </p>
   </td></tr>
 
@@ -285,16 +439,16 @@ export function investorOutreachEmail(name: string, unsubscribeUrl: string) {
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
         <td width="33%" style="padding:28px 12px 28px 0;border-right:1px solid rgba(255,255,255,0.06);text-align:center">
-          <div style="font-size:32px;font-weight:800;color:#22a882;letter-spacing:-1px">2.1%</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Daily Return</div>
+          <div style="font-size:32px;font-weight:800;color:#22a882;letter-spacing:-1px">${TIER_DAILY_RATE_PERCENT.gold}%</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Weekday Return</div>
         </td>
         <td width="33%" style="padding:28px 12px;border-right:1px solid rgba(255,255,255,0.06);text-align:center">
-          <div style="font-size:32px;font-weight:800;color:#f0a500;letter-spacing:-1px">4,200+</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Active Investors</div>
+          <div style="font-size:32px;font-weight:800;color:#f0a500;letter-spacing:-1px">24/7</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Account Access</div>
         </td>
         <td width="33%" style="padding:28px 0 28px 12px;text-align:center">
-          <div style="font-size:32px;font-weight:800;color:#ffffff;letter-spacing:-1px">FCA</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Regulated</div>
+          <div style="font-size:32px;font-weight:800;color:#ffffff;letter-spacing:-1px">KYC</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Identity Checks</div>
         </td>
       </tr>
     </table>
@@ -310,10 +464,10 @@ export function investorOutreachEmail(name: string, unsubscribeUrl: string) {
       We don't advertise. Naxcal grows through introductions — and you came highly recommended. We're reaching out directly to offer you early access before we close our current onboarding window.
     </p>
     <p style="margin:0 0 20px;font-size:15px;color:rgba(255,255,255,0.75);line-height:1.8">
-      Our platform deploys capital across a diversified set of proprietary trading strategies — forex, commodities, and digital assets — with daily returns credited directly to your account balance. No lock-in. No hidden fees. Full transparency.
+      Our platform presents account activity across forex, commodities, and digital assets, with the applicable return policy operating Monday through Friday. Weekends are excluded. Fees, eligibility checks, and processing rules are disclosed before a request is submitted.
     </p>
     <p style="margin:0;font-size:15px;color:rgba(255,255,255,0.75);line-height:1.8">
-      To put it plainly: <strong style="color:#ffffff">a $500,000 position at our Gold tier returns approximately $10,500 per day</strong>. Most of our investors treat it as a self-running income stream while their primary assets continue to grow elsewhere.
+      As an illustration only, applying the published Gold rate to $500,000 produces $10,500 for one eligible weekday. This is not a guarantee or personalised advice. Saturdays and Sundays do not accrue returns.
     </p>
   </td></tr>
 
@@ -323,26 +477,26 @@ export function investorOutreachEmail(name: string, unsubscribeUrl: string) {
       <tr style="background:rgba(255,255,255,0.04)">
         <td style="padding:12px 20px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:1px">Tier</td>
         <td style="padding:12px 20px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:1px">Min. Deposit</td>
-        <td style="padding:12px 20px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:1px">Daily Return</td>
+        <td style="padding:12px 20px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:1px">Weekday Return</td>
         <td style="padding:12px 20px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:1px">Monthly Est.</td>
       </tr>
       <tr style="border-top:1px solid rgba(255,255,255,0.06)">
         <td style="padding:16px 20px"><span style="color:#cd7f32;font-weight:700;font-size:14px">Bronze</span></td>
         <td style="padding:16px 20px;color:rgba(255,255,255,0.7);font-size:14px">$1,000</td>
-        <td style="padding:16px 20px;color:#22a882;font-weight:700;font-size:14px">1.5%</td>
-        <td style="padding:16px 20px;color:rgba(255,255,255,0.7);font-size:14px">~45%</td>
+        <td style="padding:16px 20px;color:#22a882;font-weight:700;font-size:14px">${TIER_DAILY_RATE_PERCENT.bronze}%</td>
+        <td style="padding:16px 20px;color:rgba(255,255,255,0.7);font-size:14px">~33%</td>
       </tr>
       <tr style="border-top:1px solid rgba(255,255,255,0.06)">
         <td style="padding:16px 20px"><span style="color:#c0c0c0;font-weight:700;font-size:14px">Silver</span></td>
         <td style="padding:16px 20px;color:rgba(255,255,255,0.7);font-size:14px">$10,000</td>
-        <td style="padding:16px 20px;color:#22a882;font-weight:700;font-size:14px">1.8%</td>
-        <td style="padding:16px 20px;color:rgba(255,255,255,0.7);font-size:14px">~54%</td>
+        <td style="padding:16px 20px;color:#22a882;font-weight:700;font-size:14px">${TIER_DAILY_RATE_PERCENT.silver}%</td>
+        <td style="padding:16px 20px;color:rgba(255,255,255,0.7);font-size:14px">~39.6%</td>
       </tr>
       <tr style="border-top:1px solid rgba(255,255,255,0.06);background:rgba(26,138,110,0.06)">
         <td style="padding:16px 20px"><span style="color:#f0a500;font-weight:700;font-size:14px">Gold ✦</span></td>
         <td style="padding:16px 20px;color:rgba(255,255,255,0.7);font-size:14px">$50,000</td>
-        <td style="padding:16px 20px;color:#22a882;font-weight:700;font-size:14px">2.1%</td>
-        <td style="padding:16px 20px;color:rgba(255,255,255,0.7);font-size:14px">~63%</td>
+        <td style="padding:16px 20px;color:#22a882;font-weight:700;font-size:14px">${TIER_DAILY_RATE_PERCENT.gold}%</td>
+        <td style="padding:16px 20px;color:rgba(255,255,255,0.7);font-size:14px">~46.2%</td>
       </tr>
     </table>
   </td></tr>
@@ -353,9 +507,9 @@ export function investorOutreachEmail(name: string, unsubscribeUrl: string) {
       <tr>
         <td width="33%" style="padding-right:8px">
           <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:16px;text-align:center">
-            <div style="font-size:20px;margin-bottom:6px">🏛️</div>
-            <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.85)">FCA Regulated</div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:3px">Fully authorised</div>
+            <div style="font-size:20px;margin-bottom:6px">🔐</div>
+            <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.85)">Identity Checks</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:3px">Account verification</div>
           </div>
         </td>
         <td width="33%" style="padding:0 4px">
@@ -368,8 +522,8 @@ export function investorOutreachEmail(name: string, unsubscribeUrl: string) {
         <td width="33%" style="padding-left:8px">
           <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:16px;text-align:center">
             <div style="font-size:20px;margin-bottom:6px">⚡</div>
-            <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.85)">Withdraw Anytime</div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:3px">No lock-in period</div>
+            <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.85)">Withdrawal Controls</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:3px">Eligibility checks apply</div>
           </div>
         </td>
       </tr>

@@ -1,107 +1,86 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { sendDepositConfirmedEmail } from "@/lib/emails";
-import { createNotification } from "@/lib/notifications";
-
-function verifySignature(payload: string, signature: string): boolean {
-  const hmac = crypto.createHmac("sha512", process.env.NOWPAYMENTS_IPN_SECRET!);
-  hmac.update(payload);
-  const expectedSig = hmac.digest("hex");
-  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig));
-}
+import { processEmailOutbox } from "@/lib/email-outbox";
+import { verifyNowPaymentsSignature } from "@/lib/webhook-signatures";
 
 export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();
     const signature = req.headers.get("x-nowpayments-sig") || "";
+    const ipnSecret = process.env.NOWPAYMENTS_IPN_SECRET;
 
-    if (process.env.NOWPAYMENTS_IPN_SECRET && process.env.NOWPAYMENTS_IPN_SECRET !== "your_ipn_secret") {
-      if (!signature || !verifySignature(rawBody, signature)) {
-        return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
-      }
+    if (!ipnSecret || ipnSecret === "your_ipn_secret") {
+      console.error("Payment webhook refused: NOWPAYMENTS_IPN_SECRET is not configured");
+      return NextResponse.json({ error: "Webhook is not configured" }, { status: 503 });
     }
 
     const data = JSON.parse(rawBody);
-    const { payment_status, order_id, payment_id, pay_currency, actually_paid, price_amount } = data;
-
-    if (payment_status !== "confirmed" && payment_status !== "finished") {
-      return NextResponse.json({ status: "ignored", payment_status });
+    if (!signature || !verifyNowPaymentsSignature(data, signature, ipnSecret)) {
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
-    if (!order_id) {
-      return NextResponse.json({ error: "Missing order_id" }, { status: 400 });
+    const paymentStatus = typeof data.payment_status === "string" ? data.payment_status.toLowerCase() : "";
+    const paymentId = data.payment_id == null ? "" : String(data.payment_id);
+    const orderId = typeof data.order_id === "string" ? data.order_id : "";
+    if (!paymentStatus || !paymentId || !orderId) {
+      return NextResponse.json({ error: "Missing payment identifiers" }, { status: 400 });
     }
 
-    const userId = order_id.split("_")[0];
-    const usdAmount = Number(price_amount) || 0;
-
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from("profiles")
-      .select("id, balance, total_deposited, email, full_name")
-      .eq("id", userId)
-      .single();
-
-    if (profileError || !profile) {
-      console.error("Webhook: user not found", userId);
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    const eventKey = crypto.createHash("sha256").update(rawBody).digest("hex");
+    const { error: inboxError } = await supabaseAdmin.from("payment_webhook_inbox").upsert({
+      event_key: eventKey,
+      provider_payment_id: paymentId,
+      provider_order_id: orderId,
+      payment_status: paymentStatus,
+      payload: data,
+      status: "received",
+      attempts: 1,
+      last_error: null,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "event_key", ignoreDuplicates: true });
+    if (inboxError) {
+      console.error("Could not persist verified payment webhook", inboxError);
+      return NextResponse.json({ error: "Webhook persistence failed" }, { status: 503 });
     }
 
-    const oldBalance = Number(profile.balance);
-    const newBalance = oldBalance + usdAmount;
-
-    const { error: updateError } = await supabaseAdmin
-      .from("profiles")
-      .update({
-        balance: newBalance,
-        total_deposited: Number(profile.total_deposited) + usdAmount,
-      })
-      .eq("id", userId);
-
-    if (updateError) {
-      console.error("Webhook: balance update failed", updateError);
-      return NextResponse.json({ error: "Balance update failed" }, { status: 500 });
-    }
-
-    await supabaseAdmin.from("transactions").insert({
-      user_id: userId,
-      type: "deposit",
-      amount: usdAmount,
-      asset: pay_currency?.toUpperCase(),
-      status: "completed",
-      tx_hash: String(payment_id),
-      description: `Crypto deposit - ${(pay_currency || "").toUpperCase()}`,
-      balance_before: oldBalance,
-      balance_after: newBalance,
-    });
-
-    await createNotification({
-      userId,
-      type: "deposit",
-      title: "Deposit confirmed",
-      description: `$${usdAmount.toFixed(2)} has been credited to your account.`,
-      body: `Your deposit has been confirmed and credited to your Naxcal balance. Payment currency: ${(pay_currency || "").toUpperCase()}. Transaction reference: ${payment_id}.`,
-      link: "/dashboard/transactions",
-      metadata: {
-        amount_usd: usdAmount,
-        pay_currency: (pay_currency || "").toUpperCase(),
-        payment_id: String(payment_id),
-        actually_paid,
-        balance_before: oldBalance,
-        balance_after: newBalance,
+    const { data: settlement, error: settlementError } = await supabaseAdmin.rpc(
+      "settle_nowpayments_deposit",
+      {
+        p_provider_payment_id: paymentId,
+        p_provider_order_id: orderId,
+        p_payment_status: paymentStatus,
+        p_payload: data,
       },
-    });
+    );
 
-    if (profile.email) {
-      await sendDepositConfirmedEmail(
-        profile.email,
-        profile.full_name || "Investor",
-        usdAmount,
-        (pay_currency || "").toUpperCase()
-      ).catch(console.error);
+    if (settlementError) {
+      console.error("Payment settlement failed:", settlementError);
+      await supabaseAdmin
+        .from("payment_webhook_inbox")
+        .update({
+          status: "failed",
+          last_error: settlementError.message,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("event_key", eventKey);
+      return NextResponse.json({ error: "Payment settlement failed" }, { status: 503 });
     }
 
-    return NextResponse.json({ status: "ok" });
+    const result = (settlement || {}) as Record<string, unknown>;
+    const { error: processedError } = await supabaseAdmin
+      .from("payment_webhook_inbox")
+      .update({ status: "processed", processed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .eq("event_key", eventKey);
+    if (processedError) console.error("Could not mark payment webhook processed", processedError);
+
+    if (typeof result.dedupe_key === "string") {
+      processEmailOutbox({ dedupeKey: result.dedupe_key, limit: 1 }).catch((error) => {
+        console.error("Immediate deposit email delivery failed; scheduled retry will continue", error);
+      });
+    }
+
+    return NextResponse.json({ status: result.status || "recorded" });
   } catch (err) {
     console.error("Webhook error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

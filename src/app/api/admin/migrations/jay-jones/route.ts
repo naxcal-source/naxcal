@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { SUPPORTED_EVM_CHAINS } from "@/lib/blockchain/evm-chains";
-import { runJayJonesWalletMigration } from "@/lib/migrations/jay-jones-wallet-migration";
+import { runConfiguredWalletMigration } from "@/lib/migrations/jay-jones-wallet-migration";
 
 export async function POST(request: Request) {
   try {
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
     const includeTransactions =
       url.searchParams.get("includeTransactions") === "true";
 
-    const result = await runJayJonesWalletMigration(undefined, chain, {
+    const result = await runConfiguredWalletMigration(undefined, chain, {
       includeTransactions,
     });
 

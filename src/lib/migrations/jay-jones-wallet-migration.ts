@@ -9,8 +9,9 @@ import {
   getWalletTransactions,
 } from "@/lib/blockchain/moralis-client";
 
-const JAY_JONES_USER_ID = "f46c9612-c3be-444a-8373-51575e8947aa";
-const JAY_JONES_EVM_WALLET = "0xF6D4E5a7c5215F91f59a95065190CCa24bf64554";
+const MIGRATION_TARGET_USER_ID = process.env.MIGRATION_TARGET_USER_ID || "";
+const MIGRATION_TARGET_EVM_WALLET =
+  process.env.MIGRATION_TARGET_EVM_WALLET || "";
 
 type MigrationResult = {
   success: boolean;
@@ -20,13 +21,20 @@ type MigrationResult = {
   message: string;
 };
 
-export async function runJayJonesWalletMigration(
+export async function runConfiguredWalletMigration(
   administratorId?: string,
   selectedChainKey?: string,
   options?: { includeTransactions?: boolean },
 ): Promise<MigrationResult> {
+  if (!MIGRATION_TARGET_USER_ID) {
+    return {
+      success: false,
+      status: "FAILED",
+      message: "Migration target is not configured.",
+    };
+  }
   const includeTransactions = options?.includeTransactions ?? false;
-  if (!isValidEvmAddress(JAY_JONES_EVM_WALLET)) {
+  if (!isValidEvmAddress(MIGRATION_TARGET_EVM_WALLET)) {
     return {
       success: false,
       status: "FAILED",
@@ -37,14 +45,14 @@ export async function runJayJonesWalletMigration(
   const { data: user, error: userError } = await supabaseAdmin
     .from("profiles")
     .select("id, email, full_name")
-    .eq("id", JAY_JONES_USER_ID)
+    .eq("id", MIGRATION_TARGET_USER_ID)
     .single();
 
   if (userError || !user) {
     return {
       success: false,
       status: "FAILED",
-      message: "Jay Jones profile was not found using the supplied UUID.",
+      message: "The configured migration profile was not found.",
     };
   }
 
@@ -52,9 +60,9 @@ export async function runJayJonesWalletMigration(
     .from("wallets")
     .upsert(
       {
-        user_id: JAY_JONES_USER_ID,
+        user_id: MIGRATION_TARGET_USER_ID,
         wallet_type: "evm",
-        address: JAY_JONES_EVM_WALLET,
+        address: MIGRATION_TARGET_EVM_WALLET,
         ownership_status: "verification_required",
         source: "admin_migration",
       },
@@ -76,10 +84,10 @@ export async function runJayJonesWalletMigration(
   const { data: migration, error: migrationError } = await supabaseAdmin
     .from("migration_runs")
     .insert({
-      user_id: JAY_JONES_USER_ID,
+      user_id: MIGRATION_TARGET_USER_ID,
       wallet_id: wallet.id,
       administrator_id: administratorId ?? null,
-      wallet_address: JAY_JONES_EVM_WALLET,
+      wallet_address: MIGRATION_TARGET_EVM_WALLET,
       status: "IMPORTING",
       migration_started_at: new Date().toISOString(),
     })
@@ -135,11 +143,11 @@ export async function runJayJonesWalletMigration(
     try {
       await supabaseAdmin.from("migration_audit_logs").insert({
         migration_id: migration.id,
-        user_id: JAY_JONES_USER_ID,
+        user_id: MIGRATION_TARGET_USER_ID,
         wallet_id: wallet.id,
         administrator_id: administratorId ?? null,
         chain: chain.chain,
-        wallet_address: JAY_JONES_EVM_WALLET,
+        wallet_address: MIGRATION_TARGET_EVM_WALLET,
         action: "CHAIN_IMPORT_STARTED",
         status: "IMPORTING",
         message: includeTransactions
@@ -147,10 +155,16 @@ export async function runJayJonesWalletMigration(
           : `Started Moralis balance and token import for ${chain.chain}.`,
       });
 
-      const nativeBalance = await getNativeBalance(JAY_JONES_EVM_WALLET, chain);
-      const tokenBalances = await getTokenBalances(JAY_JONES_EVM_WALLET, chain);
+      const nativeBalance = await getNativeBalance(
+        MIGRATION_TARGET_EVM_WALLET,
+        chain,
+      );
+      const tokenBalances = await getTokenBalances(
+        MIGRATION_TARGET_EVM_WALLET,
+        chain,
+      );
       const walletTransactions = includeTransactions
-        ? await getWalletTransactions(JAY_JONES_EVM_WALLET, chain)
+        ? await getWalletTransactions(MIGRATION_TARGET_EVM_WALLET, chain)
         : { transactions: [], cursor: null };
 
       const hasNativeBalance =
@@ -168,7 +182,7 @@ export async function runJayJonesWalletMigration(
         await supabaseAdmin.from("onchain_native_balances").upsert(
           {
             wallet_id: wallet.id,
-            user_id: JAY_JONES_USER_ID,
+            user_id: MIGRATION_TARGET_USER_ID,
             chain: chain.chain,
             chain_id: chain.chainId,
             asset_symbol: chain.nativeSymbol,
@@ -192,7 +206,7 @@ export async function runJayJonesWalletMigration(
         await supabaseAdmin.from("onchain_token_balances").upsert(
           {
             wallet_id: wallet.id,
-            user_id: JAY_JONES_USER_ID,
+            user_id: MIGRATION_TARGET_USER_ID,
             chain: chain.chain,
             chain_id: chain.chainId,
             token_contract_address: token.tokenContractAddress,
@@ -222,7 +236,7 @@ export async function runJayJonesWalletMigration(
           .upsert(
             {
               wallet_id: wallet.id,
-              user_id: JAY_JONES_USER_ID,
+              user_id: MIGRATION_TARGET_USER_ID,
               chain: chain.chain,
               chain_id: chain.chainId,
               tx_hash: tx.txHash,
@@ -254,7 +268,7 @@ export async function runJayJonesWalletMigration(
           wallet_id: wallet.id,
           chain: chain.chain,
           chain_id: chain.chainId,
-          address: JAY_JONES_EVM_WALLET,
+          address: MIGRATION_TARGET_EVM_WALLET,
           has_activity: hasActivity,
           native_balance: nativeBalance.normalizedBalance,
           token_count: validTokenBalances.length,
@@ -290,7 +304,7 @@ export async function runJayJonesWalletMigration(
           wallet_id: wallet.id,
           chain: chain.chain,
           chain_id: chain.chainId,
-          address: JAY_JONES_EVM_WALLET,
+          address: MIGRATION_TARGET_EVM_WALLET,
           has_activity: null,
           native_balance: null,
           token_count: 0,
@@ -306,11 +320,11 @@ export async function runJayJonesWalletMigration(
 
       await supabaseAdmin.from("migration_audit_logs").insert({
         migration_id: migration.id,
-        user_id: JAY_JONES_USER_ID,
+        user_id: MIGRATION_TARGET_USER_ID,
         wallet_id: wallet.id,
         administrator_id: administratorId ?? null,
         chain: chain.chain,
-        wallet_address: JAY_JONES_EVM_WALLET,
+        wallet_address: MIGRATION_TARGET_EVM_WALLET,
         action: "CHAIN_IMPORT_FAILED",
         status: "FAILED",
         error: message,
@@ -356,12 +370,12 @@ export async function runJayJonesWalletMigration(
   const report = {
     user: {
       id: user.id,
-      name: user.full_name ?? "Jay Jones",
+      name: user.full_name ?? "Migration target",
       email: user.email,
     },
     wallet: {
       id: wallet.id,
-      address: JAY_JONES_EVM_WALLET,
+      address: MIGRATION_TARGET_EVM_WALLET,
       walletType: "evm",
       ownershipStatus: "verification_required",
     },
@@ -373,7 +387,7 @@ export async function runJayJonesWalletMigration(
     internalPlatformData: {
       investmentBalanceUpdated: false,
       ledgerImpact: "none",
-      approvalRequired: true,
+      directLedgerImportAllowed: false,
     },
     unavailableOrUnsupportedData: supportedChainsChecked
       .filter((chain) => chain.syncStatus === "FAILED")
@@ -386,7 +400,7 @@ export async function runJayJonesWalletMigration(
 
   await supabaseAdmin.from("migration_reports").insert({
     migration_id: migration.id,
-    user_id: JAY_JONES_USER_ID,
+    user_id: MIGRATION_TARGET_USER_ID,
     wallet_id: wallet.id,
     report,
   });
@@ -398,7 +412,7 @@ export async function runJayJonesWalletMigration(
     status: finalStatus,
     message:
       finalStatus === "COMPLETED"
-        ? "Jay Jones Moralis wallet import completed safely. No internal investment ledger balance was changed."
-        : "Jay Jones Moralis wallet import finished with limitations. No internal investment ledger balance was changed.",
+        ? "Moralis wallet import completed safely. No internal investment ledger balance was changed."
+        : "Moralis wallet import finished with limitations. No internal investment ledger balance was changed.",
   };
 }

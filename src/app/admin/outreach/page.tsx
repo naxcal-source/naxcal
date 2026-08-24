@@ -119,7 +119,7 @@ export default function AdminOutreachPage() {
         <AlertTriangle size={16} className="text-naxcal-teal shrink-0 mt-0.5" />
         <div>
           <p className="text-xs font-semibold text-naxcal-teal mb-1">What this sends</p>
-          <p className="text-xs text-white/40 leading-relaxed">A premium dark-theme HTML email with Naxcal branding, daily return rates, tier breakdown, and a register button. Sent from <span className="text-white/60">noreply@naxcal.us</span> with reply-to <span className="text-white/60">support@naxcal.us</span>.</p>
+          <p className="text-xs text-white/40 leading-relaxed">A dark-theme HTML email with Naxcal branding, eligible-weekday rate examples, risk wording, tier details, and a registration button. Sent from <span className="text-white/60">noreply@naxcal.us</span> with reply-to <span className="text-white/60">support@naxcal.us</span>.</p>
         </div>
       </div>
 

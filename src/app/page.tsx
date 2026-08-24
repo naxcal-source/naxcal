@@ -689,7 +689,7 @@ export default function Home() {
               <div className="flex justify-between text-[10px] text-[#9ca3af] mb-8"><span>$500</span><span>$500,000</span></div>
               <div className="space-y-0">
                 {[
-                  { label: "Daily Return", value: daily, highlight: false },
+                  { label: "Per Eligible Weekday", value: daily, highlight: false },
                   { label: "Weekly Return", value: weekly, highlight: false },
                   { label: "Monthly Return", value: monthly, highlight: false },
                   { label: "Annual Return", value: annual, highlight: true },
@@ -809,7 +809,7 @@ export default function Home() {
           <div className="grid grid-cols-2 md:grid-cols-6 gap-8">
             <div className="col-span-2">
               <Image src="/Naxcal_Primary_Logo.png" alt="Naxcal" width={160} height={44} className="h-10 w-auto mb-4" style={{ filter: "brightness(1.4) drop-shadow(0 0 16px rgba(26,138,110,0.5))" }} />
-              <p className="text-sm text-white/30 mb-5 max-w-[280px] leading-relaxed">Institutional-grade capital management. Regulated, transparent, and built for performance.</p>
+              <p className="text-sm text-white/30 mb-5 max-w-[280px] leading-relaxed">Portfolio tracking, transaction records, supported markets, and account assistance in one place.</p>
               <div className="flex items-center gap-2.5">
                 {[{ icon: Globe, label: "X", href: "https://x.com/_naxcal" }, { icon: Send, label: "Telegram", href: "https://t.me/naxcal" }].map((s) => (
                   <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-naxcal-teal/15 transition-all" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }} aria-label={s.label}><s.icon size={15} className="text-white/40" /></a>

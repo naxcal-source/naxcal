@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { BarChart2, ArrowUpRight, ArrowDownRight, ChevronRight, RefreshCw, Search, TrendingUp, Zap, ArrowLeftRight } from "lucide-react";
+import { BarChart2, ArrowUpRight, ArrowDownRight, ChevronRight, RefreshCw, Search, TrendingUp, ArrowLeftRight } from "lucide-react";
 import StockLogo from "@/components/StockLogo";
 import { cn } from "@/lib/utils";
 
@@ -253,6 +253,7 @@ export default function MarketsPage() {
                     {tab === "stocks" ? (
                       <StockLogo symbol={asset.ticker} size={36} />
                     ) : asset.icon ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- third-party coin icons have dynamic hosts
                       <img src={asset.icon} alt={asset.ticker} width={36} height={36} className="w-9 h-9 rounded-full object-cover shrink-0" style={{ background: "#f1f5f9" }} />
                     ) : (
                       <div className="w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"

@@ -240,7 +240,7 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen overflow-x-hidden">
-      {/* ═══ FCA BANNER ═══ */}
+      {/* ═══ SECURITY BANNER ═══ */}
       <div className="fixed top-0 left-0 right-0 z-[60] bg-[#0a0a0a] border-b border-white/[0.04]">
         <div className="mx-auto max-w-7xl px-6 flex items-center justify-center h-8">
           <p className="text-[10px] text-white/35 tracking-wide"><Lock size={10} className="inline mr-1.5 text-naxcal-teal" />Secure investment platform · Your capital is at risk</p>

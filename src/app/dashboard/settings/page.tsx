@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { createClient } from "@/lib/supabase";
-import { Settings, Loader2, CheckCircle2, User, Shield, Bell, Sliders, ChevronRight, Lock, Eye, EyeOff } from "lucide-react";
+import { Settings, Loader2, CheckCircle2, User, Shield, Bell, Sliders, ChevronRight, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
@@ -92,6 +92,7 @@ function TwoFactorSection() {
         <div>
           <p className="text-xs text-[#374151] mb-3">Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.):</p>
           <div className="flex justify-center mb-4 p-4 rounded-xl bg-white" style={{ border: "1px solid #e2e8f0" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- QR image is generated from the active enrollment URI */}
             <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUri)}`} alt="2FA QR Code" width={200} height={200} />
           </div>
           <p className="text-xs text-[#6b7280] mb-3">Then enter the 6-digit code from your app:</p>

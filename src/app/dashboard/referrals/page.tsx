@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useDashboard } from "@/contexts/DashboardContext";
-import { Users, Copy, CheckCircle2, Gift, ChevronRight, Share2, MessageCircle, Mail, Link2 } from "lucide-react";
+import { Users, Copy, CheckCircle2, Gift, ChevronRight, MessageCircle, Mail, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Referral = { id: string; referred_id: string; bonus_amount: number; status: string; created_at: string };
@@ -37,7 +37,7 @@ export default function ReferralsPage() {
   const activeReferrals = referrals.filter((r) => r.status === "active").length;
   const fmt = (n: number) => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  const shareWhatsApp = () => window.open(`https://wa.me/?text=${encodeURIComponent(`Join me on Naxcal and start earning daily returns on your capital! ${referralUrl}`)}`, "_blank");
+  const shareWhatsApp = () => window.open(`https://wa.me/?text=${encodeURIComponent(`Join me on Naxcal to explore portfolio tracking and supported markets: ${referralUrl}`)}`, "_blank");
   const shareEmail = () => window.open(`mailto:?subject=${encodeURIComponent("Join Naxcal")}&body=${encodeURIComponent(`I've been using Naxcal for daily investment returns. Join here: ${referralUrl}`)}`, "_blank");
 
   return (

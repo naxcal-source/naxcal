@@ -75,7 +75,7 @@ export default function AdminProfitPage() {
   };
 
   const handleCatchUp = async () => {
-    if (!confirm(`Post missed daily returns for ${missedDays.length} day(s)?\n\n${missedDays.join(", ")}\n\nThis will apply tier-based rates (Bronze 1.5%, Silver 1.8%, Gold 2.1%) for each missed day.`)) return;
+    if (!confirm(`Post missed eligible-weekday credits for ${missedDays.length} day(s)?\n\n${missedDays.join(", ")}\n\nThis will apply tier-based rates (Bronze 1.5%, Silver 1.8%, Gold 2.1%) for each eligible day.`)) return;
     setCatchingUp(true);
     setError("");
     setResult(null);

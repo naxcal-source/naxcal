@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 <div style="background:#f9fafb;border-radius:12px;padding:20px 24px;margin:0 0 24px">
 <p style="margin:0 0 12px;font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;font-weight:600">What You'll Find</p>
 <div style="margin:0 0 10px"><span style="color:#16a34a;font-size:16px">&#10003;</span> <span style="color:#374151;font-size:14px">Complete deposit history since May 2025</span></div>
-<div style="margin:0 0 10px"><span style="color:#16a34a;font-size:16px">&#10003;</span> <span style="color:#374151;font-size:14px">All daily returns and profit records</span></div>
+<div style="margin:0 0 10px"><span style="color:#16a34a;font-size:16px">&#10003;</span> <span style="color:#374151;font-size:14px">Eligible-weekday credits and transaction records</span></div>
 <div style="margin:0 0 10px"><span style="color:#16a34a;font-size:16px">&#10003;</span> <span style="color:#374151;font-size:14px">Stock & crypto portfolio with live prices</span></div>
 <div><span style="color:#16a34a;font-size:16px">&#10003;</span> <span style="color:#374151;font-size:14px">Real-time portfolio tracking & market data</span></div>
 </div>
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
 
 </div>
 <div style="background:#f9fafb;padding:24px 32px;border-radius:0 0 12px 12px;border:1px solid #e5e7eb;border-top:none;text-align:center">
-<p style="margin:0 0 8px;font-size:11px;color:#9ca3af;line-height:1.6">Naxcal Capital Ltd is authorised and regulated by the Financial Conduct Authority.<br>Your capital is at risk. Past performance is not indicative of future results.</p>
+<p style="margin:0 0 8px;font-size:11px;color:#9ca3af;line-height:1.6">Review the platform Terms and Risk Disclosure before making financial decisions.<br>Your capital is at risk. Past performance is not indicative of future results.</p>
 <p style="margin:0;font-size:11px;color:#d1d5db">
 <a href="${SITE}/legal/privacy" style="color:#9ca3af;text-decoration:underline">Privacy</a> &middot;
 <a href="${SITE}/legal/terms" style="color:#9ca3af;text-decoration:underline">Terms</a> &middot;

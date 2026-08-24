@@ -4,7 +4,7 @@ export default function AMLPage() {
       <h1 style={{ color: "#0f172a" }}>Anti-Money Laundering Policy</h1>
       <p className="text-sm" style={{ color: "#9ca3af" }}>Last updated: June 2026</p>
       <h2>1. Commitment</h2>
-      <p>Naxcal Capital Ltd is committed to preventing money laundering and terrorist financing. We comply with the Money Laundering, Terrorist Financing and Transfer of Funds Regulations 2017 and all applicable FCA guidance.</p>
+      <p>Naxcal Capital Ltd is committed to preventing money laundering and terrorist financing and applies identity verification, transaction monitoring, and risk-based account reviews.</p>
       <h2>2. Customer Due Diligence</h2>
       <p>All customers must complete identity verification (KYC) before transacting. This includes: government-issued photo ID, proof of address, and selfie verification. Enhanced due diligence may be applied for higher-risk customers.</p>
       <h2>3. Transaction Monitoring</h2>

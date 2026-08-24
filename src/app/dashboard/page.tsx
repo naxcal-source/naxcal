@@ -7,10 +7,9 @@ import { motion } from "framer-motion";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { createClient } from "@/lib/supabase";
 import {
-  Wallet, TrendingUp, CircleDollarSign, ArrowDownCircle, ArrowUpCircle,
-  Users, FileText, AlertTriangle, ArrowRight, ArrowUpRight, ArrowDownRight,
-  Megaphone, Info, AlertCircle, CheckCircle2, Star, BarChart2, MessageCircle,
-  Inbox,
+  Wallet, TrendingUp, CircleDollarSign, ArrowDownCircle,
+  AlertTriangle, ArrowRight, ArrowUpRight,
+  Megaphone, Info, AlertCircle, CheckCircle2,
 } from "lucide-react";
 import { AreaChart, Area, PieChart, Pie, Cell, Tooltip } from "recharts";
 import { cn } from "@/lib/utils";
@@ -88,7 +87,7 @@ const getAllocationData = (cash: number, crypto: number, stocks: number) => {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { profile, refreshProfile, fmt } = useDashboard();
+  const { profile, fmt } = useDashboard();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [cryptoPortfolioValue, setCryptoPortfolioValue] = useState(0);
   const [stockPortfolioValue, setStockPortfolioValue] = useState(0);
@@ -264,29 +263,6 @@ export default function DashboardPage() {
 
     loadPortfolioValues();
   }, []);
-
-  const chartPoints = chartRange === "1W" ? 7 : chartRange === "1M" ? 30 : chartRange === "3M" ? 90 : 365;
-  const visibleChartPoints = Math.min(chartPoints, 60);
-
-  const sampleChart = Array.from({ length: visibleChartPoints }, (_, i) => {
-    const progress = i / Math.max(visibleChartPoints - 1, 1);
-    const date = new Date();
-    date.setDate(date.getDate() - Math.round((1 - progress) * chartPoints));
-
-    const wave = Math.sin(i * 1.65) * displayPortfolioValue * 0.018;
-    const startValue = Math.max(displayPortfolioValue * 0.86, 0);
-    const value = startValue + (displayPortfolioValue - startValue) * progress + wave;
-
-    return {
-      d: date.toLocaleString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      v: i === visibleChartPoints - 1 ? Math.max(displayPortfolioValue, 0) : Math.max(value, 0),
-    };
-  });
 
   const [dailyReturns, setDailyReturns] = useState<{ date: string; rate: string; earnings: string; status: string }[]>([]);
   useEffect(() => {
@@ -700,7 +676,7 @@ export default function DashboardPage() {
               </h3>
 
               <p className="text-sm text-[#64748b] mt-1 max-w-xl">
-                Your dashboard is ready. Add funds to activate portfolio tracking, daily returns and account activity.
+                Your dashboard is ready. Add funds to activate portfolio tracking, eligible-weekday credit history, and account activity.
               </p>
             </div>
 
@@ -733,7 +709,7 @@ export default function DashboardPage() {
                 href: "/dashboard/deposit",
               },
               {
-                title: "Track daily returns",
+                title: "Track eligible-weekday credits",
                 desc: "Profit history appears after your first payout.",
                 done: transactions.some((tx) => tx.type === "profit"),
                 href: "/dashboard/transactions",

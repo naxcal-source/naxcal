@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { HelpCircle, ChevronRight, ChevronDown, Search, Mail, MessageCircle, Copy, CheckCircle2, Clock, Send, Bot, User, ArrowRight } from "lucide-react";
+import { HelpCircle, ChevronRight, ChevronDown, Search, Mail, MessageCircle, Copy, CheckCircle2, Send, Bot, User, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { openCrispChat } from "@/components/CrispChat";
 
@@ -12,34 +12,34 @@ const faqSections = [
     title: "Getting Started",
     items: [
       { q: "How do I create an account?", a: "Click 'Start Investing' on the homepage, enter your full name, email, and password. After verifying your email, complete the KYC verification to unlock all features." },
-      { q: "What is KYC and why is it required?", a: "KYC (Know Your Customer) is a regulatory requirement. We verify your identity to comply with FCA regulations and protect against fraud. It typically takes under 24 hours." },
+      { q: "What is KYC and why is it required?", a: "KYC (Know Your Customer) verifies identity, supports account security, and helps prevent fraud. Review times vary depending on the documents and verification checks required." },
       { q: "What is the minimum deposit?", a: "The minimum deposit is $50 USD. You can deposit using any of our supported cryptocurrencies including BTC, ETH, USDT, and more." },
       { q: "How do I deposit funds?", a: "Go to Dashboard → Deposit, select your cryptocurrency, enter the amount, and send funds to the generated wallet address. Deposits are credited within 1-3 network confirmations." },
-      { q: "Is Naxcal regulated?", a: "Yes, Naxcal Capital Ltd is authorised and regulated by the Financial Conduct Authority (FCA). Your capital is protected under the compensation scheme." },
+      { q: "Where can I review legal and risk information?", a: "Review the Terms, Privacy, AML, and Risk pages linked in the site footer before depositing or trading. Contact support if you need clarification about availability in your jurisdiction." },
     ],
   },
   {
     title: "Returns & Profits",
     items: [
-      { q: "How are daily returns calculated?", a: "Returns are calculated based on your investment tier: Bronze (1.5%), Silver (1.8%), or Gold (2.1%). Returns are posted daily and automatically added to your balance." },
-      { q: "When are profits posted?", a: "Daily profits are typically posted between 8:00-10:00 AM UTC each day. You'll receive an email notification when your return is credited." },
-      { q: "Can I reinvest my profits?", a: "Yes, auto-compound is enabled by default. Your daily returns are automatically reinvested. You can change this in Settings → Preferences." },
-      { q: "What trading strategies does Naxcal use?", a: "We employ AI-driven algorithmic strategies across forex, equities, crypto, and commodities. Our diversified approach manages risk while targeting consistent daily returns." },
+      { q: "How are eligible-weekday rewards calculated?", a: "Published rates depend on your account tier: Bronze (1.5%), Silver (1.8%), or Gold (2.1%). Eligible-weekday credits appear in your transaction history; projections are illustrative and not guarantees." },
+      { q: "When are profits posted?", a: "Eligible-weekday credits are processed by the scheduled profit cycle. You'll receive an email when a credit is posted if daily-profit emails are enabled." },
+      { q: "Can I reinvest my profits?", a: "You can review the auto-compound preference in Settings. Eligibility and account treatment are shown in your transaction history." },
+      { q: "What markets does Naxcal support?", a: "The dashboard provides access to supported stock and crypto markets, portfolio positions, and transaction history. Market activity and projected credits involve risk." },
     ],
   },
   {
     title: "Withdrawals",
     items: [
-      { q: "How do I withdraw funds?", a: "Go to Dashboard → Withdraw, select the cryptocurrency, enter the amount and your wallet address, then enter your 6-digit withdrawal PIN. Withdrawals are processed within 24 hours." },
+      { q: "How do I withdraw funds?", a: "Go to Dashboard → Withdraw, select the cryptocurrency, enter the amount and your wallet address, then enter your 6-digit withdrawal PIN. Requests are reviewed before completion." },
       { q: "What is the minimum withdrawal?", a: "The minimum withdrawal amount is $100 USD." },
-      { q: "How long do withdrawals take?", a: "Withdrawals are typically processed within 24 hours. After processing, blockchain confirmations may take additional time depending on network congestion." },
+      { q: "How long do withdrawals take?", a: "Review and blockchain-confirmation times vary. You can track the request status in Transactions and contact support if additional review is required." },
       { q: "Why was my withdrawal rejected?", a: "Common reasons include: KYC not completed, insufficient balance, invalid wallet address, or security hold. Contact support for specific details." },
     ],
   },
   {
     title: "Security",
     items: [
-      { q: "How is my account secured?", a: "We use 256-bit SSL encryption, two-factor authentication (2FA), and advanced fraud detection. Your funds are stored in cold wallets with multi-signature protection." },
+      { q: "How is my account secured?", a: "The platform uses encrypted connections, identity verification, withdrawal PINs, rate limits, and optional two-factor authentication. Never share your password, PIN, or authentication codes." },
       { q: "What should I do if I suspect unauthorized access?", a: "Immediately change your password, enable 2FA if not already active, and contact security@naxcal.us. We can freeze your account to prevent unauthorized transactions." },
       { q: "How do I enable two-factor authentication?", a: "Go to Settings → Security → Two-Factor Authentication and follow the setup instructions using an authenticator app like Google Authenticator or Authy." },
     ],
@@ -57,9 +57,9 @@ const faqSections = [
 // AI knowledge base for the chatbot
 const AI_RESPONSES: { keywords: string[]; response: string }[] = [
   { keywords: ["deposit", "fund", "add money", "top up"], response: "To deposit funds:\n\n1. Go to **Dashboard → Deposit**\n2. Select your cryptocurrency (BTC, ETH, USDT, etc.)\n3. Enter the amount (minimum $50)\n4. Send crypto to the generated wallet address\n\nFunds are credited within 1-3 network confirmations. Your balance updates within 30 minutes." },
-  { keywords: ["withdraw", "cash out", "take out", "send money"], response: "To withdraw funds:\n\n1. Complete KYC verification first\n2. Set a withdrawal PIN in **Settings → Security**\n3. Go to **Dashboard → Withdraw**\n4. Enter amount (minimum $100), wallet address, and PIN\n\nWithdrawals are processed within 24 hours." },
+  { keywords: ["withdraw", "cash out", "take out", "send money"], response: "To withdraw funds:\n\n1. Complete KYC verification first\n2. Set a withdrawal PIN in **Settings → Security**\n3. Go to **Dashboard → Withdraw**\n4. Enter amount (minimum $100), wallet address, and PIN\n\nRequests are reviewed before completion; timing can vary." },
   { keywords: ["kyc", "verify", "verification", "identity", "document", "passport", "id"], response: "To verify your identity:\n\n1. Go to **Dashboard → Verification**\n2. Complete the Sumsub verification process\n3. Upload your government-issued ID\n4. Take a selfie for facial verification\n\nReview typically takes under 24 hours. You'll receive an email once approved." },
-  { keywords: ["return", "profit", "earn", "daily", "interest", "yield"], response: "Daily returns are based on your investment tier:\n\n• **Bronze**: 1.5% daily (balance $0+)\n• **Silver**: 1.8% daily (balance $5,000+)\n• **Gold**: 2.1% daily (balance $25,000+)\n\nReturns are posted daily between 8-10 AM UTC and auto-reinvested by default." },
+  { keywords: ["return", "profit", "earn", "daily", "interest", "yield"], response: "Eligible-weekday rates depend on your account tier:\n\n• **Bronze**: 1.5%\n• **Silver**: 1.8%\n• **Gold**: 2.1%\n\nCredits appear in transaction history when the scheduled weekday cycle completes. Projections are illustrative, not guarantees." },
   { keywords: ["tier", "upgrade", "bronze", "silver", "gold", "level"], response: "Investment tiers are based on your total balance:\n\n• **Bronze**: $0+ → 1.5% daily\n• **Silver**: $5,000+ → 1.8% daily\n• **Gold**: $25,000+ → 2.1% daily\n\nYour tier upgrades automatically when your balance reaches the threshold." },
   { keywords: ["pin", "withdrawal pin", "set pin", "change pin"], response: "To set or change your withdrawal PIN:\n\n1. Go to **Settings → Security**\n2. Scroll to **Withdrawal PIN**\n3. Enter a 6-digit numeric PIN\n4. Confirm the PIN\n\nThis PIN is required for every withdrawal request." },
   { keywords: ["2fa", "two factor", "authenticator", "google auth", "security"], response: "To enable Two-Factor Authentication:\n\n1. Go to **Settings → Security**\n2. Click **Enable 2FA**\n3. Scan the QR code with Google Authenticator or Authy\n4. Enter the 6-digit code to verify\n\nThis adds an extra layer of security to your account." },
@@ -70,8 +70,8 @@ const AI_RESPONSES: { keywords: string[]; response: string }[] = [
   { keywords: ["password", "reset", "forgot", "change password"], response: "To change your password:\n\n1. Go to **Settings → Security**\n2. Enter your current password\n3. Enter and confirm your new password\n\nIf you forgot your password, use the **Forgot Password** link on the login page." },
   { keywords: ["fee", "charge", "cost", "commission"], response: "Naxcal fees:\n\n• **Deposits**: No fees (network fees apply)\n• **Withdrawals**: No fees (network fees apply)\n• **Crypto swaps**: 0.5% per swap\n• **Stock trades**: No commission\n• **Daily returns**: Performance fee may apply (shown in your dashboard)" },
   { keywords: ["minimum", "min deposit", "min withdrawal"], response: "Minimum amounts:\n\n• **Minimum deposit**: $50 USD\n• **Minimum withdrawal**: $100 USD\n• **Minimum stock investment**: $50 USD" },
-  { keywords: ["safe", "secure", "trust", "legit", "scam", "regulated"], response: "Naxcal security measures:\n\n• FCA Authorised & Regulated\n• 256-bit SSL encryption\n• Two-factor authentication (2FA)\n• Cold storage for crypto assets\n• Multi-signature wallet protection\n• Sumsub KYC verification\n\nYour capital is protected under the UK compensation scheme." },
-  { keywords: ["contact", "email", "phone", "support", "help"], response: "You can reach us at:\n\n• **Email**: support@naxcal.us\n• **Live Chat**: Click the chat bubble in the bottom-right corner\n• **Response time**: Within 2 hours\n\nFor security issues, email security@naxcal.us immediately." },
+  { keywords: ["safe", "secure", "trust", "legit", "scam", "regulated"], response: "Naxcal account controls include encrypted connections, optional 2FA, withdrawal PINs, rate limiting, and identity verification. Investing and crypto activity involve risk. Review the site's Terms, AML, Privacy, and Risk pages before using the platform." },
+  { keywords: ["contact", "email", "phone", "support", "help"], response: "You can reach us at:\n\n• **Email**: support@naxcal.us\n• **Live Chat**: Click the chat bubble in the bottom-right corner\n\nFor security issues, email security@naxcal.us immediately." },
   { keywords: ["statement", "download", "csv", "history", "export"], response: "To download your transaction statement:\n\n1. Go to **Dashboard**\n2. Click **Statement** in Quick Actions\n3. A CSV file will download automatically\n\nYou can also export from the **Transactions** page using the Export button." },
 ];
 
@@ -96,7 +96,6 @@ export default function SupportPage() {
   const [openSection, setOpenSection] = useState<string | null>("Getting Started");
   const [openItem, setOpenItem] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: "bot", text: "Hi! I'm Naxcal's AI assistant. I can help with questions about deposits, withdrawals, returns, security, and more. What do you need help with?" },

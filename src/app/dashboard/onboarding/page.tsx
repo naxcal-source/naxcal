@@ -12,12 +12,10 @@ export default function OnboardingPage() {
   const { profile, refreshProfile } = useDashboard();
   const router = useRouter();
   const [step, setStep] = useState(0);
-  const [completing, setCompleting] = useState(false);
   const supabase = createClient();
   const firstName = profile?.full_name?.split(" ")[0] || "there";
 
   const complete = async () => {
-    setCompleting(true);
     if (profile) {
       await supabase.from("profiles").update({ onboarding_complete: true } as Record<string, unknown>).eq("id", profile.id);
       await refreshProfile();
@@ -43,7 +41,7 @@ export default function OnboardingPage() {
       <div className="grid sm:grid-cols-3 gap-4">
         {[
           { icon: Wallet, title: "Deposit Capital", desc: "Fund your account with crypto. 12+ currencies supported." },
-          { icon: TrendingUp, title: "Earn Daily", desc: "Our AI-driven strategies generate 1.5%–2.1% daily returns." },
+          { icon: TrendingUp, title: "Track Credits", desc: "View published eligible-weekday rates and account history. Returns are not guaranteed." },
           { icon: Shield, title: "Withdraw Anytime", desc: "Your capital is never locked. Withdraw within 24 hours." },
         ].map((item, i) => (
           <div key={i} className="text-center p-5 rounded-xl" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>

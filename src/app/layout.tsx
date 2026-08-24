@@ -14,12 +14,12 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Naxcal — Your Money, Working 24/7",
-  description: "Deposit crypto. We trade forex. You earn daily returns. FCA regulated and fully transparent.",
-  keywords: ["investing", "crypto", "forex", "daily returns", "FCA regulated", "naxcal"],
+  description: "Track deposits, portfolio positions, eligible-weekday credits, and account activity in one dashboard.",
+  keywords: ["portfolio dashboard", "crypto", "stocks", "account tracking", "naxcal"],
   authors: [{ name: "Naxcal Capital Ltd" }],
   openGraph: {
     title: "Naxcal — Your Money, Working 24/7",
-    description: "Deposit crypto. We trade forex. You earn daily returns. FCA regulated and fully transparent.",
+    description: "Track deposits, portfolio positions, eligible-weekday credits, and account activity in one dashboard.",
     url: "https://naxcal.us",
     siteName: "Naxcal",
     type: "website",
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Naxcal — Your Money, Working 24/7",
-    description: "Deposit crypto. We trade forex. You earn daily returns.",
+    description: "Track portfolio positions, eligible-weekday credits, and account activity.",
   },
   icons: {
     icon: [

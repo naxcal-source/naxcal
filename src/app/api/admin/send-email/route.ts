@@ -9,8 +9,7 @@ import {
   sendDepositConfirmedEmail,
   sendInvestorOutreachEmail,
   sendMigrationSuccessEmail,
-  sendEmmettWelcomePackageEmail,
-  sendTomaWelcomePackageEmail,
+  sendWelcomeEmail,
 } from "@/lib/emails";
 
 export async function POST(req: NextRequest) {
@@ -72,11 +71,8 @@ export async function POST(req: NextRequest) {
           body.dashboardUrl || "https://naxcal.us/dashboard",
         );
         break;
-      case "emmett_welcome_package":
-        await sendEmmettWelcomePackageEmail(email);
-        break;
-      case "toma_welcome_package":
-        await sendTomaWelcomePackageEmail(email);
+      case "welcome":
+        await sendWelcomeEmail(email, name || "Investor");
         break;
       default:
         return NextResponse.json({ error: "Unknown email type" }, { status: 400 });

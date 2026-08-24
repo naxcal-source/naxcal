@@ -17,6 +17,7 @@ export default function ReferralsPage() {
   const [code, setCode] = useState(profile?.referral_code || "");
   const referralUrl = code ? `https://naxcal.us/register?ref=${code}` : "";
 
+  /* eslint-disable react-hooks/set-state-in-effect -- initialize referral UI from the loaded server profile */
   useEffect(() => {
     if (!profile) return;
     if (!profile.referral_code) {
@@ -26,7 +27,8 @@ export default function ReferralsPage() {
       setCode(profile.referral_code);
     }
     fetch("/api/me/referrals").then(r => r.json()).then(data => { if (Array.isArray(data)) setReferrals(data); }).catch(() => {});
-  }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [profile]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const copyLink = () => { navigator.clipboard.writeText(referralUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); };
   const copyCode = () => { navigator.clipboard.writeText(code); setCopiedCode(true); setTimeout(() => setCopiedCode(false), 2000); };

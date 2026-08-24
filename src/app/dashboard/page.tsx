@@ -15,7 +15,10 @@ import {
 import { AreaChart, Area, PieChart, Pie, Cell, Tooltip } from "recharts";
 import { cn } from "@/lib/utils";
 
-type Transaction = { id: string; type: string; amount: number; status: string; created_at: string; description: string | null };
+type Transaction = {
+  id: string; type: string; amount: number; status: string; created_at: string; description: string | null;
+  source?: string; balance_before?: number | null; balance_after?: number | null;
+};
 type Announcement = { id: string; title: string; content: string; type: string; created_at: string };
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.06 } } };
@@ -104,7 +107,7 @@ export default function DashboardPage() {
     // Announcements are public — anon key works fine
     const supabase = createClient();
     supabase.from("announcements").select("*").eq("is_active", true).order("created_at", { ascending: false }).limit(2).then(({ data }) => { if (data) setAnnouncements(data); });
-  }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [profile]);
 
   // Removed realtime subscription — was causing balance flickering
 
@@ -138,8 +141,8 @@ export default function DashboardPage() {
   const [selectedPerformanceIndex, setSelectedPerformanceIndex] = useState<number | null>(null);
 
   const accountEvents = transactions
-    .filter((tx) => (tx as any).source !== "onchain")
-    .filter((tx) => (tx as any).balance_before !== null || (tx as any).balance_after !== null)
+    .filter((tx) => tx.source !== "onchain")
+    .filter((tx) => tx.balance_before !== null || tx.balance_after !== null)
     .slice()
     .reverse();
 
@@ -153,7 +156,7 @@ export default function DashboardPage() {
 
   const startingBalance =
     visibleEvents.length > 0
-      ? Number((visibleEvents[0] as any).balance_before ?? 0)
+      ? Number(visibleEvents[0].balance_before ?? 0)
       : 0;
 
   let runningValue = Number.isFinite(startingBalance) ? startingBalance : 0;
@@ -161,10 +164,10 @@ export default function DashboardPage() {
   const performanceChart = displayPortfolioValue > 0
     ? [
         { name: "Start", v: Math.max(runningValue, 0) },
-        ...visibleEvents.map((tx, index) => {
-          const type = String((tx as any).type || "").toLowerCase();
-          const amount = Number((tx as any).amount || 0);
-          const balanceAfter = Number((tx as any).balance_after);
+        ...visibleEvents.map((tx) => {
+          const type = String(tx.type || "").toLowerCase();
+          const amount = Number(tx.amount || 0);
+          const balanceAfter = Number(tx.balance_after);
 
           if (type === "stock_buy" || type === "swap") {
             // These move value between cash/holdings, so total account value should not drop.
@@ -176,7 +179,7 @@ export default function DashboardPage() {
           }
 
           return {
-            name: formatChartDateTime((tx as any).created_at),
+            name: formatChartDateTime(tx.created_at),
             v: Math.max(runningValue, 0),
           };
         }),
@@ -383,7 +386,7 @@ export default function DashboardPage() {
               </div>
 
               <div className="rounded-2xl bg-white/10 border border-white/10 p-4 min-w-[180px] backdrop-blur">
-                <p className="text-[11px] uppercase tracking-wider text-white/45">Today's Return</p>
+                <p className="text-[11px] uppercase tracking-wider text-white/45">Today&apos;s Return</p>
                 <p className="mt-2 text-2xl font-bold text-emerald-200">
                   <AnimatedNumber value={todayReturn} formatter={fmt} />
                 </p>
@@ -540,15 +543,15 @@ export default function DashboardPage() {
                   height={280}
                   data={performanceChart}
                   margin={{ top: 30, right: 20, left: 0, bottom: 10 }}
-                  onMouseMove={(state: any) => {
-                    if (state?.activeTooltipIndex !== undefined) {
-                      setSelectedPerformanceIndex(state.activeTooltipIndex);
+                  onMouseMove={(state: { activeTooltipIndex?: number | string | null }) => {
+                    if (state?.activeTooltipIndex != null) {
+                      setSelectedPerformanceIndex(Number(state.activeTooltipIndex));
                     }
                   }}
                   onMouseLeave={() => setSelectedPerformanceIndex(null)}
-                  onClick={(state: any) => {
-                    if (state?.activeTooltipIndex !== undefined) {
-                      setSelectedPerformanceIndex(state.activeTooltipIndex);
+                  onClick={(state: { activeTooltipIndex?: number | string | null }) => {
+                    if (state?.activeTooltipIndex != null) {
+                      setSelectedPerformanceIndex(Number(state.activeTooltipIndex));
                     }
                   }}
                 >

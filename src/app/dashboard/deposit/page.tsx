@@ -44,7 +44,7 @@ export default function DepositPage() {
   useEffect(() => {
     if (!profile) return;
     fetch("/api/me/transactions?type=deposit&limit=5").then(r => r.json()).then(data => { if (Array.isArray(data)) setRecentDeposits(data); }).catch(() => {});
-  }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [profile]);
 
   useEffect(() => {
     return () => {

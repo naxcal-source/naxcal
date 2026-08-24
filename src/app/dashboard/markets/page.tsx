@@ -29,6 +29,7 @@ export default function MarketsPage() {
   const [loading, setLoading] = useState(true);
   const [stocksLoading, setStocksLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [renderedAt] = useState(() => Date.now());
 
   const fetchCrypto = useCallback(async () => {
     try {
@@ -44,7 +45,7 @@ export default function MarketsPage() {
     } catch {} finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { fetchCrypto(); const id = setInterval(fetchCrypto, 60000); return () => clearInterval(id); }, [fetchCrypto]);
+  useEffect(() => { fetchCrypto(); const id = setInterval(fetchCrypto, 60000); return () => clearInterval(id); }, [fetchCrypto]); // eslint-disable-line react-hooks/set-state-in-effect
 
   useEffect(() => {
     fetch("/api/stocks/popular").then((r) => r.json()).then((data) => {
@@ -59,7 +60,9 @@ export default function MarketsPage() {
   }, []);
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- clear stale search results when switching datasets */
     if (search.length < 1 || tab !== "stocks") { setSearchResults([]); return; }
+    /* eslint-enable react-hooks/set-state-in-effect */
     const t = setTimeout(async () => {
       try {
         const res = await fetch(`/api/stocks/search?q=${encodeURIComponent(search)}`);
@@ -78,7 +81,7 @@ export default function MarketsPage() {
   const displayStocks = search.length > 0 ? searchResults : stocks;
   const data = tab === "crypto" ? displayCrypto : displayStocks;
   const isLoading = tab === "crypto" ? loading : stocksLoading;
-  const timeSince = lastUpdate ? `${Math.floor((Date.now() - lastUpdate.getTime()) / 1000)}s ago` : "";
+  const timeSince = lastUpdate ? `${Math.floor((renderedAt - lastUpdate.getTime()) / 1000)}s ago` : "";
 
   const fmtPrice = (p: number) => {
     if (p === 0) return "—";

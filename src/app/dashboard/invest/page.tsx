@@ -192,8 +192,8 @@ export default function InvestPage() {
         const d = await posRes.json();
         if (Array.isArray(d)) setPositions(d);
       }
-    } catch (error: any) {
-      setStockSellError(error?.message || "Unable to sell shares.");
+    } catch (error: unknown) {
+      setStockSellError(error instanceof Error ? error.message : "Unable to sell shares.");
     } finally {
       setSelling(null);
       setStockSellLoading(false);

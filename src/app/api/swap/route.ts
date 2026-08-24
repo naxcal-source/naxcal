@@ -3,6 +3,7 @@ import { getAuthUser } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { sendDepositConfirmedEmail } from "@/lib/emails";
 import { createNotification } from "@/lib/notifications";
+import { isValidIdempotencyKey } from "@/lib/request-security";
 
 const GECKO_MAP: Record<string, string> = {
   BTC: "bitcoin",
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const idempotencyKey = req.headers.get("idempotency-key");
-    if (!idempotencyKey || idempotencyKey.length > 100) return NextResponse.json({ error: "Missing request identifier" }, { status: 400 });
+    if (!isValidIdempotencyKey(idempotencyKey)) return NextResponse.json({ error: "Invalid request identifier" }, { status: 400 });
     const fromToken = String(body.from_token || "").toUpperCase();
     const toToken = String(body.to_token || "").toUpperCase();
     const fromAmount = Number(body.from_amount || 0);

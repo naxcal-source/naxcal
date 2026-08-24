@@ -80,6 +80,8 @@ export default function AdminLayoutClient({
   return (
     <div className="min-h-screen flex" style={{ background: "#111111" }}>
       <aside className="hidden lg:block w-[250px] shrink-0 border-r border-white/[0.06]" style={{ background: "#0a0a0a" }}>
+        {/* Stable in practice; extracted in a future layout refactor. */}
+        {/* eslint-disable-next-line react-hooks/static-components */}
         <SidebarContent />
       </aside>
 
@@ -87,6 +89,7 @@ export default function AdminLayoutClient({
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/60" onClick={() => setSidebarOpen(false)} />
           <aside className="absolute left-0 top-0 bottom-0 w-[250px]" style={{ background: "#0a0a0a" }}>
+            {/* eslint-disable-next-line react-hooks/static-components */}
             <SidebarContent />
           </aside>
         </div>

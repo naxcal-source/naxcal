@@ -3,6 +3,7 @@ import { getAuthUser } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { createNotification } from "@/lib/notifications";
 import { hashPin, isValidPin, verifyPin } from "@/lib/pin-security";
+import { isValidIdempotencyKey } from "@/lib/request-security";
 
 const SUPPORTED_ASSETS = new Set(["USDT", "BTC", "ETH", "BNB", "SOL"]);
 
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest) {
     if (!wallet) return NextResponse.json({ error: "Enter a wallet address." }, { status: 400 });
     if (!isValidPin(pin)) return NextResponse.json({ error: "Enter your 6-digit withdrawal PIN." }, { status: 400 });
     if (!SUPPORTED_ASSETS.has(asset)) return NextResponse.json({ error: "Unsupported withdrawal asset." }, { status: 400 });
-    if (!idempotencyKey || idempotencyKey.length > 100) return NextResponse.json({ error: "Missing request identifier." }, { status: 400 });
+    if (!isValidIdempotencyKey(idempotencyKey)) return NextResponse.json({ error: "Invalid request identifier." }, { status: 400 });
 
     const { data: allowed } = await supabaseAdmin.rpc("consume_security_rate_limit", {
       p_key: `withdrawal:${user.id}`,

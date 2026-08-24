@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { hashPin, isValidPin, verifyPin } from "./pin-security";
+import { isValidIdempotencyKey } from "./request-security";
 import { isWeekendLabel, projectedWeekdayReturn } from "./business-days";
 
 test("withdrawal PINs are hashed and verified", () => {
@@ -21,4 +22,13 @@ test("weekend labels are rejected", () => {
 
 test("weekday projections are deterministic", () => {
   assert.equal(projectedWeekdayReturn(10_000, 0.021, 5), 1_050);
+});
+
+test("trade request identifiers reject missing and unsafe values", () => {
+  assert.equal(isValidIdempotencyKey(crypto.randomUUID()), true);
+  assert.equal(isValidIdempotencyKey("trade_retry:12345678"), true);
+  assert.equal(isValidIdempotencyKey(null), false);
+  assert.equal(isValidIdempotencyKey("short"), false);
+  assert.equal(isValidIdempotencyKey("unsafe key with spaces"), false);
+  assert.equal(isValidIdempotencyKey("x".repeat(101)), false);
 });

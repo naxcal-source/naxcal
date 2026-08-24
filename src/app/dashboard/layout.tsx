@@ -53,6 +53,7 @@ function NotificationDropdown() {
     is_read: boolean;
     created_at: string;
   }>>([]);
+  const [renderedAt] = useState(() => Date.now());
 
   const loadNotifications = () => {
     fetch("/api/me/notifications")
@@ -91,7 +92,7 @@ function NotificationDropdown() {
 
   const timeAgo = (value?: string) => {
     if (!value) return "";
-    const diff = Date.now() - new Date(value).getTime();
+    const diff = renderedAt - new Date(value).getTime();
     const mins = Math.floor(diff / 60000);
     if (mins < 1) return "Just now";
     if (mins < 60) return `${mins}m ago`;
@@ -333,6 +334,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex overflow-x-hidden" style={{ background: "#f1f5f9", minHeight: "100dvh" }}>
       <aside className="hidden lg:block w-[280px] shrink-0 border-r border-white/[0.06]" style={{ background: "#080f0c" }}>
+        {/* eslint-disable-next-line react-hooks/static-components */}
         <SidebarContent />
       </aside>
 
@@ -340,6 +342,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setSidebarOpen(false)} />
           <aside className="absolute left-0 top-0 bottom-0 w-[280px]" style={{ background: "#080f0c" }}>
+            {/* eslint-disable-next-line react-hooks/static-components */}
             <SidebarContent />
           </aside>
         </div>

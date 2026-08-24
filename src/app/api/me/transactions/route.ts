@@ -49,7 +49,7 @@ export async function GET(request: Request) {
 
     const shouldIncludeOnchain = !type || type === "all" || type === "onchain";
 
-    let onchainRows: any[] = [];
+    let onchainRows: Array<Record<string, unknown>> = [];
 
     if (shouldIncludeOnchain) {
       const { data: transactions, error: onchainError } = await supabaseAdmin

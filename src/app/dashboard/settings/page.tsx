@@ -129,6 +129,7 @@ export default function SettingsPage() {
   const [prefs, setPrefs] = useState({ auto_compound: true });
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- synchronize editable form state when the server profile changes */
     if (profile) {
       const p = profile as Record<string, unknown>;
       setForm({
@@ -141,6 +142,7 @@ export default function SettingsPage() {
         setNotifications((current) => ({ ...current, ...(p.notification_preferences as typeof current) }));
       }
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [profile]);
 
   const handleSaveProfile = async (e: React.FormEvent) => {

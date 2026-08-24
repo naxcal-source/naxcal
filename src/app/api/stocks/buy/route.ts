@@ -3,6 +3,7 @@ import { getAuthUser } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getStockPrice } from "@/lib/yahoo-finance";
 import { createNotification } from "@/lib/notifications";
+import { isValidIdempotencyKey } from "@/lib/request-security";
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,7 +14,7 @@ export async function POST(req: NextRequest) {
 
     const { symbol, amount_usd } = await req.json();
     const idempotencyKey = req.headers.get("idempotency-key");
-    if (!idempotencyKey || idempotencyKey.length > 100) return NextResponse.json({ error: "Missing request identifier" }, { status: 400 });
+    if (!isValidIdempotencyKey(idempotencyKey)) return NextResponse.json({ error: "Invalid request identifier" }, { status: 400 });
     if (!symbol || !amount_usd) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     if (amount_usd < 50) return NextResponse.json({ error: "Minimum investment is $50" }, { status: 400 });
 

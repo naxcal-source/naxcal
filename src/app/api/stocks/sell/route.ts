@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getStockPrice } from "@/lib/yahoo-finance";
+import { isValidIdempotencyKey } from "@/lib/request-security";
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function POST(req: NextRequest) {
 
     const { symbol, qty } = await req.json();
     const idempotencyKey = req.headers.get("idempotency-key");
-    if (!idempotencyKey || idempotencyKey.length > 100) return NextResponse.json({ error: "Missing request identifier" }, { status: 400 });
+    if (!isValidIdempotencyKey(idempotencyKey)) return NextResponse.json({ error: "Invalid request identifier" }, { status: 400 });
     if (!symbol || !qty || qty <= 0) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
 
     const { data: position } = await supabaseAdmin

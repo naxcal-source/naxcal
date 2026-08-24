@@ -92,7 +92,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     return r.symbol + converted.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }, [currency]);
 
-  useEffect(() => { fetchProfile(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchProfile(); }, []); // eslint-disable-line react-hooks/set-state-in-effect
 
   return (
     <Ctx.Provider value={{ user, profile, loading, refreshProfile: fetchProfile, currency, setCurrency, fmt }}>

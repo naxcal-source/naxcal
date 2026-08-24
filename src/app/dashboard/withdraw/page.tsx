@@ -28,6 +28,7 @@ export default function WithdrawPage() {
   const [error, setError] = useState("");
   const [recentWithdrawals, setRecentWithdrawals] = useState<Transaction[]>([]);
   const [hasMonthlyDeposit, setHasMonthlyDeposit] = useState<boolean | null>(null);
+  const [renderedAt] = useState(() => Date.now());
   const balance = Number(profile?.balance ?? 0);
   const availableWithdrawBalance = balance;
   const fmt = (n: number) => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -86,7 +87,7 @@ export default function WithdrawPage() {
   const LOCKUP_DAYS: Record<string, number> = { bronze: 7, silver: 14, gold: 30 };
   const lockupDays = LOCKUP_DAYS[profile?.tier?.toLowerCase() ?? "bronze"] ?? 7;
   const accountAge = profile?.created_at
-    ? Math.floor((Date.now() - new Date(profile.created_at).getTime()) / 86_400_000)
+    ? Math.floor((renderedAt - new Date(profile.created_at).getTime()) / 86_400_000)
     : 0;
   const daysRemaining = Math.max(0, lockupDays - accountAge);
   const lockupBlocked = daysRemaining > 0;

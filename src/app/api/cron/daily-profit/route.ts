@@ -10,9 +10,9 @@ export const TIER_RATES: Record<string, number> = {
 };
 
 function isWeekendLabel(label?: string) {
-  if (!label || !/^\\d{4}-\\d{2}-\\d{2}$/.test(label)) return false;
+  if (!label || !/^\d{4}-\d{2}-\d{2}$/.test(label)) return false;
 
-  const day = new Date(\`${label}T00:00:00Z\`).getUTCDay();
+  const day = new Date(label + "T00:00:00Z").getUTCDay();
   return day === 0 || day === 6;
 }
 

@@ -123,7 +123,7 @@ export default function InvestPage() {
     try {
       const res = await fetch("/api/stocks/buy", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Idempotency-Key": crypto.randomUUID() },
         body: JSON.stringify({ symbol: selected.symbol, amount_usd: numAmount, user_id: profile.id }),
       });
       const data = await res.json();
@@ -173,7 +173,7 @@ export default function InvestPage() {
     try {
       const res = await fetch("/api/stocks/sell", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Idempotency-Key": crypto.randomUUID() },
         body: JSON.stringify({ symbol: selectedStockToSell.symbol, qty }),
       });
 

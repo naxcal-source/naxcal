@@ -91,7 +91,7 @@ export default function SwapPage() {
     try {
       const res = await fetch("/api/swap", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Idempotency-Key": crypto.randomUUID() },
         body: JSON.stringify({ from_token: fromToken, to_token: toToken, from_amount: parseFloat(fromAmount) }),
       });
       const data = await res.json();

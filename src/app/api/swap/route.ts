@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { rateLimit } from "@/lib/rate-limit";
 import { sendDepositConfirmedEmail } from "@/lib/emails";
 import { createNotification } from "@/lib/notifications";
 
@@ -40,76 +39,6 @@ async function getCryptoPrice(symbol: string): Promise<number> {
   }
 }
 
-async function getPosition(userId: string, symbol: string) {
-  const { data } = await supabaseAdmin
-    .from("crypto_positions")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("symbol", symbol)
-    .maybeSingle();
-
-  return data;
-}
-
-async function debitPosition(userId: string, symbol: string, amount: number) {
-  const position = await getPosition(userId, symbol);
-
-  if (!position || Number(position.qty) < amount) {
-    throw new Error(`Insufficient ${symbol} balance`);
-  }
-
-  const remaining = Number(position.qty) - amount;
-
-  if (remaining < 0.00000001) {
-    const { error } = await supabaseAdmin
-      .from("crypto_positions")
-      .delete()
-      .eq("id", position.id);
-
-    if (error) throw new Error(error.message);
-  } else {
-    const { error } = await supabaseAdmin
-      .from("crypto_positions")
-      .update({ qty: remaining })
-      .eq("id", position.id);
-
-    if (error) throw new Error(error.message);
-  }
-}
-
-async function creditPosition(
-  userId: string,
-  symbol: string,
-  amount: number,
-  valueUsd: number,
-  marketPrice: number,
-) {
-  const existing = await getPosition(userId, symbol);
-
-  if (existing) {
-    const oldQty = Number(existing.qty);
-    const oldCost = Number(existing.avg_price || 0) * oldQty;
-    const newQty = oldQty + amount;
-    const newAvg = newQty > 0 ? (oldCost + valueUsd) / newQty : marketPrice;
-
-    const { error } = await supabaseAdmin
-      .from("crypto_positions")
-      .update({ qty: newQty, avg_price: newAvg })
-      .eq("id", existing.id);
-
-    if (error) throw new Error(error.message);
-  } else {
-    const { error } = await supabaseAdmin.from("crypto_positions").insert({
-      user_id: userId,
-      symbol,
-      qty: amount,
-      avg_price: marketPrice,
-    });
-
-    if (error) throw new Error(error.message);
-  }
-}
-
 export async function POST(req: NextRequest) {
   try {
     const user = await getAuthUser();
@@ -118,7 +47,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { allowed } = rateLimit(`swap:${user.id}`, 5, 60000);
+    const { data: allowed } = await supabaseAdmin.rpc("consume_security_rate_limit", { p_key: `swap:${user.id}`, p_limit: 5, p_window_seconds: 60 });
 
     if (!allowed) {
       return NextResponse.json(
@@ -128,6 +57,8 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
+    const idempotencyKey = req.headers.get("idempotency-key");
+    if (!idempotencyKey || idempotencyKey.length > 100) return NextResponse.json({ error: "Missing request identifier" }, { status: 400 });
     const fromToken = String(body.from_token || "").toUpperCase();
     const toToken = String(body.to_token || "").toUpperCase();
     const fromAmount = Number(body.from_amount || 0);
@@ -158,19 +89,13 @@ export async function POST(req: NextRequest) {
     const netValueUsd = fromValueUsd - feeUsd;
     const toAmount = netValueUsd / toPrice;
 
-    await debitPosition(user.id, fromToken, fromAmount);
-    await creditPosition(user.id, toToken, toAmount, netValueUsd, toPrice);
-
-    await supabaseAdmin.from("transactions").insert({
-      user_id: user.id,
-      type: "swap",
-      amount: fromValueUsd,
-      asset: `${fromToken}→${toToken}`,
-      status: "completed",
-      description: `Swapped ${fromAmount.toFixed(8)} ${fromToken} for ${toAmount.toFixed(8)} ${toToken}`,
+    const { data: trade, error: tradeError } = await supabaseAdmin.rpc("execute_crypto_swap", {
+      p_user_id: user.id, p_from: fromToken, p_to: toToken, p_from_qty: fromAmount,
+      p_from_price: fromPrice, p_to_price: toPrice, p_fee_rate: 0.005, p_key: idempotencyKey,
     });
+    if (tradeError) return NextResponse.json({ error: tradeError.message }, { status: 400 });
 
-    await createNotification({
+    if (!trade.duplicate) await createNotification({
       userId: user.id,
       type: "swap",
       title: "Swap completed",

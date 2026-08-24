@@ -181,14 +181,14 @@ function RegisterForm() {
                   <label className="block text-xs mb-1.5 uppercase tracking-wider" style={{ color: "#374151" }}>Password</label>
                   <div className="relative">
                     <input type={showPw ? "text" : "password"} value={form.password} onChange={(e) => update("password", e.target.value)} placeholder="Min. 8 characters" className="w-full px-4 py-3 pr-11 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-naxcal-teal/20 focus:border-naxcal-teal transition-colors" style={{ backgroundColor: "#ffffff", color: "#0f172a", border: "1px solid #e2e8f0" }} />
-                    <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer" style={{ color: "#9ca3af" }}>{showPw ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+                    <button type="button" aria-label={showPw ? "Hide password" : "Show password"} onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer" style={{ color: "#9ca3af" }}>{showPw ? <EyeOff size={16} /> : <Eye size={16} />}</button>
                   </div>
                 </div>
                 <div>
                   <label className="block text-xs mb-1.5 uppercase tracking-wider" style={{ color: "#374151" }}>Confirm Password</label>
                   <div className="relative">
                     <input type={showCpw ? "text" : "password"} value={form.confirmPassword} onChange={(e) => update("confirmPassword", e.target.value)} placeholder="Re-enter password" className="w-full px-4 py-3 pr-11 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-naxcal-teal/20 focus:border-naxcal-teal transition-colors" style={{ backgroundColor: "#ffffff", color: "#0f172a", border: "1px solid #e2e8f0" }} />
-                    <button type="button" onClick={() => setShowCpw(!showCpw)} className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer" style={{ color: "#9ca3af" }}>{showCpw ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+                    <button type="button" aria-label={showCpw ? "Hide password confirmation" : "Show password confirmation"} onClick={() => setShowCpw(!showCpw)} className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer" style={{ color: "#9ca3af" }}>{showCpw ? <EyeOff size={16} /> : <Eye size={16} />}</button>
                   </div>
                 </div>
                 <div>

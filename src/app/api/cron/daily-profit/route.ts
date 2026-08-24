@@ -9,7 +9,19 @@ export const TIER_RATES: Record<string, number> = {
   gold: 2.1,
 };
 
+function isWeekendLabel(label?: string) {
+  if (!label || !/^\d{4}-\d{2}-\d{2}$/.test(label)) return false;
+
+  const day = new Date(label + "T00:00:00Z").getUTCDay();
+  return day === 0 || day === 6;
+}
+
 export async function runDailyProfit(label?: string) {
+  if (isWeekendLabel(label)) {
+    console.log("Daily profit skipped for weekend", label);
+    return { users: 0, total: 0 };
+  }
+
   const { data: users, error: fetchError } = await supabaseAdmin
     .from("profiles")
     .select("id, email, full_name, balance, total_profit, tier")
@@ -148,7 +160,7 @@ export async function runDailyProfit(label?: string) {
   return { users: usersProcessed, total: parseFloat(totalDistributed.toFixed(2)) };
 }
 
-// Vercel Cron calls this every day at 08:00 UTC
+// Vercel Cron calls this on weekdays at 08:00 UTC
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {

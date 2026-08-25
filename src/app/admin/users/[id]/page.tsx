@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 type Profile = {
   id: string; email: string; full_name: string | null; phone: string | null;
   kyc_status: string; tier: string; balance: number; total_deposited: number;
+  cash_balance: number; crypto_value: number; account_value: number;
   total_withdrawn: number; total_profit: number; referral_code: string | null;
   auto_compound: boolean; is_active: boolean; created_at: string;
 };
@@ -123,12 +124,15 @@ export default function AdminUserDetail() {
               <span className="text-xs text-white/70 font-medium capitalize">{v}</span>
             </div>
           ))}
+          <p className="pt-2 text-[10px] leading-4 text-white/25">Eligible-weekday credits use the total account value: crypto portfolio plus cash balance.</p>
         </div>
 
         <div className="rounded-xl p-5 space-y-3" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.06)" }}>
           <h3 className="text-sm font-semibold text-white mb-3">Financials</h3>
           {[
-            ["Balance", fmt(profile.balance)],
+            ["Total Account Value", fmt(profile.account_value)],
+            ["Crypto Portfolio", fmt(profile.crypto_value)],
+            ["Cash Balance", fmt(profile.cash_balance)],
             ["Total Deposited", fmt(profile.total_deposited)],
             ["Total Withdrawn", fmt(profile.total_withdrawn)],
             ["Total Profit", fmt(profile.total_profit)],
@@ -145,7 +149,8 @@ export default function AdminUserDetail() {
       <div className="grid sm:grid-cols-2 gap-4 mb-6">
         {/* Balance Adjustment */}
         <div className="rounded-xl p-5" style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.06)" }}>
-          <h3 className="text-sm font-semibold text-white mb-3">Adjust Balance</h3>
+          <h3 className="text-sm font-semibold text-white mb-1">Adjust Cash Balance</h3>
+          <p className="mb-3 text-[10px] text-white/25">This does not change crypto positions.</p>
           <div className="flex gap-2 mb-3">
             <button onClick={() => setAdjType("add")} className={cn("px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer", adjType === "add" ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20" : "text-white/40 border border-white/10")}>Add</button>
             <button onClick={() => setAdjType("subtract")} className={cn("px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer", adjType === "subtract" ? "bg-red-500/15 text-red-400 border border-red-500/20" : "text-white/40 border border-white/10")}>Subtract</button>

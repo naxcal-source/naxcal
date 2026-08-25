@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useDashboard } from "@/contexts/DashboardContext";
-import { ArrowUpCircle, Loader2, AlertTriangle, ChevronRight, Lock, Clock } from "lucide-react";
+import { ArrowUpCircle, Loader2, AlertTriangle, ChevronRight, Lock, Clock, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Transaction = { id: string; type: string; amount: number; status: string; created_at: string; asset: string | null; wallet_address: string | null };
@@ -255,21 +255,38 @@ export default function WithdrawPage() {
         ) : (
           <div className="space-y-2">
             {recentWithdrawals.map((tx) => (
-              <div key={tx.id} className="flex items-center justify-between py-2.5 px-2 rounded-lg hover:bg-[#f8fafc] transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
-                    <ArrowUpCircle size={14} className="text-red-500" />
+              <div key={tx.id} className="py-3 px-3 rounded-xl border border-[#f1f5f9] hover:bg-[#f8fafc] transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
+                      <ArrowUpCircle size={14} className="text-red-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-[#374151] font-medium">{tx.asset || "Crypto"} Withdrawal</p>
+                      <p className="text-[10px] text-[#9ca3af]">{new Date(tx.created_at).toLocaleDateString()}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-[#374151] font-medium">{tx.asset || "Crypto"} Withdrawal</p>
-                    <p className="text-[10px] text-[#9ca3af]">{new Date(tx.created_at).toLocaleDateString()}</p>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-red-500">-{fmt(tx.amount)}</p>
+                    <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded-full capitalize",
+                      tx.status === "completed" ? "bg-emerald-50 text-emerald-700" : tx.status === "pending" ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-600"
+                    )}>{tx.status}</span>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-red-500">-{fmt(tx.amount)}</p>
-                  <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded-full",
-                    tx.status === "completed" ? "bg-emerald-50 text-emerald-700" : tx.status === "pending" ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-600"
-                  )}>{tx.status}</span>
+                <div className="grid grid-cols-3 mt-3" aria-label={`Withdrawal status: ${tx.status}`}>
+                  {["Requested", "Review", "Completed"].map((step, index) => {
+                    const active = tx.status === "completed" || (tx.status === "pending" && index <= 1);
+                    const failed = tx.status === "failed" && index === 1;
+                    return (
+                      <div key={step} className="relative flex flex-col items-center gap-1">
+                        {index > 0 && <div className={cn("absolute top-2 right-1/2 w-full h-px", active ? "bg-emerald-300" : "bg-slate-200")} />}
+                        <div className={cn("relative z-10 w-4 h-4 rounded-full flex items-center justify-center", failed ? "bg-red-500" : active ? "bg-emerald-500" : "bg-slate-200")}>
+                          {active && <CheckCircle2 size={11} className="text-white" />}
+                        </div>
+                        <span className={cn("text-[9px]", active ? "text-[#374151] font-medium" : "text-[#94a3b8]")}>{failed ? "Needs attention" : step}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))}

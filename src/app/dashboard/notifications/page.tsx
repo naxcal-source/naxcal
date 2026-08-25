@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Bell, ChevronRight, CheckCircle2 } from "lucide-react";
+import { Bell, ChevronRight, CheckCircle2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Notification = {
@@ -31,8 +31,19 @@ function timeAgo(value?: string) {
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<"all" | "unread" | "read">("all");
+  const [search, setSearch] = useState("");
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
+  const visibleNotifications = notifications.filter((notification) => {
+    if (view === "unread" && notification.is_read) return false;
+    if (view === "read" && !notification.is_read) return false;
+    const query = search.trim().toLowerCase();
+    if (!query) return true;
+    return [notification.title, notification.description, notification.body, notification.type]
+      .filter(Boolean)
+      .some((value) => value?.toLowerCase().includes(query));
+  });
 
   useEffect(() => {
     fetch("/api/me/notifications")
@@ -83,6 +94,36 @@ export default function NotificationsPage() {
         )}
       </div>
 
+      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <div className="relative flex-1">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]" />
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search notifications..."
+            aria-label="Search notifications"
+            className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-[#e2e8f0] text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-naxcal-teal/20"
+          />
+        </div>
+        <div className="grid grid-cols-3 gap-1 p-1 rounded-lg bg-[#f1f5f9]" aria-label="Notification status filter">
+          {(["all", "unread", "read"] as const).map((option) => (
+            <button
+              key={option}
+              type="button"
+              aria-pressed={view === option}
+              onClick={() => setView(option)}
+              className={cn(
+                "px-3 py-1.5 rounded-md text-xs font-semibold capitalize transition-colors",
+                view === option ? "bg-white text-[#0f172a] shadow-sm" : "text-[#64748b] hover:text-[#0f172a]",
+              )}
+            >
+              {option}{option === "unread" && unreadCount > 0 ? ` (${unreadCount})` : ""}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="card-light overflow-hidden">
         {loading ? (
           <div className="py-14 text-center text-sm text-[#9ca3af]">
@@ -92,9 +133,13 @@ export default function NotificationsPage() {
           <div className="py-14 text-center text-sm text-[#9ca3af]">
             No new notifications. Your latest account updates will appear here.
           </div>
+        ) : visibleNotifications.length === 0 ? (
+          <div className="py-14 text-center text-sm text-[#9ca3af]">
+            No notifications match this filter.
+          </div>
         ) : (
           <div className="divide-y divide-[#f1f5f9]">
-            {notifications.map((n) => (
+            {visibleNotifications.map((n) => (
               <Link
                 key={n.id}
                 href={`/dashboard/notifications/${n.id}`}

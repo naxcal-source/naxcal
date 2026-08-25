@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useDashboard } from "@/contexts/DashboardContext";
-import { Briefcase, ChevronRight, ArrowUpRight, ArrowDownRight, TrendingUp, ArrowLeftRight, Wallet } from "lucide-react";
+import { Briefcase, ChevronRight, ArrowUpRight, ArrowDownRight, TrendingUp, ArrowLeftRight, Wallet, BarChart3 } from "lucide-react";
 import StockLogo from "@/components/StockLogo";
 import { cn } from "@/lib/utils";
 
 type StockPos = { symbol: string; name: string; qty: number; avg_entry: number; current_price: number; market_value: number; unrealized_pl: number; unrealized_plpc: number };
 type CryptoPos = { symbol: string; qty: number; avg_price: number; current_price: number; market_value: number; unrealized_pl: number };
+type LedgerPoint = { id: string; balance_after: number | null; created_at: string };
 
 type OnchainWalletRow = {
   source: "native" | "trusted_stablecoin";
@@ -47,18 +48,23 @@ export default function PortfolioPage() {
   const [stockSellingSymbol, setStockSellingSymbol] = useState<string | null>(null);
   const [stockSellAmount, setStockSellAmount] = useState("");
   const [stockSellLoading, setStockSellLoading] = useState(false);
+  const [ledgerHistory, setLedgerHistory] = useState<LedgerPoint[]>([]);
+  const [historyRange, setHistoryRange] = useState<7 | 30 | 90 | 0>(30);
+  const [renderedAt] = useState(() => Date.now());
 
   useEffect(() => {
     Promise.all([
       fetch("/api/stocks/portfolio").then((r) => r.json()).catch(() => []),
       fetch("/api/crypto/portfolio").then((r) => r.json()).catch(() => []),
       fetch("/api/me/wallet-portfolio").then((r) => r.json()).catch(() => null),
-    ]).then(([s, c, walletPortfolio]) => {
+      fetch("/api/me/transactions?limit=500").then((r) => r.json()).catch(() => []),
+    ]).then(([s, c, walletPortfolio, transactions]) => {
       if (Array.isArray(s)) setStocks(s);
       if (Array.isArray(c)) setCryptos(c);
       if (walletPortfolio && Array.isArray(walletPortfolio.rows)) {
         setOnchainWallet(walletPortfolio);
       }
+      if (Array.isArray(transactions)) setLedgerHistory(transactions);
       setLoading(false);
     });
   }, []);
@@ -76,10 +82,27 @@ export default function PortfolioPage() {
   const totalPL = stocksPL + cryptoPL;
 
   const allocation = [
-    { label: "Cash Ledger", value: 0, color: "#1a8a6e", pct: 0 },
+    { label: "Cash Ledger", value: cashValue, color: "#1a8a6e", pct: totalValue > 0 ? (cashValue / totalValue * 100) : 0 },
     { label: "Stocks", value: stocksValue, color: "#3b82f6", pct: totalValue > 0 ? (stocksValue / totalValue * 100) : 0 },
     { label: "Crypto", value: cryptoValue, color: "#8b5cf6", pct: totalValue > 0 ? (cryptoValue / totalValue * 100) : 0 },
   ].filter((a) => a.value > 0);
+
+  const rangeStart = historyRange ? renderedAt - historyRange * 86_400_000 : 0;
+  const chartHistory = ledgerHistory
+    .filter((tx) => tx.balance_after != null && new Date(tx.created_at).getTime() >= rangeStart)
+    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  const sampledHistory = chartHistory.length > 60
+    ? chartHistory.filter((_, index) => index % Math.ceil(chartHistory.length / 60) === 0 || index === chartHistory.length - 1)
+    : chartHistory;
+  const chartValues = sampledHistory.map((tx) => Number(tx.balance_after));
+  const chartMin = Math.min(...chartValues, 0);
+  const chartMax = Math.max(...chartValues, 1);
+  const chartSpan = Math.max(chartMax - chartMin, 1);
+  const chartPoints = sampledHistory.map((tx, index) => {
+    const x = sampledHistory.length === 1 ? 50 : (index / (sampledHistory.length - 1)) * 100;
+    const y = 92 - ((Number(tx.balance_after) - chartMin) / chartSpan) * 84;
+    return `${x},${y}`;
+  }).join(" ");
 
   const sellCrypto = async () => {
     if (!sellingSymbol) return;
@@ -202,6 +225,38 @@ export default function PortfolioPage() {
             {totalPL >= 0 ? "+" : ""}{fmt(totalPL)} unrealized
           </span>
         )}
+      </div>
+
+      <div className="card-light p-5 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2">
+            <BarChart3 size={17} className="text-naxcal-teal" />
+            <div>
+              <h2 className="text-sm font-semibold text-[#0f172a]">Cash Ledger History</h2>
+              <p className="text-[11px] text-[#64748b]">Balance-after values from completed account activity.</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-4 gap-1 rounded-lg bg-[#f1f5f9] p-1">
+            {([{ label: "7D", value: 7 }, { label: "30D", value: 30 }, { label: "90D", value: 90 }, { label: "All", value: 0 }] as const).map((range) => (
+              <button key={range.label} type="button" aria-pressed={historyRange === range.value} onClick={() => setHistoryRange(range.value)} className={cn("px-2.5 py-1.5 rounded-md text-[11px] font-semibold", historyRange === range.value ? "bg-white text-[#0f172a] shadow-sm" : "text-[#64748b]")}>{range.label}</button>
+            ))}
+          </div>
+        </div>
+        {sampledHistory.length > 1 ? (
+          <div className="h-48 rounded-xl bg-gradient-to-b from-emerald-50/80 to-white border border-emerald-100 p-3" role="img" aria-label={`Cash ledger history with ${sampledHistory.length} balance points`}>
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full overflow-visible" aria-hidden="true">
+              <defs><linearGradient id="ledger-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#1a8a6e" stopOpacity="0.24" /><stop offset="100%" stopColor="#1a8a6e" stopOpacity="0" /></linearGradient></defs>
+              <polygon points={`0,100 ${chartPoints} 100,100`} fill="url(#ledger-fill)" />
+              <polyline points={chartPoints} fill="none" stroke="#1a8a6e" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+            </svg>
+          </div>
+        ) : (
+          <div className="h-36 rounded-xl bg-[#f8fafc] border border-[#e2e8f0] flex items-center justify-center text-sm text-[#94a3b8]">More ledger activity is needed to draw this range.</div>
+        )}
+        <div className="flex justify-between mt-2 text-[10px] text-[#94a3b8]">
+          <span>{sampledHistory[0] ? new Date(sampledHistory[0].created_at).toLocaleDateString() : "—"}</span>
+          <span>{sampledHistory.at(-1) ? new Date(sampledHistory.at(-1)!.created_at).toLocaleDateString() : "—"}</span>
+        </div>
       </div>
 
       {/* Allocation */}

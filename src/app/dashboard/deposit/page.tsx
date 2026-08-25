@@ -7,6 +7,7 @@ import { useDashboard } from "@/contexts/DashboardContext";
 import { ArrowDownCircle, ChevronRight, AlertTriangle, Loader2, Copy, Check, CheckCircle2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { cn } from "@/lib/utils";
+import { depositActiveStage } from "@/lib/dashboard-display";
 
 type Transaction = { id: string; type: string; amount: number; status: string; created_at: string; asset: string | null };
 
@@ -284,21 +285,36 @@ export default function DepositPage() {
         ) : (
           <div className="space-y-2">
             {recentDeposits.map((tx) => (
-              <div key={tx.id} className="flex items-center justify-between py-2.5 px-2 rounded-lg hover:bg-[#f8fafc] transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
-                    <ArrowDownCircle size={14} className="text-emerald-600" />
+              <div key={tx.id} className="py-3 px-3 rounded-xl border border-[#f1f5f9] hover:bg-[#f8fafc] transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+                      <ArrowDownCircle size={14} className="text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-[#374151] font-medium">{tx.asset || "Crypto"} Deposit</p>
+                      <p className="text-[10px] text-[#9ca3af]">{new Date(tx.created_at).toLocaleDateString()}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-[#374151] font-medium">{tx.asset || "Crypto"} Deposit</p>
-                    <p className="text-[10px] text-[#9ca3af]">{new Date(tx.created_at).toLocaleDateString()}</p>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-emerald-600">+{fmt(tx.amount)}</p>
+                    <span className={cn("text-[10px] capitalize font-medium px-1.5 py-0.5 rounded-full",
+                      tx.status === "completed" ? "bg-emerald-50 text-emerald-700" : tx.status === "pending" ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-600"
+                    )}>{tx.status}</span>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-emerald-600">+{fmt(tx.amount)}</p>
-                  <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded-full",
-                    tx.status === "completed" ? "bg-emerald-50 text-emerald-700" : tx.status === "pending" ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-600"
-                  )}>{tx.status}</span>
+                <div className="grid grid-cols-4 mt-3" aria-label={`Deposit status: ${tx.status}`}>
+                  {["Created", "Detected", "Confirmed", "Credited"].map((label, index) => {
+                    const activeThrough = depositActiveStage(tx.status);
+                    const active = index <= activeThrough && tx.status !== "failed";
+                    return (
+                      <div key={label} className="relative flex flex-col items-center gap-1">
+                        {index > 0 && <div className={cn("absolute top-2 right-1/2 w-full h-px", active ? "bg-emerald-300" : "bg-slate-200")} />}
+                        <div className={cn("relative z-10 w-4 h-4 rounded-full flex items-center justify-center", active ? "bg-emerald-500" : tx.status === "failed" && index === 1 ? "bg-red-500" : "bg-slate-200")}>{active && <Check size={10} className="text-white" />}</div>
+                        <span className={cn("text-[9px]", active ? "text-[#374151] font-medium" : "text-[#94a3b8]")}>{label}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))}

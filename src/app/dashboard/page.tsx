@@ -134,7 +134,7 @@ export default function DashboardPage() {
   const balance = Number(profile?.balance ?? 0);
   const availablePortfolioBalance = balance + cryptoPortfolioValue;
   const displayPortfolioValue = availablePortfolioBalance + stockPortfolioValue;
-  const allocationData = getAllocationData(availablePortfolioBalance, 0, stockPortfolioValue);
+  const allocationData = getAllocationData(balance, cryptoPortfolioValue, stockPortfolioValue);
 
   const [chartRange, setChartRange] = useState("1M");
   const [selectedPerformanceIndex, setSelectedPerformanceIndex] = useState<number | null>(null);
@@ -348,7 +348,7 @@ export default function DashboardPage() {
                 <div className="mt-4 flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-400/12 text-emerald-100 border border-emerald-300/20 text-xs font-semibold">
                     <ArrowUpRight size={14} />
-                    {displayPortfolioValue > 0 ? `+${tierRate}% daily rate` : "Ready to fund"}
+                    {displayPortfolioValue > 0 ? `${tierRate}% eligible-weekday rate` : "Ready to fund"}
                   </span>
 
                   <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-white/8 text-white/70 border border-white/10 text-xs font-semibold capitalize">
@@ -362,18 +362,18 @@ export default function DashboardPage() {
               </div>
 
               <div className="rounded-2xl bg-white/10 border border-white/10 p-4 min-w-[180px] backdrop-blur">
-                <p className="text-[11px] uppercase tracking-wider text-white/45">Today&apos;s Return</p>
+                <p className="text-[11px] uppercase tracking-wider text-white/45">Illustrative Weekday Credit</p>
                 <p className="mt-2 text-2xl font-bold text-emerald-200">
                   <AnimatedNumber value={todayReturn} formatter={fmt} />
                 </p>
-                <p className="mt-1 text-xs text-white/50">Next profit cycle: daily</p>
+                <p className="mt-1 text-xs text-white/50">Next cycle: eligible weekday</p>
               </div>
             </div>
 
             <div className="mt-auto pt-8 grid grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="rounded-2xl bg-white/[0.07] border border-white/10 p-4">
-                <p className="text-[10px] uppercase tracking-wider text-white/40">Available Balance</p>
-                <p className="mt-2 text-lg font-bold"><AnimatedNumber value={availablePortfolioBalance} formatter={fmt} /></p>
+                <p className="text-[10px] uppercase tracking-wider text-white/40">Cash Balance</p>
+                <p className="mt-2 text-lg font-bold"><AnimatedNumber value={balance} formatter={fmt} /></p>
               </div>
 
               <div className="rounded-2xl bg-white/[0.07] border border-white/10 p-4">

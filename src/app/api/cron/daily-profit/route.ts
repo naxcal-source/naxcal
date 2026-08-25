@@ -33,6 +33,13 @@ export async function runDailyProfit(label?: string) {
 
   let totalDistributed = 0;
   let usersProcessed = 0;
+  let eligibleUsers = 0;
+  let duplicateSkipped = 0;
+  let balanceUpdateFailed = 0;
+  let transactionFailed = 0;
+  let emailSent = 0;
+  let emailFailed = 0;
+  let emailSkipped = 0;
 
   for (const user of users) {
     const tier = (user.tier as string) || "bronze";
@@ -42,6 +49,7 @@ export async function runDailyProfit(label?: string) {
     const investmentBalance = accountValue(cashBalance, cryptoValue);
 
     if (investmentBalance <= 0) continue;
+    eligibleUsers++;
 
     const profit = investmentBalance * (rate / 100);
     const newCashBalance = cashBalance + profit;
@@ -61,6 +69,7 @@ export async function runDailyProfit(label?: string) {
 
       if (existingProfit) {
         console.log("Daily profit already posted for", user.id, label);
+        duplicateSkipped++;
         continue;
       }
     }
@@ -72,6 +81,7 @@ export async function runDailyProfit(label?: string) {
 
     if (error) {
       console.error("Profile update error for", user.id, error);
+      balanceUpdateFailed++;
       continue;
     }
 
@@ -88,6 +98,7 @@ export async function runDailyProfit(label?: string) {
 
     if (txError) {
       console.error("Profit transaction insert error for", user.id, txError);
+      transactionFailed++;
     } else {
       await createNotification({
         userId: user.id,
@@ -119,7 +130,9 @@ export async function runDailyProfit(label?: string) {
           newTotalProfit,
           newInvestmentBalance,
         );
+        emailSent++;
       } catch (emailError) {
+        emailFailed++;
         console.error("Daily profit email failed for", user.email, emailError);
         await recordSystemEvent("daily_profit_email_failed", "error", "Daily profit email failed", {
           user_id: user.id,
@@ -127,6 +140,8 @@ export async function runDailyProfit(label?: string) {
           error: emailError instanceof Error ? emailError.message : "Unknown email error",
         });
       }
+    } else {
+      emailSkipped++;
     }
 
     totalDistributed += profit;
@@ -141,7 +156,17 @@ export async function runDailyProfit(label?: string) {
     notes: `Auto tier-based${label ? ` — ${label}` : ""}`,
   });
 
-  return { users: usersProcessed, total: parseFloat(totalDistributed.toFixed(2)) };
+  return {
+    users: usersProcessed,
+    eligible_users: eligibleUsers,
+    duplicate_skipped: duplicateSkipped,
+    balance_update_failed: balanceUpdateFailed,
+    transaction_failed: transactionFailed,
+    email_sent: emailSent,
+    email_failed: emailFailed,
+    email_skipped: emailSkipped,
+    total: parseFloat(totalDistributed.toFixed(2)),
+  };
 }
 
 // Vercel Cron calls this on weekdays at 08:00 UTC

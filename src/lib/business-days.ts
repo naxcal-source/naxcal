@@ -12,3 +12,12 @@ export function projectedWeekdayReturn(principal: number, dailyRate: number, day
   }
   return principal * dailyRate * days;
 }
+
+export function expectedLatestWeekdayRun(now: Date, runHourUtc = 8) {
+  const expected = new Date(now);
+  if (expected.getUTCHours() < runHourUtc) expected.setUTCDate(expected.getUTCDate() - 1);
+  while (expected.getUTCDay() === 0 || expected.getUTCDay() === 6) {
+    expected.setUTCDate(expected.getUTCDate() - 1);
+  }
+  return expected.toISOString().slice(0, 10);
+}

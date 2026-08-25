@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { ArrowUpCircle, Loader2, AlertTriangle, ChevronRight, Lock, Clock, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { withdrawalActiveStage } from "@/lib/dashboard-display";
 
 type Transaction = { id: string; type: string; amount: number; status: string; created_at: string; asset: string | null; wallet_address: string | null };
 
@@ -275,7 +276,7 @@ export default function WithdrawPage() {
                 </div>
                 <div className="grid grid-cols-3 mt-3" aria-label={`Withdrawal status: ${tx.status}`}>
                   {["Requested", "Review", "Completed"].map((step, index) => {
-                    const active = tx.status === "completed" || (tx.status === "pending" && index <= 1);
+                    const active = index <= withdrawalActiveStage(tx.status);
                     const failed = tx.status === "failed" && index === 1;
                     return (
                       <div key={step} className="relative flex flex-col items-center gap-1">

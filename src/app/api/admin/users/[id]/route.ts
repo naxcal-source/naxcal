@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUserWithClient } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { accountValue, getPersistedCryptoValues } from "@/lib/portfolio-value";
 
 async function verifyAdmin() {
   const { user } = await getAuthUserWithClient();
@@ -22,7 +23,17 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   ]);
 
   if (!profile) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json({ profile, transactions: transactions ?? [] });
+  const cryptoValues = await getPersistedCryptoValues([id]);
+  const cryptoValue = cryptoValues.get(id) || 0;
+  return NextResponse.json({
+    profile: {
+      ...profile,
+      cash_balance: Number(profile.balance || 0),
+      crypto_value: cryptoValue,
+      account_value: accountValue(profile.balance, cryptoValue),
+    },
+    transactions: transactions ?? [],
+  });
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

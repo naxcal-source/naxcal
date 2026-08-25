@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { hashPin, isValidPin, verifyPin } from "./pin-security";
 import { isValidIdempotencyKey } from "./request-security";
-import { isWeekendLabel, projectedWeekdayReturn } from "./business-days";
+import { expectedLatestWeekdayRun, isWeekendLabel, projectedWeekdayReturn } from "./business-days";
 
 test("withdrawal PINs are hashed and verified", () => {
   const stored = hashPin("123456");
@@ -22,6 +22,12 @@ test("weekend labels are rejected", () => {
 
 test("weekday projections are deterministic", () => {
   assert.equal(projectedWeekdayReturn(10_000, 0.021, 5), 1_050);
+});
+
+test("health monitoring expects the latest completed weekday run", () => {
+  assert.equal(expectedLatestWeekdayRun(new Date("2026-08-24T07:59:00Z")), "2026-08-21");
+  assert.equal(expectedLatestWeekdayRun(new Date("2026-08-24T08:01:00Z")), "2026-08-24");
+  assert.equal(expectedLatestWeekdayRun(new Date("2026-08-23T12:00:00Z")), "2026-08-21");
 });
 
 test("trade request identifiers reject missing and unsafe values", () => {

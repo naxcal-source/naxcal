@@ -17,6 +17,10 @@ import {
   ArrowUpCircle,
   Link2,
   Wallet,
+  CalendarDays,
+  CheckCircle2,
+  CircleDashed,
+  X,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -41,6 +45,15 @@ type Transaction = {
 
 const PAGE_SIZE = 10;
 
+function dateKey(value: Date) {
+  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
+}
+
+function creditedDate(tx: Transaction) {
+  const labelledDate = tx.description?.match(/\b(\d{4}-\d{2}-\d{2})\b/)?.[1];
+  return labelledDate || dateKey(new Date(tx.created_at));
+}
+
 function shortAddress(value?: string | null) {
   if (!value) return "—";
   if (value.length <= 14) return value;
@@ -57,11 +70,25 @@ function formatCryptoAmount(amount: number, asset?: string | null) {
 export default function TransactionsPage() {
   const { profile } = useDashboard();
   const [txs, setTxs] = useState<Transaction[]>([]);
+  const [creditTxs, setCreditTxs] = useState<Transaction[]>([]);
   const [filter, setFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+  const [selectedCredit, setSelectedCredit] = useState<Transaction | null>(null);
+
+  useEffect(() => {
+    if (!profile) return;
+    fetch("/api/me/transactions?type=profit&limit=500")
+      .then((r) => r.json())
+      .then((data) => setCreditTxs(Array.isArray(data) ? data : []))
+      .catch(() => setCreditTxs([]));
+  }, [profile]);
 
   useEffect(() => {
     if (!profile) return;
@@ -164,6 +191,19 @@ export default function TransactionsPage() {
         tx.description?.toLowerCase().includes("verified on-chain migration")),
   );
 
+  const completedProfitByDate = new Map(
+    creditTxs
+      .filter((tx) => tx.type === "profit" && tx.status === "completed")
+      .map((tx) => [creditedDate(tx), tx]),
+  );
+  const monthStart = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
+  const monthEnd = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0);
+  const calendarDays: Array<Date | null> = Array.from({ length: monthStart.getDay() }, () => null);
+  for (let day = 1; day <= monthEnd.getDate(); day += 1) {
+    calendarDays.push(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), day));
+  }
+  const todayKey = dateKey(new Date());
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -239,6 +279,72 @@ export default function TransactionsPage() {
         </div>
       )}
 
+      <section className="card-light p-4 sm:p-5 mb-5" aria-labelledby="credit-calendar-title">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+              <CalendarDays size={18} className="text-emerald-700" />
+            </div>
+            <div>
+              <h2 id="credit-calendar-title" className="text-sm font-bold text-[#0f172a]">Weekday Credit Calendar</h2>
+              <p className="text-xs text-[#64748b] mt-1">Completed profit records are shown on eligible Monday–Friday dates.</p>
+            </div>
+          </div>
+          <div className="flex items-center justify-between sm:justify-end gap-2">
+            <button type="button" aria-label="Previous month" onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))} className="p-2 rounded-lg border border-[#e2e8f0] hover:bg-[#f8fafc]">
+              <ChevronLeft size={16} />
+            </button>
+            <span className="w-32 text-center text-sm font-semibold text-[#374151]">{calendarMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</span>
+            <button type="button" aria-label="Next month" onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))} className="p-2 rounded-lg border border-[#e2e8f0] hover:bg-[#f8fafc]">
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+        <div className="grid grid-cols-7 gap-1 text-center" role="grid" aria-label="Weekday credit calendar">
+          {Array.from({ length: 7 }, (_, index) => (
+            <div key={index} className="py-1 text-[10px] font-semibold uppercase text-[#94a3b8]">{["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][index]}</div>
+          ))}
+          {calendarDays.map((day, index) => {
+            if (!day) return <div key={`blank-${index}`} />;
+            const key = dateKey(day);
+            const weekend = day.getDay() === 0 || day.getDay() === 6;
+            const future = key > todayKey;
+            const profit = completedProfitByDate.get(key);
+            const label = profit
+              ? `${day.toLocaleDateString()}: completed credit ${fmt(Number(profit.amount || 0))}`
+              : weekend
+                ? `${day.toLocaleDateString()}: weekend, not eligible`
+                : future
+                  ? `${day.toLocaleDateString()}: upcoming eligible weekday`
+                  : `${day.toLocaleDateString()}: no completed credit in loaded history`;
+            return (
+              <button key={key} type="button" aria-label={label} onClick={() => setSelectedCredit(profit || null)} className={cn("min-h-12 rounded-lg border p-1 flex flex-col items-center justify-center gap-0.5", profit ? "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100" : weekend ? "bg-slate-50 border-slate-100 text-slate-400" : future ? "bg-white border-slate-100 text-slate-400" : "bg-amber-50/60 border-amber-100 text-amber-700")}>
+                <span className="text-xs font-semibold">{day.getDate()}</span>
+                {profit ? <CheckCircle2 size={12} /> : weekend ? <X size={11} /> : <CircleDashed size={11} />}
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 text-[11px] text-[#64748b]">
+          <span className="flex items-center gap-1"><CheckCircle2 size={12} className="text-emerald-600" /> Posted</span>
+          <span className="flex items-center gap-1"><CircleDashed size={12} className="text-amber-600" /> No record in loaded history</span>
+          <span className="flex items-center gap-1"><X size={12} className="text-slate-400" /> Weekend</span>
+        </div>
+        {selectedCredit && (
+          <div className="mt-4 p-4 rounded-xl border border-emerald-200 bg-emerald-50/60 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <p className="text-xs text-emerald-700 font-semibold">Completed weekday credit</p>
+              <p className="text-sm text-[#0f172a] mt-1">{selectedCredit.description || "Daily profit credit"}</p>
+              <p className="text-[11px] text-[#64748b] mt-1">Posted {new Date(selectedCredit.created_at).toLocaleString()}</p>
+            </div>
+            <div className="flex items-center justify-between sm:block sm:text-right gap-4">
+              <p className="text-lg font-bold text-emerald-700">+{fmt(Number(selectedCredit.amount || 0))}</p>
+              <button type="button" onClick={() => setSelectedCredit(null)} className="text-xs text-[#64748b] hover:text-[#0f172a]">Close</button>
+            </div>
+          </div>
+        )}
+      </section>
+
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9ca3af]" />
@@ -313,9 +419,12 @@ export default function TransactionsPage() {
               const onchain = isOnchain(tx);
               return (
                 <div key={tx.id}>
-                  <div
+                  <button
+                    type="button"
+                    aria-expanded={expanded === tx.id}
+                    aria-label={`View details for ${tx.description || tx.type}`}
                     onClick={() => setExpanded(expanded === tx.id ? null : tx.id)}
-                    className="grid grid-cols-[40px_1fr_auto] sm:grid-cols-[40px_1fr_120px_100px_130px] gap-2 items-center px-5 py-3.5 hover:bg-[#f8fafc] transition-colors cursor-pointer border-b border-[#f1f5f9]"
+                    className="w-full text-left grid grid-cols-[40px_1fr_auto] sm:grid-cols-[40px_1fr_120px_100px_130px] gap-2 items-center px-5 py-3.5 hover:bg-[#f8fafc] transition-colors cursor-pointer border-b border-[#f1f5f9]"
                   >
                     <div
                       className={cn(
@@ -361,7 +470,7 @@ export default function TransactionsPage() {
                     <p className="hidden sm:block text-xs text-[#9ca3af] text-right">
                       {new Date(tx.created_at).toLocaleString()}
                     </p>
-                  </div>
+                  </button>
 
                   {expanded === tx.id && (
                     <div className="px-5 py-3 bg-[#f8fafc] border-b border-[#e2e8f0]">
@@ -397,6 +506,12 @@ export default function TransactionsPage() {
                         <div>
                           <span className="text-[#9ca3af]">Tx Hash</span>
                           <p className="text-[#374151] font-medium">{shortAddress(tx.tx_hash)}</p>
+                        </div>
+                        <div>
+                          <span className="text-[#9ca3af]">Balance Before</span>
+                          <p className="text-[#374151] font-medium">
+                            {tx.balance_before != null ? fmt(tx.balance_before) : "—"}
+                          </p>
                         </div>
                         <div>
                           <span className="text-[#9ca3af]">Balance After</span>

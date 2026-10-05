@@ -7,6 +7,7 @@ import {
   verifyWithdrawalPin,
 } from "@/lib/withdrawal-pin";
 import { durableRateLimit } from "@/lib/durable-rate-limit";
+import { createClient } from "@supabase/supabase-js";
 
 export async function POST(req: NextRequest) {
   const auth = await requireMfaAuth();
@@ -20,6 +21,8 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => null);
   const currentPin = body?.currentPin;
+  const currentPassword = body?.currentPassword;
+  const recovery = body?.recovery === true;
   const newPin = body?.newPin;
   if (!isValidWithdrawalPin(newPin)) {
     return NextResponse.json({ error: "PIN must be exactly 6 digits." }, { status: 400 });
@@ -36,14 +39,35 @@ export async function POST(req: NextRequest) {
   }
 
   if (profile.withdrawal_pin) {
-    if (!isValidWithdrawalPin(currentPin)) {
-      return NextResponse.json({ error: "Enter your current PIN." }, { status: 400 });
-    }
+    if (recovery) {
+      if (typeof currentPassword !== "string" || !currentPassword || !user.email) {
+        return NextResponse.json({ error: "Enter your account password to reset your PIN." }, { status: 400 });
+      }
 
-    const matches = await verifyWithdrawalPin(currentPin, profile.withdrawal_pin);
-    if (!matches) {
-      return NextResponse.json({ error: "Current PIN is incorrect." }, { status: 403 });
+      const supabaseAuth = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { auth: { persistSession: false, autoRefreshToken: false } },
+      );
+      const { error: passwordError } = await supabaseAuth.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword,
+      });
+      if (passwordError) {
+        return NextResponse.json({ error: "Account password is incorrect." }, { status: 403 });
+      }
+    } else {
+      if (!isValidWithdrawalPin(currentPin)) {
+        return NextResponse.json({ error: "Enter your current PIN." }, { status: 400 });
+      }
+
+      const matches = await verifyWithdrawalPin(currentPin, profile.withdrawal_pin);
+      if (!matches) {
+        return NextResponse.json({ error: "Current PIN is incorrect." }, { status: 403 });
+      }
     }
+  } else if (recovery) {
+    return NextResponse.json({ error: "No withdrawal PIN is set." }, { status: 400 });
   }
 
   const withdrawalPinHash = await hashWithdrawalPin(newPin);

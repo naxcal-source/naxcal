@@ -121,6 +121,8 @@ export default function SettingsPage() {
   const [form, setForm] = useState({ full_name: "", phone: "", dob: "", nationality: "", address: "", city: "", country: "", postal_code: "" });
   const [pwForm, setPwForm] = useState({ current: "", newPw: "", confirm: "" });
   const [pinForm, setPinForm] = useState({ current: "", newPin: "", confirmPin: "" });
+  const [pinRecovery, setPinRecovery] = useState(false);
+  const [recoveryPassword, setRecoveryPassword] = useState("");
   const [hasPin, setHasPin] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -342,26 +344,37 @@ export default function SettingsPage() {
               if (!profile) return;
               if (pinForm.newPin.length !== 6 || !/^\d{6}$/.test(pinForm.newPin)) { setError("PIN must be exactly 6 digits."); return; }
               if (pinForm.newPin !== pinForm.confirmPin) { setError("PINs do not match."); return; }
-              if (hasPin && pinForm.current.length !== 6) { setError("Enter your current PIN."); return; }
+              if (hasPin && pinRecovery && !recoveryPassword) { setError("Enter your account password to reset your PIN."); return; }
+              if (hasPin && !pinRecovery && pinForm.current.length !== 6) { setError("Enter your current PIN."); return; }
               setLoading(true);
               const pinRes = await fetch("/api/me/withdrawal-pin", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ currentPin: pinForm.current, newPin: pinForm.newPin }),
+                body: JSON.stringify({ currentPin: pinForm.current, currentPassword: recoveryPassword, recovery: pinRecovery, newPin: pinForm.newPin }),
               });
               const pinData = await pinRes.json();
               setLoading(false);
               if (!pinRes.ok) { setError(pinData.error || "Failed to update PIN"); return; }
               setHasPin(true);
               setPinForm({ current: "", newPin: "", confirmPin: "" });
+              setRecoveryPassword("");
+              setPinRecovery(false);
               setSaved("Withdrawal PIN updated successfully");
               setTimeout(() => setSaved(""), 3000);
             }} className="space-y-3">
-              {hasPin && (
+              {hasPin && !pinRecovery && (
                 <div>
                   <label className="block text-xs text-[#6b7280] mb-1.5 uppercase tracking-wider">Current PIN</label>
                   <input type="password" value={pinForm.current} onChange={(e) => setPinForm({ ...pinForm, current: e.target.value.replace(/\D/g, "").slice(0, 6) })} placeholder="······" maxLength={6}
                     className={cn(inputCls, "tracking-[0.5em] text-center")} style={inputStyle} />
+                </div>
+              )}
+              {hasPin && pinRecovery && (
+                <div>
+                  <label className="block text-xs text-[#6b7280] mb-1.5 uppercase tracking-wider">Account Password</label>
+                  <input type="password" autoComplete="current-password" value={recoveryPassword} onChange={(e) => setRecoveryPassword(e.target.value)} placeholder="Enter your account password"
+                    className={cn(inputCls, "text-center")} style={inputStyle} />
+                  <p className="text-xs text-[#6b7280] mt-2">Confirm your account password to reset a forgotten withdrawal PIN.</p>
                 </div>
               )}
               <div className="grid sm:grid-cols-2 gap-3">
@@ -377,8 +390,13 @@ export default function SettingsPage() {
                 </div>
               </div>
               <button type="submit" disabled={loading || pinForm.newPin.length !== 6} className="px-6 py-2.5 rounded-lg font-semibold text-sm cursor-pointer btn-teal text-white disabled:opacity-50">
-                {loading ? "Saving..." : hasPin ? "Update PIN" : "Set PIN"}
+                {loading ? "Saving..." : hasPin ? pinRecovery ? "Reset PIN" : "Update PIN" : "Set PIN"}
               </button>
+              {hasPin && (
+                <button type="button" onClick={() => { setPinRecovery(!pinRecovery); setRecoveryPassword(""); setPinForm({ ...pinForm, current: "" }); setError(""); }} className="ml-3 text-xs font-semibold text-naxcal-teal hover:underline cursor-pointer">
+                  {pinRecovery ? "Use current PIN instead" : "Forgot your PIN?"}
+                </button>
+              )}
             </form>
           </div>
 

@@ -24,5 +24,8 @@ export async function createNotification(input: CreateNotificationInput) {
 
   if (error) {
     console.error("Create notification error:", error.message);
+    return false;
   }
+
+  return true;
 }

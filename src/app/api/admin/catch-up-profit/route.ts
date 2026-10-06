@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthUserWithClient } from "@/lib/auth-api";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { runDailyProfit } from "@/app/api/cron/daily-profit/route";
+import { runDailyProfit } from "@/lib/daily-profit";
 
 export async function POST() {
   const { user, supabase } = await getAuthUserWithClient();

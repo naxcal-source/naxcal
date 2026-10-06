@@ -16,6 +16,7 @@ export default function AdminWithdrawalsPage() {
   const [rejectModal, setRejectModal] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [message, setMessage] = useState("");
+  const [messageKind, setMessageKind] = useState<"success" | "warning" | "error">("success");
   const [tab, setTab] = useState<"pending" | "completed">("pending");
   const [copiedWallet, setCopiedWallet] = useState<string | null>(null);
 
@@ -26,10 +27,13 @@ export default function AdminWithdrawalsPage() {
   };
 
   const load = async () => {
-    const res = await fetch("/api/admin/transactions");
-    if (res.ok) {
+    try {
+      const res = await fetch("/api/admin/transactions");
+      if (!res.ok) return;
       const data = await res.json();
       setWithdrawals(data as Withdrawal[]);
+    } catch {
+      // Preserve the current list if refreshing it fails.
     }
   };
 
@@ -67,30 +71,73 @@ export default function AdminWithdrawalsPage() {
     if (!rejectModal) return;
     setProcessing(rejectModal);
     const w = withdrawals.find((x) => x.id === rejectModal);
-    if (w) {
-      await fetch("/api/admin/transactions", {
+    if (!w) {
+      setMessageKind("error");
+      setMessage("Could not find this withdrawal. Refresh the list and try again.");
+      setProcessing(null);
+      return;
+    }
+
+    try {
+      const rejectResponse = await fetch("/api/admin/transactions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "reject", id: w.id, user_id: w.user_id, amount: w.amount, reason: rejectReason || undefined }),
       });
-      // Notify the user by email
-      if (w.profiles?.email) {
-        await fetch("/api/admin/send-email", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            type: "withdrawal_rejected",
-            email: w.profiles.email,
-            name: w.profiles.full_name || "Investor",
-            amount: w.amount,
-            reason: rejectReason || "",
-          }),
-        });
+      const rejectResult = await rejectResponse.json().catch(() => ({}));
+      if (!rejectResponse.ok) {
+        setMessageKind("error");
+        setMessage(rejectResult.error || "The withdrawal could not be rejected. No refund was confirmed.");
+        setProcessing(null);
+        await load();
+        return;
       }
+      if (rejectResult.duplicate) {
+        setMessageKind("warning");
+        setMessage("This withdrawal was already processed. The latest status has been loaded.");
+        setRejectModal(null); setRejectReason(""); setProcessing(null);
+        await load();
+        return;
+      }
+      if (rejectResult.status !== "failed") {
+        setMessageKind("error");
+        setMessage("The server did not confirm that this withdrawal was rejected.");
+        setProcessing(null);
+        await load();
+        return;
+      }
+
+      let emailSent = false;
+      if (w.profiles?.email) {
+        try {
+          const emailResponse = await fetch("/api/admin/send-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type: "withdrawal_rejected",
+              email: w.profiles.email,
+              name: w.profiles.full_name || "Investor",
+              amount: w.amount,
+              reason: rejectReason || "",
+            }),
+          });
+          emailSent = emailResponse.ok;
+        } catch {}
+      }
+
+      setMessageKind(rejectResult.notification_created && emailSent ? "success" : "warning");
+      const deliveryMessage = [
+        rejectResult.notification_created ? "In-app notification sent" : "In-app notification could not be saved",
+        emailSent ? "email sent" : "email could not be sent",
+      ].join("; ");
+      setMessage(`Withdrawal rejected and refunded. ${deliveryMessage}.`);
+      setRejectModal(null); setRejectReason(""); setProcessing(null);
+      await load();
+    } catch {
+      setMessageKind("error");
+      setMessage("The withdrawal result could not be confirmed. Refresh the list before trying again.");
+      setProcessing(null);
     }
-    setMessage("Withdrawal rejected — balance refunded & user notified");
-    setRejectModal(null); setRejectReason(""); setProcessing(null);
-    load();
   };
 
   const filtered = withdrawals.filter((w) => tab === "pending" ? w.status === "pending" : w.status !== "pending");
@@ -103,7 +150,7 @@ export default function AdminWithdrawalsPage() {
       </div>
 
       {message && (
-        <div className="p-3 rounded-lg bg-naxcal-teal/15 border border-naxcal-teal/30 text-naxcal-teal text-sm mb-4">{message}</div>
+        <div className={cn("p-3 rounded-lg border text-sm mb-4", messageKind === "success" ? "bg-naxcal-teal/15 border-naxcal-teal/30 text-naxcal-teal" : messageKind === "error" ? "bg-red-500/10 border-red-500/20 text-red-400" : "bg-amber-500/10 border-amber-500/20 text-amber-300")}>{message}</div>
       )}
 
       <div className="flex gap-2 mb-4">
@@ -178,7 +225,9 @@ export default function AdminWithdrawalsPage() {
               className="w-full px-3 py-2 rounded-lg text-sm text-white placeholder:text-white/20 outline-none mb-4 resize-none" style={{ background: "#111", border: "1px solid rgba(255,255,255,0.08)" }} />
             <div className="flex gap-2 justify-end">
               <button onClick={() => { setRejectModal(null); setRejectReason(""); }} className="px-4 py-2 rounded-lg text-xs text-white/50 border border-white/10 cursor-pointer">Cancel</button>
-              <button onClick={handleReject} className="px-4 py-2 rounded-lg text-xs font-semibold text-white bg-red-600 hover:bg-red-700 cursor-pointer">Reject & Refund</button>
+              <button onClick={handleReject} disabled={processing === rejectModal} className="px-4 py-2 rounded-lg text-xs font-semibold text-white bg-red-600 hover:bg-red-700 cursor-pointer disabled:opacity-50">
+                {processing === rejectModal ? "Rejecting..." : "Reject & Refund"}
+              </button>
             </div>
           </div>
         </div>

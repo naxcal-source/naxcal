@@ -46,13 +46,34 @@ export default function NotificationsPage() {
   });
 
   useEffect(() => {
-    fetch("/api/me/notifications")
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) setNotifications(data);
-      })
-      .catch(() => setNotifications([]))
-      .finally(() => setLoading(false));
+    let mounted = true;
+    const loadNotifications = () => {
+      fetch("/api/me/notifications", { cache: "no-store" })
+        .then((r) => r.json())
+        .then((data) => {
+          if (mounted && Array.isArray(data)) setNotifications(data);
+        })
+        .catch(() => {
+          if (mounted) setNotifications([]);
+        })
+        .finally(() => {
+          if (mounted) setLoading(false);
+        });
+    };
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") loadNotifications();
+    };
+
+    loadNotifications();
+    const interval = window.setInterval(refreshWhenVisible, 30_000);
+    window.addEventListener("focus", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      mounted = false;
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refreshWhenVisible);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
   }, []);
 
   const markAllRead = async () => {

@@ -8,7 +8,7 @@ import { ArrowUpCircle, Loader2, AlertTriangle, ChevronRight, Lock, Clock, Check
 import { cn } from "@/lib/utils";
 import { withdrawalActiveStage } from "@/lib/dashboard-display";
 
-type Transaction = { id: string; type: string; amount: number; status: string; created_at: string; asset: string | null; wallet_address: string | null };
+type Transaction = { id: string; type: string; amount: number; status: string; created_at: string; asset: string | null; wallet_address: string | null; admin_note?: string | null };
 
 const cryptoOptions = [
   { symbol: "USDT", name: "Tether (TRC-20)", color: "#26a17b" },
@@ -20,6 +20,7 @@ const cryptoOptions = [
 
 export default function WithdrawPage() {
   const { profile, refreshProfile } = useDashboard();
+  const userId = profile?.id;
   const [amount, setAmount] = useState("");
   const [wallet, setWallet] = useState("");
   const [asset, setAsset] = useState("USDT");
@@ -38,11 +39,35 @@ export default function WithdrawPage() {
   const currentMonthName = now.toLocaleString("en-US", { month: "long", year: "numeric" });
 
   useEffect(() => {
-    if (!profile) return;
-    fetch("/api/me/transactions?type=withdrawal&limit=5")
-      .then((r) => r.json())
-      .then((data) => { if (Array.isArray(data)) setRecentWithdrawals(data); });
+    if (!userId) return;
+    const loadRecentWithdrawals = async () => {
+      try {
+        const response = await fetch("/api/me/transactions?type=withdrawal&limit=5", { cache: "no-store" });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (Array.isArray(data)) setRecentWithdrawals(data);
+      } catch {
+        // Keep the last successfully loaded withdrawal status visible.
+      }
+    };
+    const refreshLiveData = () => {
+      void loadRecentWithdrawals();
+      void refreshProfile();
+    };
 
+    void loadRecentWithdrawals();
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === "visible") refreshLiveData();
+    }, 15_000);
+    window.addEventListener("focus", refreshLiveData);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refreshLiveData);
+    };
+  }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!userId) return;
     // Check if user has a completed deposit this calendar month
     fetch("/api/me/transactions?type=deposit&limit=50")
       .then((r) => r.json())
@@ -55,7 +80,7 @@ export default function WithdrawPage() {
         });
         setHasMonthlyDeposit(found);
       });
-  }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const depositBlocked = hasMonthlyDeposit === false;
 
@@ -271,9 +296,14 @@ export default function WithdrawPage() {
                     <p className="text-sm font-semibold text-red-500">-{fmt(tx.amount)}</p>
                     <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded-full capitalize",
                       tx.status === "completed" ? "bg-emerald-50 text-emerald-700" : tx.status === "pending" ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-600"
-                    )}>{tx.status}</span>
+                    )}>{tx.status === "failed" ? "Rejected · refunded" : tx.status}</span>
                   </div>
                 </div>
+                {tx.status === "failed" && (
+                  <p className="mt-2 text-xs text-[#b45309]">
+                    Returned to your available balance. {tx.admin_note && !/^rejected by admin$/i.test(tx.admin_note) ? tx.admin_note : ""}
+                  </p>
+                )}
                 <div className="grid grid-cols-3 mt-3" aria-label={`Withdrawal status: ${tx.status}`}>
                   {["Requested", "Review", "Completed"].map((step, index) => {
                     const active = index <= withdrawalActiveStage(tx.status);

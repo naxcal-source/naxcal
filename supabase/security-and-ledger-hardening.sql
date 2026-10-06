@@ -173,7 +173,7 @@ BEGIN
     tx.user_id, 'adjustment_credit', tx.amount, 'completed',
     'Withdrawal refund — request declined', current_balance, refunded_balance,
     'withdrawal-refund:' || tx.id::text
-  ) ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING;
+  ) ON CONFLICT (user_id, idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING;
 
   RETURN jsonb_build_object('id', tx.id, 'status', 'failed', 'new_balance', refunded_balance, 'duplicate', false);
 END;

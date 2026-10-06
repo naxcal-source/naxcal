@@ -24,6 +24,8 @@ Financial and security changes must test authorization, idempotency, duplicate p
 
 Apply `supabase/security-and-ledger-hardening.sql` before deploying the matching application release. It removes direct client mutation policies and adds atomic withdrawals, shared rate limits, notification preferences, and operational events.
 
+For an existing deployment, apply any focused SQL fix in `supabase/` before retrying the affected operation. The withdrawal refund conflict fix is `supabase/fix-withdrawal-refund-idempotency-conflict.sql`.
+
 Back up production first, apply in staging, verify the application, and then deploy. Do not partially deploy the database and application changes.
 
 ## Scheduled jobs

@@ -43,7 +43,7 @@ const testimonials = [
   { name: "David Chen", initials: "DC", color: "bg-emerald-600", profit: "$2,180", quote: "Started at Bronze three months ago. The consistency convinced me to scale up. Exceptional platform.", tier: "Silver", since: "Mar 2024" },
   { name: "Emma Richardson", initials: "ER", color: "bg-naxcal-teal", profit: "$28,600", quote: "As a Gold investor, the VIP service is unmatched. My dedicated strategist keeps me informed on every adjustment.", tier: "Gold", since: "Sep 2023" },
   { name: "Oliver Thompson", initials: "OT", color: "bg-naxcal-gold", profit: "$6,750", quote: "Withdrew profits within 24 hours. The speed and reliability is exactly what institutional investors demand.", tier: "Silver", since: "Feb 2024" },
-  { name: "Priya Patel", initials: "PP", color: "bg-emerald-600", profit: "$8,920", quote: "FCA oversight gave me the confidence to commit serious capital. Returns have exceeded every expectation.", tier: "Silver", since: "Dec 2023" },
+  { name: "Priya Patel", initials: "PP", color: "bg-emerald-600", profit: "$8,920", quote: "Returns have exceeded every expectation.", tier: "Silver", since: "Dec 2023" },
   { name: "Marcus Williams", initials: "MW", color: "bg-naxcal-teal", profit: "$1,450", quote: "Diversification across six asset classes means I'm not exposed to a single market. The approach I needed.", tier: "Bronze", since: "Apr 2024" },
   { name: "Charlotte Evans", initials: "CE", color: "bg-naxcal-gold", profit: "$15,200", quote: "200+ algorithmic trades daily, all transparent. Returns arrive like clockwork every 24 hours.", tier: "Gold", since: "Oct 2023" },
 ];

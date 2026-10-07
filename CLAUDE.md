@@ -57,7 +57,7 @@ Use `<Image>` from `next/image` with `/Naxcal_Primary_Logo.png`. Apply `filter: 
 - `AnimatedCounter` — Intersection Observer-based number counter with configurable decimals, prefix, suffix
 - `FadeUp` — Framer Motion scroll-triggered fade+slide wrapper used on every section
 - `SectionLabel` — Mono uppercase label with teal divider lines
-- `LiveDot` — Pulsing green dot for "LIVE" / "FCA Regulated" badges
+- `LiveDot` — Pulsing green dot for live status indicators
 - Testimonials use a two-row infinite marquee (CSS animation, opposite directions)
 - Live activity feed uses CSS `feed-scroll` animation with top/bottom fade gradients
 - Tier cards use CSS utility classes `.tier-bronze`, `.tier-silver`, `.tier-gold` for distinct gradient backgrounds and border colors
